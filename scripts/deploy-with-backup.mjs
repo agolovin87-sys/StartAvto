@@ -1,9 +1,11 @@
 /**
- * Сборка → Firebase Hosting → коммит в Git (при отсутствии изменений — пустой коммит) → тег → push.
- * Откат: git checkout deploy-<метка> или список тегов: git tag -l "deploy-*"
+ * Сборка → Firebase Hosting → коммит в Git с датой/временем и описанием diff → тег → push.
+ * История: git log --grep=^deploy: или git tag -n9 deploy-
+ * Откат: git checkout <тег> — в сообщении тега и коммита указаны дата и изменения.
  */
 import { execSync } from "node:child_process";
 import fs from "node:fs";
+import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -16,6 +18,82 @@ function run(cmd, opts = {}) {
 
 function runOut(cmd) {
   return execSync(cmd, { encoding: "utf8", cwd: root, shell: true }).trim();
+}
+
+function runOutMulti(cmd) {
+  try {
+    return execSync(cmd, { encoding: "utf8", cwd: root, shell: true });
+  } catch {
+    return "";
+  }
+}
+
+function formatLocalDateTime(d) {
+  const date = new Intl.DateTimeFormat("ru-RU", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  }).format(d);
+  const time = new Intl.DateTimeFormat("ru-RU", {
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: false,
+  }).format(d);
+  const tz = Intl.DateTimeFormat("ru-RU", { timeZoneName: "short" })
+    .formatToParts(d)
+    .find((p) => p.type === "timeZoneName")?.value;
+  return { date, time, line: `${date}, ${time}${tz ? ` (${tz})` : ""}` };
+}
+
+function buildDeployMessage({ now, iso, hasStagedChanges }) {
+  const { line: localLine } = formatLocalDateTime(now);
+  const title = `deploy: ${localLine.replace(/\s+/g, " ").trim()}`;
+
+  const nameStatus = runOutMulti("git diff --cached --name-status").trim();
+  const stat = runOutMulti("git diff --cached --stat").trim();
+  const shortstat = runOutMulti("git diff --cached --shortstat").trim();
+
+  const lines = [
+    title,
+    "",
+    "─── Сохранение деплоя в GitHub ───",
+    "",
+    `Дата и время сохранения (локально): ${localLine}`,
+    `Дата и время (UTC, ISO): ${iso}`,
+    "",
+    "Действие: сборка (npm run build) и публикация на Firebase Hosting.",
+    "",
+  ];
+
+  if (hasStagedChanges && nameStatus) {
+    lines.push("Изменённые файлы (статус):");
+    lines.push(nameStatus);
+    lines.push("");
+  }
+
+  if (hasStagedChanges && stat) {
+    lines.push("Детализация (git diff --cached --stat):");
+    lines.push(stat);
+    lines.push("");
+  }
+
+  if (hasStagedChanges && shortstat) {
+    lines.push(`Итого: ${shortstat}`);
+    lines.push("");
+  }
+
+  if (!hasStagedChanges) {
+    lines.push(
+      "Изменений в отслеживаемых файлах нет — это повторный деплой той же версии исходников",
+      "(пустой коммит только для отметки момента публикации на хостинге).",
+      ""
+    );
+  }
+
+  lines.push(`Тег для отката создаётся автоматически после этого коммита.`);
+
+  return { title, full: lines.join("\n") };
 }
 
 process.chdir(root);
@@ -61,7 +139,7 @@ if (!inGit) {
   process.exit(0);
 }
 
-console.log("\n▶ Git: сохранение точки отката\n");
+console.log("\n▶ Git: сохранение в GitHub с датой, временем и описанием изменений\n");
 
 run("git add -A");
 
@@ -73,13 +151,30 @@ try {
   /* ignore */
 }
 
-if (hasStaged) {
-  run(`git commit -m "chore(deploy): ${iso}"`);
-} else {
-  run(`git commit --allow-empty -m "chore(deploy): ${iso} (только деплой, файлы не менялись)"`);
-}
+const { full: commitBody } = buildDeployMessage({
+  now,
+  iso,
+  hasStagedChanges: hasStaged,
+});
 
-run(`git tag -a "${tag}" -m "Firebase deploy ${iso}"`);
+const msgPath = path.join(os.tmpdir(), `startavto-deploy-msg-${Date.now()}.txt`);
+fs.writeFileSync(msgPath, commitBody, "utf8");
+
+try {
+  if (hasStaged) {
+    run(`git commit -F "${msgPath.replace(/\\/g, "/")}"`);
+  } else {
+    run(`git commit --allow-empty -F "${msgPath.replace(/\\/g, "/")}"`);
+  }
+
+  run(`git tag -a "${tag}" -F "${msgPath.replace(/\\/g, "/")}"`);
+} finally {
+  try {
+    fs.unlinkSync(msgPath);
+  } catch {
+    /* ignore */
+  }
+}
 
 const branch = runOut("git rev-parse --abbrev-ref HEAD");
 if (branch === "HEAD") {
@@ -91,5 +186,6 @@ console.log(`\n▶ git push origin ${branch} && git push origin ${tag}\n`);
 run(`git push origin ${branch}`);
 run(`git push origin "${tag}"`);
 
-console.log(`\n✓ Готово. Тег отката: ${tag}`);
-console.log(`  Пример: git checkout ${tag}\n`);
+console.log(`\n✓ Готово. Тег: ${tag}`);
+console.log("  Просмотр, что сохранено: git show " + tag);
+console.log("  История деплоев: git log --oneline --grep=\"^deploy:\" -20\n");
