@@ -8,7 +8,8 @@
     "dev:force": "vite --force",
     "build": "tsc -b && vite build",
     "preview": "vite preview",
-    "hosting:preview": "npm run build && firebase hosting:channel:deploy temp --expires 7d"
+    "hosting:preview": "npm run build && firebase hosting:channel:deploy temp --expires 7d",
+    "deploy": "node scripts/deploy-with-backup.mjs"
   },
   "dependencies": {
     "firebase": "^12.11.0",
