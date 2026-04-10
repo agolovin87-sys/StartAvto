@@ -1,0 +1,733 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function isSignedIn() {
+      return request.auth != null;
+    }
+    function isOwner(uid) {
+      return isSignedIn() && request.auth.uid == uid;
+    }
+    function userData() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+
+    /**
+     * Те же email, что в VITE_ADMIN_EMAILS (по одному в кавычках, в нижнем регистре).
+     * Нужны, чтобы доступ к /groups не зависел только от поля role в Firestore
+     * (если профиль ещё не успел обновиться или правила не совпадают с .env).
+     * После правки: firebase deploy --only firestore:rules
+     */
+    function adminEmailsList() {
+      // Синхронизировано с VITE_ADMIN_EMAILS в .env (нижний регистр).
+      return [
+        'start-auto13@mail.ru'
+      ];
+    }
+
+    function isAdminByTokenEmail() {
+      return request.auth != null
+        && request.auth.token.email != null
+        && request.auth.token.email.lower() in adminEmailsList();
+    }
+
+    function isAdmin() {
+      return isSignedIn()
+        && (
+          isAdminByTokenEmail()
+          || (
+            exists(/databases/$(database)/documents/users/$(request.auth.uid))
+            && userData().get('role', '') == 'admin'
+          )
+        );
+    }
+
+    /** role в документе должен быть в точности «instructor» (как в приложении). */
+    function isInstructorAccount() {
+      return isSignedIn()
+        && exists(/databases/$(database)/documents/users/$(request.auth.uid))
+        && userData().get('role', 'student') == 'instructor';
+    }
+
+    /** Без поля role в документе считаем курсантом (как normalizeUserProfile на клиенте). */
+    function isStudentAccount() {
+      return isSignedIn()
+        && exists(/databases/$(database)/documents/users/$(request.auth.uid))
+        && userData().get('role', 'student') == 'student';
+    }
+
+    /** Курсант видит карточку инструктора, у которого он в attachedStudentIds. */
+    function studentReadsTheirInstructorProfile() {
+      return isStudentAccount()
+        && resource.data.get('role', '') == 'instructor'
+        && request.auth.uid in resource.data.get('attachedStudentIds', []);
+    }
+
+    /**
+     * Любой вошедший не-админ может читать профили с role admin (контакт «Администратор», чат).
+     */
+    function signedNonAdminReadsAdminUserDoc() {
+      return isSignedIn()
+        && !isAdmin()
+        && resource.data.get('role', '') == 'admin';
+    }
+
+    /**
+     * Профиль с email из adminEmailsList (как VITE_ADMIN_EMAILS) — даже если в документе ещё не role admin.
+     * Нужно для запроса where('email','in',…) и закреплённого контакта.
+     */
+    function signedNonAdminReadsUserInAdminEmailList() {
+      let em = resource.data.get('email', '');
+      return isSignedIn()
+        && !isAdmin()
+        && em is string
+        && em.lower() in adminEmailsList();
+    }
+
+    /** Список uid курсантов у инструктора (поле может отсутствовать в старых документах). */
+    function instructorAttachedStudentIds() {
+      let ids = userData().get('attachedStudentIds', []);
+      return ids is list ? ids : [];
+    }
+
+    /** Курсант, закреплённый за текущим инструктором (поле attachedStudentIds). */
+    function instructorReadsAttachedStudent(studentUserId) {
+      return isInstructorAccount()
+        && studentUserId in instructorAttachedStudentIds();
+    }
+
+    /** Курсант читает документы инструктора, где он в attachedStudentIds (по instructorId). */
+    function studentAttachedToInstructor(instructorId) {
+      return isStudentAccount()
+        && exists(/databases/$(database)/documents/users/$(instructorId))
+        && get(/databases/$(database)/documents/users/$(instructorId)).data.get('role', '') == 'instructor'
+        && request.auth.uid in get(/databases/$(database)/documents/users/$(instructorId)).data.get('attachedStudentIds', []);
+    }
+
+    /** Списание ровно 1 талона у закреплённого курсанта (отмена «курсант не явился» и т.п.). */
+    function instructorDecrementsAttachedStudentTalonsByOne(userId) {
+      return isInstructorAccount()
+        && userId != request.auth.uid
+        && resource.data.get('role', 'student') == 'student'
+        && userId in instructorAttachedStudentIds()
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['talons'])
+        && request.resource.data.get('uid', '') == resource.data.get('uid', '')
+        && resource.data.get('talons', 0) >= 1
+        && request.resource.data.get('talons', 0) == resource.data.get('talons', 0) - 1;
+    }
+
+    /** Завершённое вождение: −1 талон и +1 к числу завершённых вождений у закреплённого курсанта. */
+    function instructorCompletesDriveIncrementsStudentCount(userId) {
+      return isInstructorAccount()
+        && userId != request.auth.uid
+        && resource.data.get('role', 'student') == 'student'
+        && userId in instructorAttachedStudentIds()
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['talons', 'drivesCount'])
+        && request.resource.data.get('uid', '') == resource.data.get('uid', '')
+        && resource.data.get('talons', 0) >= 1
+        && request.resource.data.get('talons', 0) == resource.data.get('talons', 0) - 1
+        && request.resource.data.get('drivesCount', 0) == resource.data.get('drivesCount', 0) + 1;
+    }
+
+    match /users/{userId} {
+      allow read: if isOwner(userId)
+        || isAdmin()
+        || instructorReadsAttachedStudent(userId)
+        || studentReadsTheirInstructorProfile()
+        || signedNonAdminReadsAdminUserDoc()
+        || signedNonAdminReadsUserInAdminEmailList();
+      allow create: if isOwner(userId) && request.resource.data.uid == userId;
+      /**
+       * Владельцу разрешаем update только без смены поля uid (immutable),
+       * иначе можно было бы подставить чужой uid и получить доступ к чужим чатам.
+       */
+      allow update: if isAdmin()
+        || (
+          isOwner(userId)
+          && request.resource.data.get('uid', '') == resource.data.get('uid', '')
+        )
+        || instructorDecrementsAttachedStudentTalonsByOne(userId)
+        || instructorCompletesDriveIncrementsStudentCount(userId);
+      allow delete: if isAdmin();
+    }
+
+    match /groups/{groupId} {
+      /** Курсант читает только свою учебную группу (для привязки к чат-группе и self-join). */
+      allow read: if isAdmin()
+        || isInstructorAccount()
+        || (
+          isStudentAccount()
+          && groupId == userData().get('groupId', '')
+        );
+      allow write: if isAdmin();
+    }
+
+    match /driveSlots/{slotId} {
+      allow read: if isAdmin()
+        || resource.data.instructorId == request.auth.uid
+        || resource.data.studentId == request.auth.uid;
+
+      /** Инструктор создаёт запись на вождение курсанту из своего списка. */
+      function driveSlotInstructorCreatesBooking() {
+        return isInstructorAccount()
+          && request.resource.data.instructorId == request.auth.uid
+          && request.resource.data.status == 'pending_confirmation'
+          && request.resource.data.studentId in instructorAttachedStudentIds()
+          && request.resource.data.get('studentDisplayName', '') is string;
+      }
+
+      /** Инструктор подтверждает бронь свободного окна: сразу создаёт scheduled. */
+      function driveSlotInstructorCreatesScheduledFromWindow() {
+        return isInstructorAccount()
+          && request.resource.data.instructorId == request.auth.uid
+          && request.resource.data.status == 'scheduled'
+          && request.resource.data.studentId in instructorAttachedStudentIds()
+          && request.resource.data.cancelledByRole == null
+          && request.resource.data.cancelReason == ''
+          && request.resource.data.get('studentDisplayName', '') is string;
+      }
+
+      /** Курсант подтверждает запись инструктора. */
+      function driveSlotStudentConfirms() {
+        return isStudentAccount()
+          && resource.data.studentId == request.auth.uid
+          && resource.data.status == 'pending_confirmation'
+          && request.resource.data.status == 'scheduled'
+          && request.resource.data.studentId == resource.data.studentId
+          && request.resource.data.instructorId == resource.data.instructorId
+          && request.resource.data.dateKey == resource.data.dateKey
+          && request.resource.data.startTime == resource.data.startTime
+          && request.resource.data.get('studentDisplayName', '') is string;
+      }
+
+      /** Курсант отклоняет запись — статус «отменено» с отметкой курсанта. */
+      function driveSlotStudentDeclines() {
+        return isStudentAccount()
+          && resource.data.studentId == request.auth.uid
+          && resource.data.status == 'pending_confirmation'
+          && request.resource.data.status == 'cancelled'
+          && request.resource.data.cancelledByRole == 'student'
+          && request.resource.data.studentId == resource.data.studentId
+          && request.resource.data.instructorId == resource.data.instructorId
+          && request.resource.data.dateKey == resource.data.dateKey
+          && request.resource.data.startTime == resource.data.startTime;
+      }
+
+      /** Курсант отменяет уже подтверждённое вождение. */
+      function driveSlotStudentCancelsScheduled() {
+        return isStudentAccount()
+          && resource.data.studentId == request.auth.uid
+          && resource.data.status == 'scheduled'
+          && resource.data.get('liveStartedAt', null) == null
+          && request.resource.data.status == 'cancelled'
+          && request.resource.data.cancelledByRole == 'student'
+          && request.resource.data.studentId == resource.data.studentId
+          && request.resource.data.instructorId == resource.data.instructorId
+          && request.resource.data.dateKey == resource.data.dateKey
+          && request.resource.data.startTime == resource.data.startTime;
+      }
+
+      /** Инструктор нажимает «Начать вождение» — liveStartedAt и сброс instructorLateShiftMin. */
+      function driveSlotInstructorStartsLive() {
+        return isInstructorAccount()
+          && resource.data.instructorId == request.auth.uid
+          && resource.data.status == 'scheduled'
+          && resource.data.get('liveStartedAt', null) == null
+          && request.resource.data.status == 'scheduled'
+          && request.resource.data.instructorId == request.auth.uid
+          && request.resource.data.studentId == resource.data.studentId
+          && request.resource.data.get('liveStartedAt', null) != null
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['liveStartedAt', 'instructorLateShiftMin']);
+      }
+
+      /** Инструктор: «Опаздываю» — сдвиг dateKey/startTime и отметка минут для курсанта. */
+      function driveSlotInstructorRunningLate() {
+        return isInstructorAccount()
+          && resource.data.instructorId == request.auth.uid
+          && resource.data.status == 'scheduled'
+          && resource.data.get('liveStartedAt', null) == null
+          && request.resource.data.status == 'scheduled'
+          && request.resource.data.instructorId == resource.data.instructorId
+          && request.resource.data.studentId == resource.data.studentId
+          && request.resource.data.dateKey is string
+          && request.resource.data.startTime is string
+          && request.resource.data.instructorLateShiftMin in [5, 10, 15]
+          && request.resource.data.get('cancelledByRole', null) == resource.data.get('cancelledByRole', null)
+          && request.resource.data.get('cancelReason', '') == resource.data.get('cancelReason', '')
+          && request.resource.data.get('liveStartedAt', null) == null
+          && request.resource.data.get('liveStudentAckAt', null) == resource.data.get('liveStudentAckAt', null)
+          && request.resource.data.get('livePausedAt', null) == resource.data.get('livePausedAt', null)
+          && request.resource.data.get('liveTotalPausedMs', 0) == resource.data.get('liveTotalPausedMs', 0)
+          && request.resource.data.get('liveEndedAt', null) == resource.data.get('liveEndedAt', null)
+          && request.resource.data.get('studentDisplayName', '') == resource.data.get('studentDisplayName', '');
+      }
+
+
+      /** Курсант подтверждает начало вождения — меняется только liveStudentAckAt. */
+      function driveSlotStudentAckLive() {
+        return isStudentAccount()
+          && resource.data.studentId == request.auth.uid
+          && resource.data.status == 'scheduled'
+          && resource.data.get('liveStartedAt', null) != null
+          && resource.data.get('liveStudentAckAt', null) == null
+          && request.resource.data.status == 'scheduled'
+          && request.resource.data.studentId == resource.data.studentId
+          && request.resource.data.get('liveStudentAckAt', null) != null
+          && request.resource.data.get('liveStartedAt', null) == resource.data.get('liveStartedAt', null)
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['liveStudentAckAt']);
+      }
+
+      /** Завершение вождения: status + снятие полей live*. */
+      function driveSlotInstructorCompletesLive() {
+        return isInstructorAccount()
+          && resource.data.instructorId == request.auth.uid
+          && resource.data.status == 'scheduled'
+          && resource.data.get('liveStartedAt', null) != null
+          && request.resource.data.status == 'completed'
+          && request.resource.data.instructorId == request.auth.uid
+          && request.resource.data.studentId == resource.data.studentId
+          && request.resource.data.get('liveStartedAt', null) == null
+          && request.resource.data.get('liveStudentAckAt', null) == null
+          && request.resource.data.get('livePausedAt', null) == null
+          && request.resource.data.get('liveTotalPausedMs', null) == null
+          && request.resource.data.get('liveEndedAt', null) != null
+          && request.resource.data.diff(resource.data).affectedKeys()
+            .hasOnly(['status', 'liveStartedAt', 'liveStudentAckAt', 'livePausedAt', 'liveTotalPausedMs', 'liveEndedAt', 'studentDisplayName']);
+      }
+
+      /** Пауза таймера вождения. */
+      function driveSlotInstructorPausesLive() {
+        return isInstructorAccount()
+          && resource.data.instructorId == request.auth.uid
+          && resource.data.status == 'scheduled'
+          && resource.data.get('liveStartedAt', null) != null
+          && resource.data.get('liveStudentAckAt', null) != null
+          && resource.data.get('livePausedAt', null) == null
+          && request.resource.data.status == 'scheduled'
+          && request.resource.data.instructorId == resource.data.instructorId
+          && request.resource.data.studentId == resource.data.studentId
+          && request.resource.data.get('liveStartedAt', null) == resource.data.get('liveStartedAt', null)
+          && request.resource.data.get('liveStudentAckAt', null) == resource.data.get('liveStudentAckAt', null)
+          && request.resource.data.get('livePausedAt', null) != null
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['livePausedAt']);
+      }
+
+      /** Снятие паузы: накопление liveTotalPausedMs. */
+      function driveSlotInstructorResumesLive() {
+        return isInstructorAccount()
+          && resource.data.instructorId == request.auth.uid
+          && resource.data.status == 'scheduled'
+          && resource.data.get('livePausedAt', null) != null
+          && request.resource.data.status == 'scheduled'
+          && request.resource.data.instructorId == resource.data.instructorId
+          && request.resource.data.studentId == resource.data.studentId
+          && request.resource.data.get('liveStartedAt', null) == resource.data.get('liveStartedAt', null)
+          && request.resource.data.get('liveStudentAckAt', null) == resource.data.get('liveStudentAckAt', null)
+          && request.resource.data.get('livePausedAt', null) == null
+          && request.resource.data.get('liveTotalPausedMs', 0) >= resource.data.get('liveTotalPausedMs', 0)
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['livePausedAt', 'liveTotalPausedMs']);
+      }
+
+      /** Отмена начатого вождения инструктором (без списания талонов). */
+      function driveSlotInstructorCancelsLiveSession() {
+        return isInstructorAccount()
+          && resource.data.instructorId == request.auth.uid
+          && resource.data.status == 'scheduled'
+          && resource.data.get('liveStartedAt', null) != null
+          && request.resource.data.status == 'cancelled'
+          && request.resource.data.cancelledByRole == 'instructor'
+          && request.resource.data.studentId == resource.data.studentId
+          && request.resource.data.instructorId == resource.data.instructorId
+          && request.resource.data.dateKey == resource.data.dateKey
+          && request.resource.data.startTime == resource.data.startTime
+          && request.resource.data.get('liveStartedAt', null) == null
+          && request.resource.data.get('liveStudentAckAt', null) == null
+          && request.resource.data.get('livePausedAt', null) == null
+          && request.resource.data.get('liveTotalPausedMs', null) == null
+          && request.resource.data.cancelReason is string
+          && request.resource.data.cancelReason.size() > 0
+          && request.resource.data.diff(resource.data).affectedKeys()
+            .hasOnly([
+              'status',
+              'cancelledByRole',
+              'cancelReason',
+              'liveStartedAt',
+              'liveStudentAckAt',
+              'livePausedAt',
+              'liveTotalPausedMs',
+              'studentDisplayName',
+            ]);
+      }
+
+      allow create: if isAdmin()
+        || driveSlotInstructorCreatesBooking()
+        || driveSlotInstructorCreatesScheduledFromWindow();
+
+      allow update: if isAdmin()
+        || driveSlotStudentConfirms()
+        || driveSlotStudentDeclines()
+        || driveSlotStudentCancelsScheduled()
+        || driveSlotInstructorStartsLive()
+        || driveSlotInstructorRunningLate()
+        || driveSlotStudentAckLive()
+        || driveSlotInstructorCompletesLive()
+        || driveSlotInstructorPausesLive()
+        || driveSlotInstructorResumesLive()
+        || driveSlotInstructorCancelsLiveSession();
+
+      allow delete: if isAdmin()
+        || (
+          isInstructorAccount()
+          && resource.data.instructorId == request.auth.uid
+          && resource.data.get('liveStartedAt', null) == null
+        );
+    }
+
+    match /freeDriveWindows/{windowId} {
+      function freeWindowInstructorCreatesOpen() {
+        return isInstructorAccount()
+          && request.resource.data.instructorId == request.auth.uid
+          && request.resource.data.status == 'open'
+          && request.resource.data.get('studentId', null) == null
+          && request.resource.data.dateKey is string
+          && request.resource.data.startTime is string;
+      }
+
+      function freeWindowStudentReserves() {
+        return isStudentAccount()
+          && studentAttachedToInstructor(resource.data.instructorId)
+          && resource.data.status == 'open'
+          && resource.data.get('studentId', null) == null
+          && request.resource.data.instructorId == resource.data.instructorId
+          && request.resource.data.dateKey == resource.data.dateKey
+          && request.resource.data.startTime == resource.data.startTime
+          && request.resource.data.status == 'reserved'
+          && request.resource.data.studentId == request.auth.uid
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'studentId']);
+      }
+
+      function freeWindowInstructorCancelsReservation() {
+        return isInstructorAccount()
+          && resource.data.instructorId == request.auth.uid
+          && resource.data.status == 'reserved'
+          && request.resource.data.instructorId == resource.data.instructorId
+          && request.resource.data.dateKey == resource.data.dateKey
+          && request.resource.data.startTime == resource.data.startTime
+          && request.resource.data.status == 'open'
+          && request.resource.data.get('studentId', null) == null
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'studentId']);
+      }
+
+      function freeWindowStudentCancelsOwnReservation() {
+        return isStudentAccount()
+          && studentAttachedToInstructor(resource.data.instructorId)
+          && resource.data.status == 'reserved'
+          && resource.data.studentId == request.auth.uid
+          && request.resource.data.instructorId == resource.data.instructorId
+          && request.resource.data.dateKey == resource.data.dateKey
+          && request.resource.data.startTime == resource.data.startTime
+          && request.resource.data.status == 'open'
+          && request.resource.data.get('studentId', null) == null
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'studentId']);
+      }
+
+      allow read: if isAdmin()
+        || (isInstructorAccount() && resource.data.instructorId == request.auth.uid)
+        || studentAttachedToInstructor(resource.data.instructorId);
+      allow create: if isAdmin() || freeWindowInstructorCreatesOpen();
+      allow update: if isAdmin()
+        || freeWindowStudentReserves()
+        || freeWindowInstructorCancelsReservation()
+        || freeWindowStudentCancelsOwnReservation();
+      allow delete: if isAdmin()
+        || (isInstructorAccount() && resource.data.instructorId == request.auth.uid);
+    }
+
+    /**
+     * Опциональные поля «от кого»: если fromUid непустой — роль и контрагент должны совпадать с парой инструктор↔курсант.
+     */
+    function instructorTalonHistoryCreateFromOptionalValid() {
+      let d = request.resource.data;
+      let fu = d.get('fromUid', '');
+      let fuStr = fu is string ? fu : '';
+      return fuStr.size() == 0
+        ? true
+        : (
+          d.get('fromRole', '') is string
+          && d.get('fromDisplayName', '') is string
+          && (
+            (
+              request.resource.data.delta == -1
+              && fuStr == request.auth.uid
+              && d.get('fromRole', '') == 'instructor'
+            )
+            || (
+              request.resource.data.delta == 1
+              && fuStr in instructorAttachedStudentIds()
+              && d.get('fromRole', '') == 'student'
+            )
+          )
+        );
+    }
+
+    /** Админ: при непустом fromUid — это текущий пользователь с ролью admin (ручное изменение баланса). */
+    function adminTalonHistoryCreateFromOptionalValid() {
+      let d = request.resource.data;
+      let fu = d.get('fromUid', '');
+      let fuStr = fu is string ? fu : '';
+      return fuStr.size() == 0
+        ? true
+        : (
+          fuStr == request.auth.uid
+          && d.get('fromRole', '') == 'admin'
+          && d.get('fromDisplayName', '') is string
+        );
+    }
+
+    match /adminTalonHistory/{docId} {
+      /**
+       * Журнал по целевому uid: админ — всё; остальные — только строки, где targetUid совпадает с auth.
+       * Не привязываем к isStudentAccount/isInstructorAccount: иначе сбой при неверном role в /users
+       * или до создания профиля ломает чтение своих же записей.
+       */
+      allow read: if isAdmin()
+        || (
+          isSignedIn()
+          && resource.data.targetUid == request.auth.uid
+        );
+      /** Админ — ручное изменение; инструктор — перенос за вождение (курсант −1, я +1). */
+      allow create: if (
+          isAdmin()
+          && adminTalonHistoryCreateFromOptionalValid()
+        )
+        || (
+          isInstructorAccount()
+          && request.resource.data.keys().hasAll([
+            'at',
+            'targetUid',
+            'targetRole',
+            'targetDisplayName',
+            'delta',
+            'previousTalons',
+            'newTalons',
+          ])
+          && instructorTalonHistoryCreateFromOptionalValid()
+          && (
+            (
+              request.resource.data.delta == -1
+              && request.resource.data.targetUid in instructorAttachedStudentIds()
+            )
+            || (
+              request.resource.data.delta == 1
+              && request.resource.data.targetUid == request.auth.uid
+            )
+          )
+        );
+      allow update, delete: if isAdmin();
+    }
+
+    // Чат: участники по participantIds + админ.
+    // Важно: для /chats/{chatId} нельзя использовать get() этого же chatId в условии чтения —
+    // получается рекурсия в правилах, и не-админы (инструктор, курсант) получают permission-denied.
+    function chatDocParticipantIds() {
+      let p = resource.data.get('participantIds', []);
+      return p is list ? p : [];
+    }
+
+    function chatDocParticipantEmailsLower() {
+      let e = resource.data.get('participantEmailsLower', []);
+      return e is list ? e : [];
+    }
+
+    function signedInByAuthOrLegacyUidInChatDoc() {
+      let p = chatDocParticipantIds();
+      let em = request.auth.token.email;
+      return isSignedIn() && (
+        request.auth.uid in p
+        || (
+          em is string
+          && em.lower() in chatDocParticipantEmailsLower()
+        )
+      );
+    }
+
+    function newChatParticipantIds() {
+      let p = request.resource.data.get('participantIds', []);
+      return p is list ? p : [];
+    }
+
+    /** Участники из data (документ до/после записи). */
+    function participantIdsListFrom(data) {
+      let p = data.get('participantIds', []);
+      return p is list ? p : [];
+    }
+
+    /** Старый документ без валидного списка — разрешить merge с participantIds (починка пары 1:1). */
+    function chatParticipantIdsMissingOrEmpty(data) {
+      let p = data.get('participantIds', []);
+      return !(p is list) || p.size() == 0;
+    }
+
+    function chatUpdateAllowedForSignedParticipant() {
+      return isSignedIn() && (
+        (request.auth.uid in participantIdsListFrom(resource.data))
+        || (
+          chatParticipantIdsMissingOrEmpty(resource.data)
+          && request.auth.uid in participantIdsListFrom(request.resource.data)
+        )
+      );
+    }
+
+    /** Групповой чат по полю kind или по id group_*. */
+    function chatDocLooksLikeGroup(chatId) {
+      return resource.data.get('kind', '') == 'group'
+        || (chatId is string && chatId.matches('group_.*'));
+    }
+
+    /** Только для автосинхронизации от учебной группы. */
+    function chatDocIsLinkedGroupMode() {
+      return resource.data.get('membershipMode', '') == 'linkedGroup';
+    }
+
+    /**
+     * Курсант добавляет только себя в participantIds, если его учебная группа привязана к этому чату.
+     * newIds.hasAll(oldIds) + ровно один новый uid — нельзя выкинуть других участников.
+     */
+    function studentSelfJoinLinkedGroupChat(chatId) {
+      let oldIds = resource.data.get('participantIds', []);
+      let newIds = request.resource.data.get('participantIds', []);
+      let gid = userData().get('groupId', '');
+      return isStudentAccount()
+        && chatDocLooksLikeGroup(chatId)
+        && chatDocIsLinkedGroupMode()
+        && gid is string
+        && gid != ''
+        && exists(/databases/$(database)/documents/groups/$(gid))
+        && get(/databases/$(database)/documents/groups/$(gid)).data.get('linkedChatGroupId', '') == chatId
+        && oldIds is list
+        && newIds is list
+        && newIds.hasAll(oldIds)
+        && newIds.size() == oldIds.size() + 1
+        && !(request.auth.uid in oldIds)
+        && request.auth.uid in newIds;
+    }
+
+    /**
+     * Инструктор добавляет только себя, если в чате уже есть хотя бы один его закреплённый курсант.
+     */
+    function instructorSelfJoinGroupChat(chatId) {
+      let oldIds = resource.data.get('participantIds', []);
+      let newIds = request.resource.data.get('participantIds', []);
+      return isInstructorAccount()
+        && chatDocLooksLikeGroup(chatId)
+        && chatDocIsLinkedGroupMode()
+        && oldIds is list
+        && newIds is list
+        && newIds.hasAll(oldIds)
+        && newIds.size() == oldIds.size() + 1
+        && !(request.auth.uid in oldIds)
+        && request.auth.uid in newIds
+        && oldIds.hasAny(instructorAttachedStudentIds());
+    }
+
+    /**
+     * Ручная группа: пользователь с отмеченным email может добавить только себя в participantIds.
+     */
+    function manualEmailSelfJoinGroupChat(chatId) {
+      let oldIds = resource.data.get('participantIds', []);
+      let newIds = request.resource.data.get('participantIds', []);
+      let em = request.auth.token.email;
+      return isSignedIn()
+        && chatDocLooksLikeGroup(chatId)
+        && resource.data.get('membershipMode', 'manual') == 'manual'
+        && em is string
+        && em.lower() in chatDocParticipantEmailsLower()
+        && oldIds is list
+        && newIds is list
+        && newIds.hasAll(oldIds)
+        && newIds.size() == oldIds.size() + 1
+        && !(request.auth.uid in oldIds)
+        && request.auth.uid in newIds;
+    }
+
+    function uidInChatDoc(chatId, uid) {
+      let em = request.auth.token.email;
+      return exists(/databases/$(database)/documents/chats/$(chatId))
+        && get(/databases/$(database)/documents/chats/$(chatId)).data.get('participantIds', []) is list
+        && (
+          uid in get(/databases/$(database)/documents/chats/$(chatId)).data.get('participantIds', [])
+          || (
+            em is string
+            && em.lower() in get(/databases/$(database)/documents/chats/$(chatId)).data.get('participantEmailsLower', [])
+          )
+        );
+    }
+
+    match /chats/{chatId} {
+      /**
+       * Сначала участник по participantIds (без get() в другие коллекции) — иначе при list/array-contains
+       * правила могут многократно вычислять isAdmin() (exists+get users) по каждому кандидату и упереться в лимит
+       * чтений → Missing or insufficient permissions на весь запрос.
+       */
+      allow read: if isAdminByTokenEmail()
+        || isAdmin()
+        || (
+          isSignedIn()
+          && (
+            request.auth.uid in resource.data.get('participantIds', [])
+            || (
+              request.auth.token.email is string
+              && request.auth.token.email.lower() in resource.data.get('participantEmailsLower', [])
+            )
+          )
+        );
+      allow create: if isSignedIn()
+        && request.auth.uid in newChatParticipantIds();
+      allow update: if isAdminByTokenEmail()
+        || chatUpdateAllowedForSignedParticipant()
+        || studentSelfJoinLinkedGroupChat(chatId)
+        || instructorSelfJoinGroupChat(chatId)
+        || manualEmailSelfJoinGroupChat(chatId);
+      allow delete: if isAdminByTokenEmail()
+        || (
+          isSignedIn()
+          && (
+            request.auth.uid in resource.data.get('participantIds', [])
+            || (
+              request.auth.token.email is string
+              && request.auth.token.email.lower() in resource.data.get('participantEmailsLower', [])
+            )
+          )
+        );
+    }
+
+    match /chats/{chatId}/typing/{typerId} {
+      allow read: if (isSignedIn() && uidInChatDoc(chatId, request.auth.uid))
+        || isAdminByTokenEmail();
+      /** Web SDK часто шлёт числа как float — «is int» давало permission-denied на setDoc. */
+      allow create, update: if isSignedIn()
+        && request.auth.uid == typerId
+        && uidInChatDoc(chatId, request.auth.uid)
+        && request.resource.data.keys().hasOnly(["updatedAt"])
+        && (
+          request.resource.data.updatedAt is int
+          || request.resource.data.updatedAt is float
+        );
+      allow delete: if isSignedIn()
+        && request.auth.uid == typerId
+        && uidInChatDoc(chatId, request.auth.uid);
+    }
+
+    match /chats/{chatId}/messages/{messageId} {
+      /** Админ по role в users — только чтение чужих переписок; запись — как у участников или email-админа. */
+      allow read: if (isSignedIn() && uidInChatDoc(chatId, request.auth.uid))
+        || isAdminByTokenEmail()
+        || isAdmin();
+      allow create: if (isSignedIn() && uidInChatDoc(chatId, request.auth.uid))
+        || isAdminByTokenEmail();
+      /** Очистка вложений/текста из настроек администратора. */
+      allow update, delete: if (isSignedIn() && uidInChatDoc(chatId, request.auth.uid))
+        || isAdminByTokenEmail()
+        || isAdmin();
+    }
+  }
+}
