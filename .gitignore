@@ -8,6 +8,7 @@ Thumbs.db
 .vite
 coverage
 *.local
+.cursor
 .idea
 .vscode/*
 !.vscode/extensions.json
