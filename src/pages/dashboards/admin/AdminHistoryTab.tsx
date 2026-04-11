@@ -88,6 +88,12 @@ export function AdminHistoryTab() {
 
   const userRows = useMemo(() => buildUserHistoryRows(users), [users]);
 
+  /** Только правки баланса администратором из карточек; без списаний за вождение (инструктор → курсант). */
+  const adminTalonEntries = useMemo(
+    () => talonEntries.filter((e) => !e.fromRole || e.fromRole === "admin"),
+    [talonEntries]
+  );
+
   async function confirmClearTalonHistory() {
     setClearTalonBusy(true);
     setErr(null);
@@ -165,15 +171,16 @@ export function AdminHistoryTab() {
               </tr>
             </thead>
             <tbody>
-              {talonEntries.length === 0 ? (
+              {adminTalonEntries.length === 0 ? (
                 <tr>
                   <td colSpan={6} className="admin-schedule-table-empty">
-                    Записей пока нет. Списание и зачисление талонов фиксируются при сохранении в карточках
-                    курсантов и инструкторов.
+                    {talonEntries.length === 0
+                      ? "Записей пока нет. Зачисление и списание талонов администратором фиксируются при сохранении в карточках курсантов и инструкторов."
+                      : "Нет операций администратора по талонам. Списания за вождение (инструктор — курсант) здесь не отображаются."}
                   </td>
                 </tr>
               ) : (
-                talonEntries.map((e) => {
+                adminTalonEntries.map((e) => {
                   const op =
                     e.delta > 0
                       ? `Зачисление +${e.delta}`
