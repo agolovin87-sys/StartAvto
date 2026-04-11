@@ -1015,7 +1015,8 @@ code {
   flex-wrap: nowrap;
   align-items: center;
   justify-content: flex-start;
-  gap: 0.4em;
+  /* Один «пробел» между ФИО, значком сети и ролью */
+  gap: 1ch;
   min-width: 0;
   width: 100%;
   max-width: 100%;
@@ -1025,13 +1026,13 @@ code {
   padding-block: 0.15rem;
 }
 
-/* Равные зазоры вокруг индикатора сети */
+/* Без боковых полей — расстояние только от gap у .shell-header-meta */
 .shell-header-meta-sep-wrap {
   display: inline-flex;
   justify-content: center;
   align-items: center;
   flex-shrink: 0;
-  padding-inline: 0.12em;
+  padding-inline: 0;
 }
 
 .shell-header-meta-sep-wrap--offline {
