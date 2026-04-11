@@ -2437,20 +2437,20 @@ code {
   white-space: nowrap;
 }
 
-/* Ознакомительный тур (инструктор): карточка поверх подсветки меню */
+/* Ознакомительный тур (инструктор / курсант): карточка поверх подсветки меню */
 .instructor-onboarding-title {
   margin: 0 0 0.45rem;
   font-size: 1.05rem;
   font-weight: 700;
   letter-spacing: -0.02em;
-  color: var(--theme-heading);
+  color: #86efac;
 }
 
 .instructor-onboarding-body {
   margin: 0;
   font-size: 0.88rem;
   line-height: 1.5;
-  color: var(--theme-muted);
+  color: #86efac;
 }
 
 .instructor-onboarding-footer {
@@ -2465,7 +2465,51 @@ code {
 .instructor-onboarding-step {
   font-size: 0.78rem;
   font-weight: 600;
-  color: var(--theme-soft);
+  color: #86efac;
+}
+
+.instructor-onboarding-actions .btn-ghost.btn-sm {
+  color: #86efac;
+  border-color: rgba(134, 239, 172, 0.45);
+}
+
+.instructor-onboarding-actions .btn-ghost.btn-sm:hover {
+  color: #bbf7d0;
+  border-color: rgba(187, 247, 208, 0.55);
+  background: rgba(34, 197, 94, 0.12);
+}
+
+.instructor-onboarding-actions .btn-primary.btn-sm {
+  background: linear-gradient(180deg, #4ade80 0%, #22c55e 100%);
+  color: #052e16;
+  border-color: rgba(187, 247, 208, 0.35);
+}
+
+.instructor-onboarding-actions .btn-primary.btn-sm:hover {
+  filter: brightness(1.06);
+}
+
+html[data-theme="light"] .instructor-onboarding-title,
+html[data-theme="light"] .instructor-onboarding-body,
+html[data-theme="light"] .instructor-onboarding-step {
+  color: #15803d;
+}
+
+html[data-theme="light"] .instructor-onboarding-actions .btn-ghost.btn-sm {
+  color: #15803d;
+  border-color: rgba(21, 128, 61, 0.35);
+}
+
+html[data-theme="light"] .instructor-onboarding-actions .btn-ghost.btn-sm:hover {
+  color: #166534;
+  border-color: rgba(22, 101, 52, 0.45);
+  background: rgba(34, 197, 94, 0.1);
+}
+
+html[data-theme="light"] .instructor-onboarding-actions .btn-primary.btn-sm {
+  background: linear-gradient(180deg, #22c55e 0%, #16a34a 100%);
+  color: #f0fdf4;
+  border-color: rgba(21, 128, 61, 0.25);
 }
 
 .instructor-onboarding-actions {
