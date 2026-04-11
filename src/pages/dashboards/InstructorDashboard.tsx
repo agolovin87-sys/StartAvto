@@ -195,6 +195,7 @@ export function InstructorDashboard() {
               <button
                 key={id}
                 type="button"
+                data-instructor-onboarding-nav={id}
                 className={
                   tab === id ? "admin-bottom-nav-item is-active" : "admin-bottom-nav-item"
                 }

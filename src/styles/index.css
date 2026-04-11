@@ -1240,6 +1240,12 @@ code {
   display: block;
 }
 
+.shell-instr-help-ico {
+  width: 22px;
+  height: 22px;
+  display: block;
+}
+
 .shell-logout-btn {
   display: inline-flex;
   align-items: center;
@@ -2429,6 +2435,46 @@ code {
 
 .admin-bottom-nav-label {
   white-space: nowrap;
+}
+
+/* Ознакомительный тур (инструктор): карточка поверх подсветки меню */
+.instructor-onboarding-title {
+  margin: 0 0 0.45rem;
+  font-size: 1.05rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--theme-heading);
+}
+
+.instructor-onboarding-body {
+  margin: 0;
+  font-size: 0.88rem;
+  line-height: 1.5;
+  color: var(--theme-muted);
+}
+
+.instructor-onboarding-footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.65rem;
+  margin-top: 0.9rem;
+}
+
+.instructor-onboarding-step {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--theme-soft);
+}
+
+.instructor-onboarding-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.4rem;
+  margin-left: auto;
 }
 
 /* Админ — график вождений */

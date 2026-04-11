@@ -4,7 +4,9 @@ import { formatShortFio } from "@/admin/formatShortFio";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { FirstLaunchPermissions } from "@/components/FirstLaunchPermissions";
 import { IconInstallApp } from "@/components/IconInstallApp";
+import { InstructorOnboardingTour } from "@/components/InstructorOnboardingTour";
 import { useAuth } from "@/context/AuthContext";
+import { useInstructorOnboarding } from "@/context/InstructorOnboardingContext";
 import {
   ChatThreadShellProvider,
   useChatThreadShell,
@@ -25,6 +27,18 @@ const roleLabel: Record<UserRole, string> = {
   instructor: "Инструктор",
   student: "Курсант",
 };
+
+/** Подсказка по разделам кабинета инструктора */
+function IconInstructorHelp() {
+  return (
+    <svg className="shell-instr-help-ico" viewBox="0 0 24 24" aria-hidden>
+      <path
+        fill="currentColor"
+        d="M11 18h2v-2h-2v2zm1-16C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm0-14c-2.21 0-4 1.79-4 4h2c0-1.1.9-2 2-2s2 .9 2 2c0 2-3 1.75-3 5h2c0-2.25 3-2.5 3-5 0-2.21-1.79-4-4-4z"
+      />
+    </svg>
+  );
+}
 
 function IconLogout() {
   return (
@@ -73,6 +87,7 @@ function IconNoSignal() {
 
 function AppShellInner({ children }: { children: React.ReactNode }) {
   const { profile, signOut } = useAuth();
+  const instructorOnboarding = useInstructorOnboarding();
   const [exitConfirmOpen, setExitConfirmOpen] = useState(false);
   const { shellHeaderHidden } = useChatThreadShell();
   const [networkOnline, setNetworkOnline] = useState(
@@ -298,6 +313,19 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
             ) : null}
           </div>
           <div className="shell-user">
+            {profile?.role === "instructor" &&
+            profile.accountStatus === "active" &&
+            instructorOnboarding ? (
+              <button
+                type="button"
+                className="shell-install-btn"
+                aria-label="Инструкция по кабинету"
+                title="Инструкция по кабинету"
+                onClick={() => instructorOnboarding.startTour()}
+              >
+                <IconInstructorHelp />
+              </button>
+            ) : null}
             <Link
               to="/install"
               className="shell-install-btn"
@@ -338,6 +366,11 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
         onCancel={() => setExitConfirmOpen(false)}
       />
       <FirstLaunchPermissions />
+      {profile?.role === "instructor" &&
+      profile.accountStatus === "active" &&
+      instructorOnboarding ? (
+        <InstructorOnboardingTour suppressed={shellHeaderHidden} />
+      ) : null}
     </div>
   );
 }
