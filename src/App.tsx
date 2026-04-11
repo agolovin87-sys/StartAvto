@@ -18,6 +18,7 @@ import { AppShell } from "@/components/AppShell";
 import { PageLoading } from "@/components/PageLoading";
 import { ChatUnreadProvider } from "@/context/ChatUnreadContext";
 import { InstructorOnboardingProvider } from "@/context/InstructorOnboardingContext";
+import { StudentOnboardingProvider } from "@/context/StudentOnboardingContext";
 import { GlobalIncomingChatAlerts } from "@/chat/GlobalIncomingChatAlerts";
 import type { UserRole } from "@/types";
 
@@ -139,7 +140,11 @@ export default function App() {
       />
       <Route
         path="/app/student"
-        element={<ProtectedApp role="student" />}
+        element={
+          <StudentOnboardingProvider>
+            <ProtectedApp role="student" />
+          </StudentOnboardingProvider>
+        }
       />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

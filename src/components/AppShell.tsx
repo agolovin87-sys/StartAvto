@@ -5,8 +5,10 @@ import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { FirstLaunchPermissions } from "@/components/FirstLaunchPermissions";
 import { IconInstallApp } from "@/components/IconInstallApp";
 import { InstructorOnboardingTour } from "@/components/InstructorOnboardingTour";
+import { StudentOnboardingTour } from "@/components/StudentOnboardingTour";
 import { useAuth } from "@/context/AuthContext";
 import { useInstructorOnboarding } from "@/context/InstructorOnboardingContext";
+import { useStudentOnboarding } from "@/context/StudentOnboardingContext";
 import {
   ChatThreadShellProvider,
   useChatThreadShell,
@@ -28,8 +30,8 @@ const roleLabel: Record<UserRole, string> = {
   student: "Курсант",
 };
 
-/** Подсказка по разделам кабинета инструктора */
-function IconInstructorHelp() {
+/** Значок «инструкция / правила» в шапке кабинета */
+function IconCabinetHelp() {
   return (
     <svg className="shell-instr-help-ico" viewBox="0 0 24 24" aria-hidden>
       <path
@@ -88,6 +90,7 @@ function IconNoSignal() {
 function AppShellInner({ children }: { children: React.ReactNode }) {
   const { profile, signOut } = useAuth();
   const instructorOnboarding = useInstructorOnboarding();
+  const studentOnboarding = useStudentOnboarding();
   const [exitConfirmOpen, setExitConfirmOpen] = useState(false);
   const { shellHeaderHidden } = useChatThreadShell();
   const [networkOnline, setNetworkOnline] = useState(
@@ -323,7 +326,20 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
                 title="Инструкция по кабинету"
                 onClick={() => instructorOnboarding.startTour()}
               >
-                <IconInstructorHelp />
+                <IconCabinetHelp />
+              </button>
+            ) : null}
+            {profile?.role === "student" &&
+            profile.accountStatus === "active" &&
+            studentOnboarding ? (
+              <button
+                type="button"
+                className="shell-install-btn"
+                aria-label="Инструкция и правила для курсанта"
+                title="Инструкция и правила"
+                onClick={() => studentOnboarding.startTour()}
+              >
+                <IconCabinetHelp />
               </button>
             ) : null}
             <Link
@@ -370,6 +386,11 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
       profile.accountStatus === "active" &&
       instructorOnboarding ? (
         <InstructorOnboardingTour suppressed={shellHeaderHidden} />
+      ) : null}
+      {profile?.role === "student" &&
+      profile.accountStatus === "active" &&
+      studentOnboarding ? (
+        <StudentOnboardingTour suppressed={shellHeaderHidden} />
       ) : null}
     </div>
   );

@@ -1259,6 +1259,7 @@ export function StudentDashboard() {
               <button
                 key={id}
                 type="button"
+                data-student-onboarding-nav={id}
                 className={
                   tab === id ? "admin-bottom-nav-item is-active" : "admin-bottom-nav-item"
                 }
