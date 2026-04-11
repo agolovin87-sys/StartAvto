@@ -17,7 +17,7 @@ function parseAdminEmails(): Set<string> {
   return new Set(
     raw
       .split(",")
-      .map((e) => e.trim().toLowerCase())
+      .map((e: string) => e.trim().toLowerCase())
       .filter(Boolean)
   );
 }
@@ -27,7 +27,7 @@ export function getAdminEmailsInOrder(): string[] {
   const raw = import.meta.env.VITE_ADMIN_EMAILS ?? "";
   return raw
     .split(",")
-    .map((e) => e.trim().toLowerCase())
+    .map((e: string) => e.trim().toLowerCase())
     .filter(Boolean);
 }
 

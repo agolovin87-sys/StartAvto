@@ -1,9 +1,16 @@
 import { FormEvent, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
+import { AppBrandIcon } from "@/components/AppBrandIcon";
 import { RequiredMark } from "@/components/RequiredMark";
+import { WebAppInstallCallout } from "@/components/WebAppInstallCallout";
 import { useAuth } from "@/context/AuthContext";
 
 export function LoginPage() {
+  const [searchParams] = useSearchParams();
+  const installFromLink =
+    searchParams.get("install") === "1" ||
+    searchParams.get("install") === "true" ||
+    searchParams.get("install") === "yes";
   const { signIn, error, clearError } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -28,8 +35,12 @@ export function LoginPage() {
   return (
     <div className="auth-page">
       <div className="auth-card">
+        <div className="auth-app-icon-wrap">
+          <AppBrandIcon size={72} alt="" />
+        </div>
         <h1 className="auth-title">Вход</h1>
         <p className="auth-lead">Автошкола StartAvto</p>
+        {installFromLink ? <WebAppInstallCallout /> : null}
         <form className="form" onSubmit={onSubmit} noValidate>
           {message ? (
             <div className="form-error" role="alert">
@@ -84,7 +95,11 @@ export function LoginPage() {
           </button>
         </form>
         <p className="auth-footer">
-          Нет аккаунта? <Link to="/register">Регистрация</Link>
+          Нет аккаунта?{" "}
+          <Link to={installFromLink ? "/register?install=1" : "/register"}>Регистрация</Link>
+        </p>
+        <p className="auth-footer auth-footer--secondary">
+          <Link to="/install">Как установить приложение</Link> (iPhone, Android, ПК)
         </p>
       </div>
     </div>

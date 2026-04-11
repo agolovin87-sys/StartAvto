@@ -1,7 +1,12 @@
+import { AppBrandIcon } from "@/components/AppBrandIcon";
+
 export function SetupFirebase() {
   return (
     <div className="auth-page">
       <div className="auth-card auth-card-wide">
+        <div className="auth-app-icon-wrap">
+          <AppBrandIcon size={72} alt="" />
+        </div>
         <h1 className="auth-title">Настройка Firebase</h1>
         <p className="auth-lead">
           Создайте проект в{" "}

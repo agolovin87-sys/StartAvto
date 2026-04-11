@@ -5,6 +5,7 @@ import { useAuth } from "@/context/AuthContext";
 import { SetupFirebase } from "@/pages/SetupFirebase";
 import { LoginPage } from "@/pages/LoginPage";
 import { RegisterPage } from "@/pages/RegisterPage";
+import { InstallAppPage } from "@/pages/InstallAppPage";
 import { AdminDashboard } from "@/pages/dashboards/AdminDashboard";
 import { InstructorDashboard } from "@/pages/dashboards/InstructorDashboard";
 import { StudentDashboard } from "@/pages/dashboards/StudentDashboard";
@@ -121,6 +122,7 @@ export default function App() {
           </GuestOnly>
         }
       />
+      <Route path="/install" element={<InstallAppPage />} />
       <Route path="/app" element={<RoleHome />} />
       <Route
         path="/app/admin"

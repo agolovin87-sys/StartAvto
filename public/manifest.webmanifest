@@ -1,11 +1,26 @@
 {
   "name": "StartAvto — Автошкола",
   "short_name": "StartAvto",
+  "description": "Кабинет автошколы: администратор, инструктор, курсант",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
   "orientation": "portrait-primary",
   "background_color": "#0f172a",
   "theme_color": "#0f172a",
-  "lang": "ru"
+  "lang": "ru",
+  "icons": [
+    {
+      "src": "/app-icon-v6.png",
+      "type": "image/png",
+      "sizes": "512x512",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/app-icon-v6.png",
+      "type": "image/png",
+      "sizes": "192x192",
+      "purpose": "any"
+    }
+  ]
 }

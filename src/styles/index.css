@@ -535,6 +535,195 @@ code {
   font-size: 0.9rem;
 }
 
+.auth-footer--secondary {
+  margin-top: 0.65rem;
+  font-size: 0.82rem;
+  line-height: 1.4;
+}
+
+.auth-install-callout {
+  margin: 0 0 1.1rem;
+  padding: 0.85rem 1rem;
+  border-radius: 12px;
+  border: 1px solid var(--theme-line-soft);
+  background: var(--theme-bg-mute);
+}
+
+.auth-install-callout--ok {
+  background: rgba(34, 197, 94, 0.12);
+  border-color: rgba(34, 197, 94, 0.35);
+}
+
+.auth-install-callout-title {
+  margin: 0 0 0.45rem;
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: var(--theme-heading);
+}
+
+.auth-install-callout-lead {
+  margin: 0;
+  font-size: 0.88rem;
+  line-height: 1.45;
+  color: var(--theme-text);
+}
+
+.auth-install-callout-text {
+  margin: 0 0 0.65rem;
+  font-size: 0.82rem;
+  line-height: 1.5;
+  color: var(--theme-muted);
+}
+
+.auth-install-callout-btn {
+  width: 100%;
+  margin-bottom: 0.35rem;
+}
+
+.auth-install-callout-hint {
+  margin: 0.35rem 0 0;
+  font-size: 0.8rem;
+  color: var(--theme-soft);
+  line-height: 1.4;
+}
+
+.auth-install-callout-more {
+  margin: 0.65rem 0 0;
+  font-size: 0.82rem;
+  text-align: center;
+}
+
+.auth-install-callout-more a {
+  font-weight: 600;
+  color: #7dd3fc;
+}
+
+.auth-install-callout-more a:hover {
+  text-decoration: underline;
+}
+
+.app-brand-icon {
+  display: block;
+  border-radius: 22%;
+  object-fit: cover;
+  box-shadow:
+    0 4px 14px rgba(0, 0, 0, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+}
+
+.auth-app-icon-wrap {
+  display: flex;
+  justify-content: center;
+  margin: 0 0 0.85rem;
+}
+
+/* Страница «Установка приложения» (PWA) */
+.install-app-card {
+  max-width: 34rem;
+}
+
+.install-app-icon-wrap {
+  display: flex;
+  justify-content: center;
+  margin: 0 0 1rem;
+}
+
+.install-app-icon {
+  width: 112px;
+  height: 112px;
+}
+
+.install-app-lead {
+  margin-bottom: 1rem;
+}
+
+.install-app-banner {
+  margin: 0 0 1rem;
+  padding: 0.65rem 0.75rem;
+  border-radius: 10px;
+  background: rgba(34, 197, 94, 0.15);
+  border: 1px solid rgba(34, 197, 94, 0.35);
+  color: var(--theme-text);
+  font-size: 0.88rem;
+}
+
+.install-app-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-bottom: 1rem;
+}
+
+.install-app-tab {
+  flex: 1 1 auto;
+  min-width: 5.5rem;
+  padding: 0.5rem 0.65rem;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--theme-muted);
+  background: var(--theme-bg-mute);
+  border: 1px solid var(--theme-line-soft);
+  border-radius: 10px;
+  cursor: pointer;
+  transition:
+    color 0.15s ease,
+    border-color 0.15s ease,
+    background 0.15s ease;
+}
+
+.install-app-tab:hover {
+  color: var(--theme-text);
+  border-color: var(--theme-line);
+}
+
+.install-app-tab.is-active {
+  color: var(--theme-bright);
+  background: rgba(14, 165, 233, 0.18);
+  border-color: rgba(14, 165, 233, 0.45);
+}
+
+.install-app-panel {
+  min-height: 8rem;
+}
+
+.install-app-steps {
+  margin: 0;
+  padding-left: 1.2rem;
+  color: var(--theme-text);
+  font-size: 0.9rem;
+  line-height: 1.55;
+}
+
+.install-app-steps li {
+  margin-bottom: 0.65rem;
+}
+
+.install-app-steps li:last-child {
+  margin-bottom: 0;
+}
+
+.install-app-pc-action {
+  margin-bottom: 1rem;
+}
+
+.install-app-hint {
+  margin-top: 0.5rem !important;
+  margin-bottom: 0;
+}
+
+.install-app-result {
+  margin: 0 0 1rem;
+  padding: 0.55rem 0.7rem;
+  border-radius: 8px;
+  background: var(--theme-bg-mute);
+  font-size: 0.85rem;
+  color: var(--theme-soft);
+}
+
+.auth-footer.install-app-back-top {
+  margin: 0 0 1rem;
+}
+
 .form {
   display: flex;
   flex-direction: column;
@@ -828,6 +1017,10 @@ code {
 
 .shell-brand {
   flex-shrink: 0;
+  display: inline-flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 0.45rem;
   font-weight: 700;
   font-size: 1.22rem;
   color: var(--theme-bright);
@@ -835,9 +1028,18 @@ code {
   line-height: 1.2;
 }
 
+.shell-brand-ico {
+  flex-shrink: 0;
+  width: 34px;
+  height: 34px;
+  border-radius: 22%;
+  object-fit: cover;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.25);
+}
+
 /* Свечение по буквам слева направо (задержка animation-delay на каждой span) */
 .shell-header .shell-brand.shell-brand--glow {
-  display: inline-block;
+  display: inline-flex;
 }
 
 .shell-header .shell-brand.shell-brand--glow .shell-brand-chars {
@@ -970,7 +1172,36 @@ code {
   display: flex;
   align-items: center;
   justify-content: flex-end;
+  gap: 0.4rem;
   flex-shrink: 0;
+}
+
+.shell-install-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--shell-logout-size, 40px);
+  height: var(--shell-logout-size, 40px);
+  padding: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--theme-muted);
+  border: 1px solid var(--theme-line-input);
+  cursor: pointer;
+  font: inherit;
+  text-decoration: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.shell-install-btn:hover {
+  color: var(--theme-text);
+  border-color: var(--theme-line-focus);
+}
+
+.shell-install-ico {
+  width: 22px;
+  height: 22px;
+  display: block;
 }
 
 .shell-logout-btn {
@@ -5215,6 +5446,7 @@ html[data-theme="light"] .drive-live-session-panel__toolbar {
 .icon-pill,
 .instr-side-btn,
 .shell-logout-btn,
+.shell-install-btn,
 .admin-bottom-nav-item,
 .role-option {
   touch-action: manipulation;
@@ -5245,6 +5477,11 @@ html[data-theme="light"] .drive-live-session-panel__toolbar {
 
   .shell-brand {
     font-size: 1.12rem;
+  }
+
+  .shell-brand-ico {
+    width: 30px;
+    height: 30px;
   }
 
   .shell-main {

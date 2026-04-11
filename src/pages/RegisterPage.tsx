@@ -1,6 +1,8 @@
 import { FormEvent, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
+import { AppBrandIcon } from "@/components/AppBrandIcon";
 import { RequiredMark } from "@/components/RequiredMark";
+import { WebAppInstallCallout } from "@/components/WebAppInstallCallout";
 import { useAuth } from "@/context/AuthContext";
 import { isValidRuMobilePhone, normalizeRuPhone } from "@/lib/phoneRu";
 import type { UserRole } from "@/types";
@@ -16,6 +18,11 @@ function isFullFio(value: string): boolean {
 }
 
 export function RegisterPage() {
+  const [searchParams] = useSearchParams();
+  const installFromLink =
+    searchParams.get("install") === "1" ||
+    searchParams.get("install") === "true" ||
+    searchParams.get("install") === "yes";
   const { signUp, error, clearError } = useAuth();
   const [displayName, setDisplayName] = useState("");
   const [email, setEmail] = useState("");
@@ -55,8 +62,12 @@ export function RegisterPage() {
   return (
     <div className="auth-page">
       <div className="auth-card">
+        <div className="auth-app-icon-wrap">
+          <AppBrandIcon size={72} alt="" />
+        </div>
         <h1 className="auth-title">Регистрация</h1>
         <p className="auth-lead">Создайте аккаунт в StartAvto</p>
+        {installFromLink ? <WebAppInstallCallout /> : null}
         <form className="form" onSubmit={onSubmit} noValidate>
           {message ? (
             <div className="form-error" role="alert">
@@ -161,7 +172,11 @@ export function RegisterPage() {
           </button>
         </form>
         <p className="auth-footer">
-          Уже есть аккаунт? <Link to="/login">Войти</Link>
+          Уже есть аккаунт?{" "}
+          <Link to={installFromLink ? "/login?install=1" : "/login"}>Войти</Link>
+        </p>
+        <p className="auth-footer auth-footer--secondary">
+          <Link to="/install">Как установить приложение</Link> (iPhone, Android, ПК)
         </p>
       </div>
     </div>
