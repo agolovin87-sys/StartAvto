@@ -1126,12 +1126,13 @@ code {
   }
 }
 
-/* Фамилия И.О.: перенос только внутри блока; Wi‑Fi и роль в одной строке с метой */
+/* Фамилия И.О.: ширина по тексту (не растягивается на всю строку) — Wi‑Fi и роль сразу справа */
 .shell-header-fio {
-  display: block;
-  flex: 1 1 auto;
+  display: inline-block;
+  flex: 0 1 auto;
   min-width: 0;
   max-width: 100%;
+  width: max-content;
   box-sizing: border-box;
   padding-right: 0;
   margin-right: 0;
@@ -1142,6 +1143,7 @@ code {
   word-break: break-word;
   overflow-wrap: anywhere;
   line-height: 1.35;
+  vertical-align: middle;
 }
 
 .shell-header-meta-wifi {
