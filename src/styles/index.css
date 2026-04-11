@@ -1012,10 +1012,10 @@ code {
 .shell-header-meta {
   display: flex;
   flex-direction: row;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   align-items: center;
   justify-content: flex-start;
-  gap: 0.35em 0.4em;
+  gap: 0.4em;
   min-width: 0;
   width: 100%;
   max-width: 100%;
@@ -1125,13 +1125,12 @@ code {
   }
 }
 
-/* Полное ФИО из профиля: перенос строк, без многоточия (в т.ч. Android / узкая шапка) */
+/* Фамилия И.О.: перенос только внутри блока; Wi‑Fi и роль в одной строке с метой */
 .shell-header-fio {
   display: block;
-  flex: 1 1 100%;
+  flex: 1 1 auto;
   min-width: 0;
   max-width: 100%;
-  width: 100%;
   box-sizing: border-box;
   padding-right: 0;
   margin-right: 0;
