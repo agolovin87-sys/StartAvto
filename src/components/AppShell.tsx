@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import { formatShortFio } from "@/admin/formatShortFio";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { FirstLaunchPermissions } from "@/components/FirstLaunchPermissions";
 import { IconInstallApp } from "@/components/IconInstallApp";
@@ -259,7 +260,7 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
             {profile ? (
               <div className="shell-header-meta">
                 <span className="shell-header-fio">
-                  {profile.displayName?.trim() || "—"}
+                  {formatShortFio(profile.displayName ?? "")}
                 </span>
                 <span
                   className={
