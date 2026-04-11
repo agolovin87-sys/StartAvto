@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
+import { IconInstallApp } from "@/components/IconInstallApp";
 import { detectCabinetClientKind } from "@/lib/clientPlatform";
 
 function useStandaloneMode(): boolean {
@@ -73,7 +74,10 @@ export function WebAppInstallCallout() {
 
   return (
     <div className="auth-install-callout glossy-panel">
-      <p className="auth-install-callout-title">Установите веб-приложение</p>
+      <div className="auth-install-callout-head">
+        <IconInstallApp className="auth-install-callout-title-ico" />
+        <p className="auth-install-callout-title">Установите веб-приложение</p>
+      </div>
       <p className="auth-install-callout-text">{shortInstruction()}</p>
       {deferred ? (
         <button

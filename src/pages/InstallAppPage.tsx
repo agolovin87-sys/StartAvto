@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { AppBrandIcon } from "@/components/AppBrandIcon";
+import { IconInstallApp } from "@/components/IconInstallApp";
 import { APP_ASSET_VERSION } from "@/lib/appAssetVersion";
 import { detectCabinetClientKind } from "@/lib/clientPlatform";
 
@@ -75,7 +76,13 @@ export function InstallAppPage() {
         <p className="auth-footer install-app-back-top">
           <Link to={`/login?install=1&refresh=${APP_ASSET_VERSION}`}>← Ко входу с подсказкой по установке</Link>
           {" · "}
-          <Link to={`/register?install=1&refresh=${APP_ASSET_VERSION}`}>Регистрация</Link>
+          <Link
+            to={`/register?install=1&refresh=${APP_ASSET_VERSION}`}
+            className="install-app-invite-link"
+          >
+            <IconInstallApp className="install-app-invite-ico" />
+            <span>Регистрация</span>
+          </Link>
         </p>
         <div className="install-app-icon-wrap">
           <AppBrandIcon className="install-app-icon" size={112} alt="StartAvto" />

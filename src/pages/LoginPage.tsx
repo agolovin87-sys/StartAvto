@@ -1,6 +1,7 @@
 import { FormEvent, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { AppBrandIcon } from "@/components/AppBrandIcon";
+import { IconInstallApp } from "@/components/IconInstallApp";
 import { RequiredMark } from "@/components/RequiredMark";
 import { WebAppInstallCallout } from "@/components/WebAppInstallCallout";
 import { useAuth } from "@/context/AuthContext";
@@ -96,7 +97,19 @@ export function LoginPage() {
         </form>
         <p className="auth-footer">
           Нет аккаунта?{" "}
-          <Link to={installFromLink ? "/register?install=1" : "/register"}>Регистрация</Link>
+          <Link
+            to={installFromLink ? "/register?install=1" : "/register"}
+            className={installFromLink ? "install-app-invite-link" : undefined}
+          >
+            {installFromLink ? (
+              <>
+                <IconInstallApp className="install-app-invite-ico" />
+                <span>Регистрация</span>
+              </>
+            ) : (
+              "Регистрация"
+            )}
+          </Link>
         </p>
         <p className="auth-footer auth-footer--secondary">
           <Link to="/install">Как установить приложение</Link> (iPhone, Android, ПК)
