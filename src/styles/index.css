@@ -2792,6 +2792,19 @@ code {
   padding-right: 0.15rem;
 }
 
+/* Главная инструктора — список курсантов: «Позвонить» и «Чат» всегда справа, друг под другом */
+.instructor-home-tab .instructor-card--student:not(.student-home-my-instructor) .instructor-preview-bar {
+  flex-wrap: nowrap;
+  align-items: stretch;
+}
+
+.instructor-home-tab .instructor-card--student:not(.student-home-my-instructor) .instructor-preview-actions {
+  flex-direction: column;
+  width: auto;
+  flex-shrink: 0;
+  justify-content: center;
+}
+
 .instr-side-btn {
   display: inline-flex;
   align-items: center;
@@ -5525,6 +5538,20 @@ html[data-theme="light"] .drive-live-session-panel__toolbar {
 
   .shell-header-meta {
     font-size: 0.8rem;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    row-gap: 0.2rem;
+  }
+
+  /* Полное ФИО (как в formatShortFio), без обрезки многоточием на узких экранах */
+  .shell-header-fio {
+    flex: 1 1 100%;
+    max-width: 100%;
+    overflow: visible;
+    text-overflow: unset;
+    white-space: normal;
+    word-break: break-word;
+    line-height: 1.3;
   }
 
   .dashboard-title {
