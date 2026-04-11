@@ -1012,10 +1012,10 @@ code {
 .shell-header-meta {
   display: flex;
   flex-direction: row;
-  flex-wrap: nowrap;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: flex-start;
-  gap: 0.4em;
+  gap: 0.35em 0.4em;
   min-width: 0;
   width: 100%;
   max-width: 100%;
@@ -1125,19 +1125,23 @@ code {
   }
 }
 
-/* Без flex-grow: иначе ФИО растягивается на всю строку и роль уезжает вправо */
+/* Полное ФИО из профиля: перенос строк, без многоточия (в т.ч. Android / узкая шапка) */
 .shell-header-fio {
-  display: inline-block;
-  flex: 0 1 auto;
+  display: block;
+  flex: 1 1 100%;
   min-width: 0;
-  max-width: calc(100% - 12rem);
+  max-width: 100%;
+  width: 100%;
+  box-sizing: border-box;
   padding-right: 0;
   margin-right: 0;
   font-weight: 500;
   color: var(--theme-text);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  overflow: visible;
+  white-space: normal;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+  line-height: 1.35;
 }
 
 .shell-header-meta-wifi {
@@ -2792,17 +2796,27 @@ code {
   padding-right: 0.15rem;
 }
 
-/* Главная инструктора — список курсантов: «Позвонить» и «Чат» всегда справа, друг под другом */
+/* Главная инструктора — курсанты: превью слева, «Позвонить» + «Чат» справа столбцом (grid, без переноса под карточку) */
 .instructor-home-tab .instructor-card--student:not(.student-home-my-instructor) .instructor-preview-bar {
-  flex-wrap: nowrap;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
   align-items: stretch;
+  gap: 0.5rem;
+}
+
+.instructor-home-tab .instructor-card--student:not(.student-home-my-instructor) .instructor-card-preview {
+  min-width: 0;
 }
 
 .instructor-home-tab .instructor-card--student:not(.student-home-my-instructor) .instructor-preview-actions {
+  display: flex;
   flex-direction: column;
-  width: auto;
-  flex-shrink: 0;
   justify-content: center;
+  gap: 0.45rem;
+  width: auto;
+  min-width: 44px;
+  flex-shrink: 0;
+  align-self: stretch;
 }
 
 .instr-side-btn {
@@ -5538,20 +5552,6 @@ html[data-theme="light"] .drive-live-session-panel__toolbar {
 
   .shell-header-meta {
     font-size: 0.8rem;
-    flex-wrap: wrap;
-    align-items: flex-start;
-    row-gap: 0.2rem;
-  }
-
-  /* Полное ФИО (как в formatShortFio), без обрезки многоточием на узких экранах */
-  .shell-header-fio {
-    flex: 1 1 100%;
-    max-width: 100%;
-    overflow: visible;
-    text-overflow: unset;
-    white-space: normal;
-    word-break: break-word;
-    line-height: 1.3;
   }
 
   .dashboard-title {
