@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useChatUnread } from "@/context/ChatUnreadContext";
 import { ChatNavContext } from "@/context/ChatNavContext";
@@ -9,10 +9,19 @@ import { InstructorBookingTab } from "@/pages/dashboards/instructor/InstructorBo
 import { InstructorHistoryTab } from "@/pages/dashboards/instructor/InstructorHistoryTab";
 import { InstructorHomeTab } from "@/pages/dashboards/instructor/InstructorHomeTab";
 import { InstructorTicketsTab } from "@/pages/dashboards/instructor/InstructorTicketsTab";
-import { subscribeFreeDriveWindowsForInstructor } from "@/firebase/drives";
+import {
+  subscribeDriveSlotsForInstructor,
+  subscribeFreeDriveWindowsForInstructor,
+} from "@/firebase/drives";
 import { useAutoDeleteExpiredOpenFreeWindows } from "@/hooks/useAutoDeleteExpiredOpenFreeWindows";
 import { useDashboardTabHistory } from "@/hooks/useDashboardTabHistory";
-import type { FreeDriveWindow } from "@/types";
+import { playDriveAlertSound } from "@/audio/playDriveAlertSound";
+import {
+  loadInstructorSeenDriveKeys,
+  relevantInstructorHomeNotificationKeys,
+  saveInstructorSeenDriveKeys,
+} from "@/lib/instructorHomeDriveNotifications";
+import type { DriveSlot, FreeDriveWindow } from "@/types";
 
 type InstructorNavTab = "home" | "booking" | "chat" | "tickets" | "history" | "settings";
 
@@ -113,6 +122,11 @@ export function InstructorDashboard() {
   const { setShellHeaderHidden } = useChatThreadShell();
   const { reportDashboardTab, totalUnread } = useChatUnread();
   const [instructorFreeWindows, setInstructorFreeWindows] = useState<FreeDriveWindow[]>([]);
+  const [instructorSlots, setInstructorSlots] = useState<DriveSlot[]>([]);
+  const [seenInstructorDriveKeys, setSeenInstructorDriveKeys] = useState<Set<string>>(
+    () => new Set()
+  );
+  const prevUnseenInstructorDriveKeysRef = useRef<Set<string>>(new Set());
   const [pendingOpenChatUserId, setPendingOpenChatUserId] = useState<string | null>(
     null
   );
@@ -154,6 +168,91 @@ export function InstructorDashboard() {
     );
   }, [instructorUid]);
 
+  useLayoutEffect(() => {
+    if (!instructorUid) {
+      setSeenInstructorDriveKeys(new Set());
+      return;
+    }
+    setSeenInstructorDriveKeys(loadInstructorSeenDriveKeys(instructorUid));
+  }, [instructorUid]);
+
+  useEffect(() => {
+    prevUnseenInstructorDriveKeysRef.current = new Set();
+  }, [instructorUid]);
+
+  useEffect(() => {
+    if (!instructorUid) {
+      setInstructorSlots([]);
+      return;
+    }
+    return subscribeDriveSlotsForInstructor(instructorUid, setInstructorSlots, () =>
+      setInstructorSlots([])
+    );
+  }, [instructorUid]);
+
+  useLayoutEffect(() => {
+    if (tab !== "home" || !instructorUid) return;
+    const rel = relevantInstructorHomeNotificationKeys(
+      instructorSlots,
+      instructorFreeWindows,
+      instructorUid
+    );
+    if (rel.length === 0) return;
+    setSeenInstructorDriveKeys((prev) => {
+      const next = new Set(prev);
+      let changed = false;
+      for (const k of rel) {
+        if (!next.has(k)) {
+          next.add(k);
+          changed = true;
+        }
+      }
+      if (changed) saveInstructorSeenDriveKeys(instructorUid, next);
+      return changed ? next : prev;
+    });
+  }, [tab, instructorUid, instructorSlots, instructorFreeWindows]);
+
+  const homeBookingNotifCount = useMemo(() => {
+    if (tab === "home" || !instructorUid) return 0;
+    const rel = relevantInstructorHomeNotificationKeys(
+      instructorSlots,
+      instructorFreeWindows,
+      instructorUid
+    );
+    return rel.filter((k) => !seenInstructorDriveKeys.has(k)).length;
+  }, [
+    tab,
+    instructorUid,
+    instructorSlots,
+    instructorFreeWindows,
+    seenInstructorDriveKeys,
+  ]);
+
+  useEffect(() => {
+    if (!instructorUid) return;
+    const rel = relevantInstructorHomeNotificationKeys(
+      instructorSlots,
+      instructorFreeWindows,
+      instructorUid
+    );
+    const unseen = new Set(rel.filter((k) => !seenInstructorDriveKeys.has(k)));
+    const prev = prevUnseenInstructorDriveKeysRef.current;
+    let hasNew = false;
+    for (const k of unseen) {
+      if (!prev.has(k)) {
+        hasNew = true;
+        break;
+      }
+    }
+    if (hasNew) playDriveAlertSound(instructorUid);
+    prevUnseenInstructorDriveKeysRef.current = new Set(unseen);
+  }, [
+    instructorUid,
+    instructorSlots,
+    instructorFreeWindows,
+    seenInstructorDriveKeys,
+  ]);
+
   useAutoDeleteExpiredOpenFreeWindows(instructorUid, instructorFreeWindows);
 
   return (
@@ -191,6 +290,18 @@ export function InstructorDashboard() {
           {navItems.map(({ id, label, Icon }) => {
             const chatTabBadge =
               id === "chat" && tab !== "chat" && totalUnread > 0 ? totalUnread : 0;
+            const homeTabBadge =
+              id === "home" && tab !== "home" && homeBookingNotifCount > 0
+                ? homeBookingNotifCount
+                : 0;
+            const navBadge =
+              id === "chat" ? chatTabBadge : id === "home" ? homeTabBadge : 0;
+            const navBadgeAria =
+              id === "chat" && navBadge > 0
+                ? `Непрочитанных сообщений: ${navBadge}`
+                : id === "home" && navBadge > 0
+                  ? `Новых уведомлений по записи и вождению: ${navBadge}`
+                  : "";
             return (
               <button
                 key={id}
@@ -203,12 +314,9 @@ export function InstructorDashboard() {
               >
                 <span className="admin-bottom-nav-ico-wrap">
                   <Icon className="admin-nav-icon" />
-                  {chatTabBadge > 0 ? (
-                    <span
-                      className="admin-bottom-nav-badge"
-                      aria-label={`Непрочитанных сообщений: ${chatTabBadge}`}
-                    >
-                      {chatTabBadge > 99 ? "99+" : chatTabBadge}
+                  {navBadge > 0 ? (
+                    <span className="admin-bottom-nav-badge" aria-label={navBadgeAria}>
+                      {navBadge > 99 ? "99+" : navBadge}
                     </span>
                   ) : null}
                 </span>

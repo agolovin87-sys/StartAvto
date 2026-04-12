@@ -52,6 +52,7 @@ import {
 } from "@/components/DriveFinishedDayTable";
 import { DriveWeekScheduleNoticeCard } from "@/components/DriveWeekScheduleNoticeCard";
 import { useDashboardTabHistory } from "@/hooks/useDashboardTabHistory";
+import { playDriveAlertSound } from "@/audio/playDriveAlertSound";
 import {
   loadSeenDriveKeys,
   relevantDriveNotificationKeys,
@@ -604,6 +605,7 @@ export function StudentDashboard() {
     null
   );
   const [seenDriveNotifyKeys, setSeenDriveNotifyKeys] = useState<Set<string>>(() => new Set());
+  const prevUnseenDriveKeysRef = useRef<Set<string>>(new Set());
 
   const prevSlotLiveSnapshotRef = useRef<
     Map<
@@ -704,6 +706,26 @@ export function StudentDashboard() {
     const rel = relevantDriveNotificationKeys(slots, freeWindows, studentUid);
     return rel.filter((k) => !seenDriveNotifyKeys.has(k)).length;
   }, [tab, studentUid, slots, freeWindows, seenDriveNotifyKeys]);
+
+  useEffect(() => {
+    prevUnseenDriveKeysRef.current = new Set();
+  }, [studentUid]);
+
+  useEffect(() => {
+    if (!studentUid) return;
+    const rel = relevantDriveNotificationKeys(slots, freeWindows, studentUid);
+    const unseen = new Set(rel.filter((k) => !seenDriveNotifyKeys.has(k)));
+    const prev = prevUnseenDriveKeysRef.current;
+    let hasNew = false;
+    for (const k of unseen) {
+      if (!prev.has(k)) {
+        hasNew = true;
+        break;
+      }
+    }
+    if (hasNew) playDriveAlertSound(studentUid);
+    prevUnseenDriveKeysRef.current = new Set(unseen);
+  }, [studentUid, slots, freeWindows, seenDriveNotifyKeys]);
 
   useEffect(() => {
     if (!studentUid) {
