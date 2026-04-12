@@ -1,4 +1,4 @@
-import { doc, onSnapshot, serverTimestamp, setDoc } from "firebase/firestore";
+import { doc, getDocFromServer, onSnapshot, serverTimestamp, setDoc } from "firebase/firestore";
 import { getFirebase, isFirebaseConfigured } from "@/firebase/config";
 
 export const INSTRUCTOR_LIVE_LOCATIONS = "instructorLiveLocations";
@@ -7,6 +7,8 @@ export type InstructorLiveLocation = {
   lat: number;
   lng: number;
   updatedAtMs: number | null;
+  /** Радиус погрешности в метрах (от браузера / GPS), если известен. */
+  accuracyM: number | null;
 };
 
 function toMillis(v: unknown): number | null {
@@ -29,17 +31,27 @@ export function normalizeInstructorLiveLocation(
   const lng = data.lng;
   if (typeof lat !== "number" || typeof lng !== "number") return null;
   if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
+  const accRaw = data.accuracy;
+  const accuracyM =
+    typeof accRaw === "number" && Number.isFinite(accRaw) && accRaw > 0 ? accRaw : null;
   return {
     lat,
     lng,
     updatedAtMs: toMillis(data.updatedAt),
+    accuracyM,
   };
+}
+
+function clampAccuracyMeters(m: number): number {
+  if (!Number.isFinite(m) || m < 0.5) return 9999;
+  return Math.min(100_000, m);
 }
 
 export async function writeInstructorLiveLocation(
   instructorUid: string,
   lat: number,
-  lng: number
+  lng: number,
+  accuracyMeters: number
 ): Promise<void> {
   const uid = instructorUid.trim();
   if (!uid || !isFirebaseConfigured) return;
@@ -49,10 +61,23 @@ export async function writeInstructorLiveLocation(
     {
       lat,
       lng,
+      accuracy: clampAccuracyMeters(accuracyMeters),
       updatedAt: serverTimestamp(),
     },
     { merge: true }
   );
+}
+
+/** Принудительно с сервера (без кэша клиента) — для кнопки «Обновить» у админа. */
+export async function fetchInstructorLiveLocationFromServer(
+  instructorUid: string
+): Promise<InstructorLiveLocation | null> {
+  const uid = instructorUid.trim();
+  if (!uid || !isFirebaseConfigured) return null;
+  const { db } = getFirebase();
+  const snap = await getDocFromServer(doc(db, INSTRUCTOR_LIVE_LOCATIONS, uid));
+  if (!snap.exists()) return null;
+  return normalizeInstructorLiveLocation(snap.data() as Record<string, unknown>);
 }
 
 export function subscribeInstructorLiveLocation(

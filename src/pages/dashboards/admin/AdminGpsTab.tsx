@@ -1,7 +1,8 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { formatShortFio } from "@/admin/formatShortFio";
 import { subscribeInstructors } from "@/firebase/admin";
 import {
+  fetchInstructorLiveLocationFromServer,
   subscribeInstructorLiveLocation,
   type InstructorLiveLocation,
 } from "@/firebase/instructorLiveLocation";
@@ -9,9 +10,18 @@ import type { UserProfile } from "@/types";
 
 const STALE_MS = 12 * 60 * 1000;
 
-function osmEmbedSrc(lat: number, lng: number): string {
-  const d = 0.014;
-  const bbox = `${lng - d},${lat - d},${lng + d},${lat + d}`;
+/** Полуразмер карты в метрах (масштаб ~видимая область). */
+function mapHalfSpanMeters(accuracyM: number | null): number {
+  const base = accuracyM != null && accuracyM > 0 ? accuracyM : 40;
+  return Math.max(22, Math.min(120, base * 2.8));
+}
+
+function osmEmbedSrc(lat: number, lng: number, accuracyM: number | null): string {
+  const halfM = mapHalfSpanMeters(accuracyM);
+  const dLat = halfM / 111_320;
+  const cosLat = Math.cos((lat * Math.PI) / 180);
+  const dLng = halfM / (111_320 * Math.max(Math.abs(cosLat), 0.25));
+  const bbox = `${lng - dLng},${lat - dLat},${lng + dLng},${lat + dLat}`;
   return `https://www.openstreetmap.org/export/embed.html?bbox=${bbox}&layer=mapnik&marker=${lat}%2C${lng}`;
 }
 
@@ -29,15 +39,21 @@ function formatAgo(ms: number | null): string {
 
 function AdminGpsMapModal({
   open,
+  instructorUid,
+  subscriptionLocation,
   title,
-  location,
   onClose,
 }: {
   open: boolean;
+  instructorUid: string;
+  subscriptionLocation: InstructorLiveLocation | null;
   title: string;
-  location: InstructorLiveLocation | null;
   onClose: () => void;
 }) {
+  const [display, setDisplay] = useState<InstructorLiveLocation | null>(null);
+  const [refreshBusy, setRefreshBusy] = useState(false);
+  const [mapNonce, setMapNonce] = useState(0);
+
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => {
@@ -47,11 +63,35 @@ function AdminGpsMapModal({
     return () => window.removeEventListener("keydown", onKey);
   }, [open, onClose]);
 
+  useEffect(() => {
+    if (!open) return;
+    setDisplay(subscriptionLocation);
+  }, [open, subscriptionLocation]);
+
+  const handleRefresh = useCallback(async () => {
+    const uid = instructorUid.trim();
+    if (!uid) return;
+    setRefreshBusy(true);
+    try {
+      const next = await fetchInstructorLiveLocationFromServer(uid);
+      setDisplay(next);
+      setMapNonce((n) => n + 1);
+    } finally {
+      setRefreshBusy(false);
+    }
+  }, [instructorUid]);
+
   if (!open) return null;
 
-  const { lat, lng, updatedAtMs } = location ?? { lat: 0, lng: 0, updatedAtMs: null };
-  const hasPoint = location != null && Number.isFinite(lat) && Number.isFinite(lng);
+  const { lat, lng, updatedAtMs, accuracyM } = display ?? {
+    lat: 0,
+    lng: 0,
+    updatedAtMs: null,
+    accuracyM: null,
+  };
+  const hasPoint = display != null && Number.isFinite(lat) && Number.isFinite(lng);
   const stale = updatedAtMs != null && Date.now() - updatedAtMs > STALE_MS;
+  const mapSrc = hasPoint ? osmEmbedSrc(lat, lng, accuracyM) : "";
 
   return (
     <div
@@ -69,24 +109,43 @@ function AdminGpsMapModal({
         aria-labelledby="admin-gps-modal-title"
         onClick={(e) => e.stopPropagation()}
       >
-        <h2 id="admin-gps-modal-title" className="confirm-dialog-title">
-          {title}
-        </h2>
+        <div className="admin-gps-modal-head">
+          <h2 id="admin-gps-modal-title" className="confirm-dialog-title">
+            {title}
+          </h2>
+          <button
+            type="button"
+            className="btn btn-secondary btn-sm admin-gps-refresh-btn"
+            disabled={refreshBusy}
+            onClick={() => void handleRefresh()}
+            aria-busy={refreshBusy}
+            title="Загрузить последние координаты с сервера"
+          >
+            {refreshBusy ? "…" : "Обновить"}
+          </button>
+        </div>
         {!hasPoint ? (
           <p className="confirm-dialog-message admin-gps-modal-hint">
             Нет данных о местоположении. Инструктору нужно открыть кабинет и разрешить доступ к геолокации в
-            браузере.
+            браузере. Точность зависит от GPS телефона; метр и меньше в вебе недостижимы без спец. оборудования.
           </p>
         ) : (
           <>
             <p className={`admin-gps-meta${stale ? " admin-gps-meta--stale" : ""}`}>
               Обновлено: {formatAgo(updatedAtMs)}
               {stale ? " — данные могли устареть" : ""}
+              {accuracyM != null ? (
+                <>
+                  {" "}
+                  · оценка погрешности GPS: ±{Math.round(accuracyM)} м
+                </>
+              ) : null}
             </p>
             <div className="admin-gps-map-wrap">
               <iframe
+                key={`${mapSrc}-${mapNonce}`}
                 title="Карта"
-                src={osmEmbedSrc(lat, lng)}
+                src={mapSrc}
                 loading="lazy"
                 referrerPolicy="no-referrer-when-downgrade"
               />
@@ -155,7 +214,8 @@ export function AdminGpsTab() {
     <div className="admin-tab admin-gps-tab">
       <h1 className="admin-tab-title">GPS</h1>
       <p className="admin-tab-lead">
-        Местоположение инструкторов обновляется, пока у них открыт личный кабинет и разрешена геолокация.
+        Координаты в режиме высокой точности (GPS). На телефоне держите инструктору открытым кабинет и разрешите
+        геолокацию; под открытым небом точность обычно лучше, чем в помещении.
       </p>
       {listErr ? (
         <div className="form-error" role="alert">
@@ -171,8 +231,9 @@ export function AdminGpsTab() {
       )}
       <AdminGpsMapModal
         open={selected != null}
+        instructorUid={selected?.uid ?? ""}
+        subscriptionLocation={live}
         title={modalTitle}
-        location={live}
         onClose={() => setSelected(null)}
       />
     </div>
