@@ -33,6 +33,11 @@ export type NotificationSettings = {
   /** Минуты от полуночи 0…1439 */
   doNotDisturbStartMinutes: number;
   doNotDisturbEndMinutes: number;
+  /**
+   * Push (FCM): сохранять токен устройства и получать уведомления с сервера.
+   * Выкл — токены удаляются из Firestore на этом устройстве.
+   */
+  webPushEnabled: boolean;
 };
 
 export const DEFAULT_NOTIFICATION_SETTINGS: NotificationSettings = {
@@ -48,6 +53,7 @@ export const DEFAULT_NOTIFICATION_SETTINGS: NotificationSettings = {
   doNotDisturbEnabled: false,
   doNotDisturbStartMinutes: 22 * 60,
   doNotDisturbEndMinutes: 7 * 60,
+  webPushEnabled: true,
 };
 
 function sanitizeIncomingSoundFields(s: NotificationSettings): void {

@@ -20,6 +20,7 @@ import { ChatUnreadProvider } from "@/context/ChatUnreadContext";
 import { InstructorOnboardingProvider } from "@/context/InstructorOnboardingContext";
 import { StudentOnboardingProvider } from "@/context/StudentOnboardingContext";
 import { GlobalIncomingChatAlerts } from "@/chat/GlobalIncomingChatAlerts";
+import { FcmRegistrar } from "@/components/FcmRegistrar";
 import type { UserRole } from "@/types";
 
 function RoleHome() {
@@ -99,54 +100,54 @@ export default function App() {
   }
 
   return (
-    <Routes>
-      <Route
-        path="/"
-        element={
-          <GuestOnly>
-            <Navigate to="/login" replace />
-          </GuestOnly>
-        }
-      />
-      <Route
-        path="/login"
-        element={
-          <GuestOnly>
-            <LoginPage />
-          </GuestOnly>
-        }
-      />
-      <Route
-        path="/register"
-        element={
-          <GuestOnly>
-            <RegisterPage />
-          </GuestOnly>
-        }
-      />
-      <Route path="/install" element={<InstallAppPage />} />
-      <Route path="/app" element={<RoleHome />} />
-      <Route
-        path="/app/admin"
-        element={<ProtectedApp role="admin" />}
-      />
-      <Route
-        path="/app/instructor"
-        element={
-          <InstructorOnboardingProvider>
-            <ProtectedApp role="instructor" />
-          </InstructorOnboardingProvider>
-        }
-      />
-      <Route
-        path="/app/student"
-        element={
-          <StudentOnboardingProvider>
-            <ProtectedApp role="student" />
-          </StudentOnboardingProvider>
-        }
-      />
-      <Route path="*" element={<Navigate to="/" replace />} />
-    </Routes>
+    <>
+      <FcmRegistrar />
+      <Routes>
+        <Route
+          path="/"
+          element={
+            <GuestOnly>
+              <Navigate to="/login" replace />
+            </GuestOnly>
+          }
+        />
+        <Route
+          path="/login"
+          element={
+            <GuestOnly>
+              <LoginPage />
+            </GuestOnly>
+          }
+        />
+        <Route
+          path="/register"
+          element={
+            <GuestOnly>
+              <RegisterPage />
+            </GuestOnly>
+          }
+        />
+        <Route path="/install" element={<InstallAppPage />} />
+        <Route path="/app" element={<RoleHome />} />
+        <Route path="/app/admin" element={<ProtectedApp role="admin" />} />
+        <Route
+          path="/app/instructor"
+          element={
+            <InstructorOnboardingProvider>
+              <ProtectedApp role="instructor" />
+            </InstructorOnboardingProvider>
+          }
+        />
+        <Route
+          path="/app/student"
+          element={
+            <StudentOnboardingProvider>
+              <ProtectedApp role="student" />
+            </StudentOnboardingProvider>
+          }
+        />
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    </>
   );
 }

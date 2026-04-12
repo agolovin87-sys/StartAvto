@@ -42,6 +42,11 @@ import {
 } from "@/firebase/adminChatFirestoreMemory";
 import { ClientCacheClearPanel } from "@/components/ClientCacheClearPanel";
 import {
+  hasFcmVapidConfigured,
+  registerWebPushAndSaveToken,
+  removeAllFcmTokensForUser,
+} from "@/firebase/fcm";
+import {
   getTheme,
   setTheme,
   subscribeTheme,
@@ -244,6 +249,12 @@ export function AdminSettingsTab() {
     const next = !v;
     setNotificationSettings(uid, { [key]: next });
     setNotifySettings({ ...cur, [key]: next });
+    if (key === "webPushEnabled" && next === false) {
+      void removeAllFcmTokensForUser(uid);
+    }
+    if (key === "webPushEnabled" && next === true && hasFcmVapidConfigured()) {
+      void registerWebPushAndSaveToken(uid);
+    }
   };
 
   const setNotifyVolumePercent = (percent: number) => {
@@ -260,8 +271,11 @@ export function AdminSettingsTab() {
   const requestBrowserNotifications = () => {
     if (typeof Notification === "undefined") return;
     const req = Notification.requestPermission();
-    void Promise.resolve(req).then(() => {
+    void Promise.resolve(req).then(async () => {
       setNotifyPerm(getBrowserNotificationPermission());
+      if (getBrowserNotificationPermission() === "granted" && uid && hasFcmVapidConfigured()) {
+        await registerWebPushAndSaveToken(uid);
+      }
     });
   };
 
@@ -780,6 +794,35 @@ export function AdminSettingsTab() {
                         ? "Проверить снова"
                         : "Включить"}
                   </button>
+                </div>
+                {!hasFcmVapidConfigured() ? (
+                  <p className="admin-settings-notify-perm-warn" role="status">
+                    Push с сервера: в <code>.env</code> укажите{" "}
+                    <code>VITE_FIREBASE_VAPID_KEY</code> (Web Push в Firebase Console → настройки проекта →
+                    Cloud Messaging), пересоберите сайт и задеплойте Cloud Functions из папки{" "}
+                    <code>functions/</code>.
+                  </p>
+                ) : null}
+                <div className="admin-settings-toggle-row">
+                  <div className="admin-settings-toggle-label" id="notify-web-push-label">
+                    Push-уведомления на устройство
+                    <span className="admin-settings-toggle-hint">
+                      Сообщения, запись, свободные окна, вождение, талоны — в том числе когда вкладка в фоне
+                      (нужен разрешённый доступ выше).
+                    </span>
+                  </div>
+                  <label className="switch-stay">
+                    <input
+                      type="checkbox"
+                      role="switch"
+                      checked={notifySettings.webPushEnabled}
+                      onChange={() => toggleNotify("webPushEnabled")}
+                      aria-labelledby="notify-web-push-label"
+                      aria-checked={notifySettings.webPushEnabled}
+                      disabled={!hasFcmVapidConfigured()}
+                    />
+                    <span className="switch-stay-slider" aria-hidden />
+                  </label>
                 </div>
                 {notifyPerm === "denied" ? (
                   <details className="admin-settings-notify-denied-help">

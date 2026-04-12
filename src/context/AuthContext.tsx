@@ -21,6 +21,7 @@ import {
 import { doc, getDoc, getDocFromServer, onSnapshot } from "firebase/firestore";
 import type { UserRole, UserProfile } from "@/types";
 import { getFirebase, isFirebaseConfigured } from "@/firebase/config";
+import { removeAllFcmTokensForUser } from "@/firebase/fcm";
 import {
   createUserProfile,
   ensureProfileAfterLogin,
@@ -221,6 +222,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signOut = useCallback(async () => {
     setError(null);
     const { auth } = getFirebase();
+    const uid = auth.currentUser?.uid?.trim();
+    if (uid) {
+      try {
+        await removeAllFcmTokensForUser(uid);
+      } catch {
+        /* сеть / правила — выход всё равно выполняем */
+      }
+    }
     await firebaseSignOut(auth);
   }, []);
 

@@ -148,6 +148,15 @@ service cloud.firestore {
         || instructorDecrementsAttachedStudentTalonsByOne(userId)
         || instructorCompletesDriveIncrementsStudentCount(userId);
       allow delete: if isAdmin();
+
+      /** FCM: только владелец хранит токены устройств для push. */
+      match /fcmTokens/{tokenDoc} {
+        allow read, delete: if isOwner(userId);
+        allow create, update: if isOwner(userId)
+          && request.resource.data.token is string
+          && request.resource.data.token.size() > 40
+          && request.resource.data.token.size() <= 4096;
+      }
     }
 
     match /groups/{groupId} {

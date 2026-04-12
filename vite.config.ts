@@ -1,8 +1,9 @@
-import { defineConfig, loadEnv } from "vite";
-import react from "@vitejs/plugin-react";
-import basicSsl from "@vitejs/plugin-basic-ssl";
+import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { defineConfig, loadEnv, type Plugin } from "vite";
+import react from "@vitejs/plugin-react";
+import basicSsl from "@vitejs/plugin-basic-ssl";
 
 const __dirname = fileURLToPath(new URL(".", import.meta.url));
 
@@ -45,12 +46,63 @@ function htmlOpenGraphPlugin(siteOrigin: string) {
   };
 }
 
+/** Генерирует `dist/firebase-messaging-sw.js` для FCM (фоновые push). */
+function firebaseMessagingSwPlugin(mode: string): Plugin {
+  return {
+    name: "emit-firebase-messaging-sw",
+    apply: "build",
+    closeBundle() {
+      const env = loadEnv(mode, process.cwd(), "");
+      const cfg = {
+        apiKey: env.VITE_FIREBASE_API_KEY ?? "",
+        authDomain: env.VITE_FIREBASE_AUTH_DOMAIN ?? "",
+        projectId: env.VITE_FIREBASE_PROJECT_ID ?? "",
+        storageBucket: env.VITE_FIREBASE_STORAGE_BUCKET ?? "",
+        messagingSenderId: env.VITE_FIREBASE_MESSAGING_SENDER_ID ?? "",
+        appId: env.VITE_FIREBASE_APP_ID ?? "",
+      };
+      if (!cfg.apiKey || !cfg.projectId) {
+        console.warn(
+          "[vite] firebase-messaging-sw.js не создан: задайте VITE_FIREBASE_* в .env для сборки."
+        );
+        return;
+      }
+      const outDir = path.resolve(__dirname, "dist");
+      const json = JSON.stringify(cfg);
+      const src = `importScripts("https://www.gstatic.com/firebasejs/11.6.0/firebase-app-compat.js");
+importScripts("https://www.gstatic.com/firebasejs/11.6.0/firebase-messaging-compat.js");
+firebase.initializeApp(${json});
+const messaging = firebase.messaging();
+messaging.onBackgroundMessage((payload) => {
+  const title = (payload.notification && payload.notification.title) || "StartAvto";
+  const body = (payload.notification && payload.notification.body) || "";
+  return self.registration.showNotification(title, {
+    body,
+    icon: "/app-icon-v6.png",
+    badge: "/favicon.svg",
+    data: payload.data || {},
+  });
+});
+self.addEventListener("install", (e) => e.waitUntil(self.skipWaiting()));
+self.addEventListener("activate", (e) => e.waitUntil(self.clients.claim()));
+`;
+      fs.mkdirSync(outDir, { recursive: true });
+      fs.writeFileSync(path.join(outDir, "firebase-messaging-sw.js"), src, "utf8");
+    },
+  };
+}
+
 /** HTTPS в dev: микрофон (getUserMedia) в Safari/Chrome не работает по http://IP в LAN. */
 export default defineConfig(({ mode }) => {
   const publicSiteOrigin = resolvePublicSiteOrigin(mode);
 
   return {
-  plugins: [react(), basicSsl(), htmlOpenGraphPlugin(publicSiteOrigin)],
+  plugins: [
+    react(),
+    basicSsl(),
+    htmlOpenGraphPlugin(publicSiteOrigin),
+    firebaseMessagingSwPlugin(mode),
+  ],
   /** Явно тянем firebase в pre-bundle, чтобы не залипала старая версия в node_modules/.vite/deps. */
   optimizeDeps: {
     include: [
@@ -58,6 +110,7 @@ export default defineConfig(({ mode }) => {
       "firebase/auth",
       "firebase/firestore",
       "firebase/storage",
+      "firebase/messaging",
     ],
   },
   server: {
