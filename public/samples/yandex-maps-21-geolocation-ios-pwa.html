@@ -2,7 +2,11 @@
 <html lang="ru">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <!-- Для iOS/PWA: фиксированный масштаб снижает глюки жестов; для продакшена оцените доступность (user-scalable). -->
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no, viewport-fit=cover"
+    />
     <title>JS API 2.1 — геолокация: iOS / PWA / fallback</title>
     <!-- Ключ подставляется при npm run build из VITE_YANDEX_MAPS_API_KEY -->
     <script src="https://api-maps.yandex.ru/2.1/?apikey=YOUR_API_KEY&lang=ru_RU"></script>
@@ -75,75 +79,25 @@
       button.danger {
         background: #7f1d1d;
       }
-      #btnLastGeo {
-        display: none;
-        background: #0d9488;
-      }
-      #btnLastGeo.is-visible {
-        display: inline-block;
-      }
-
-      /* Индикатор загрузки геолокации */
-      #geo-loading {
-        position: fixed;
-        z-index: 2000;
-        inset: 0;
-        display: none;
-        align-items: center;
-        justify-content: center;
-        flex-direction: column;
-        gap: 14px;
-        background: rgba(15, 23, 42, 0.55);
-        backdrop-filter: blur(4px);
-        -webkit-backdrop-filter: blur(4px);
-        color: #f1f5f9;
-        font-size: 14px;
-        font-weight: 500;
-        pointer-events: none;
-      }
-      #geo-loading.is-active {
-        display: flex;
-      }
-      .geo-loading-spinner {
-        width: 40px;
-        height: 40px;
-        border: 3px solid rgba(148, 163, 184, 0.35);
-        border-top-color: #38bdf8;
-        border-radius: 50%;
-        animation: geo-spin 0.75s linear infinite;
-      }
-      @keyframes geo-spin {
-        to {
-          transform: rotate(360deg);
-        }
-      }
-      @media (prefers-reduced-motion: reduce) {
-        .geo-loading-spinner {
-          animation: none;
-          border-top-color: #94a3b8;
-        }
-      }
     </style>
   </head>
   <body>
-    <div id="geo-loading" aria-live="polite" aria-busy="false">
-      <div class="geo-loading-spinner" aria-hidden="true"></div>
-      <span>Определение местоположения…</span>
-    </div>
-
     <div id="panel" role="status">
       <div id="msg">Загрузка карты…</div>
       <div id="meta"></div>
       <div class="btn-row">
         <button type="button" class="primary" id="btnRetry" disabled>Повторить попытку</button>
         <button type="button" id="btnManual" disabled>Выбрать на карте вручную</button>
-        <button type="button" id="btnLastGeo">Использовать предыдущее местоположение</button>
       </div>
     </div>
     <div id="map"></div>
 
     <script>
-      var LS_KEY = "yandex-maps-21-ios-pwa-last-geo-v1";
+      var GEO_OPTIONS_IOS = {
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 0,
+      };
       var PWA_RACE_MS = 4000;
 
       function isIOS() {
@@ -167,23 +121,6 @@
 
       function isIOSPWA() {
         return isIOS() && isStandalonePWA();
-      }
-
-      /** Таймаут getCurrentPosition: iOS 20 с, Android и остальные 10 с */
-      function geoTimeoutMs() {
-        return isIOS() ? 20000 : 10000;
-      }
-
-      function getGeoOptions() {
-        return {
-          enableHighAccuracy: true,
-          timeout: geoTimeoutMs(),
-          maximumAge: 0,
-        };
-      }
-
-      function ymapsGeoTimeoutMs() {
-        return isIOS() ? 20000 : 10000;
       }
 
       function platformLabel() {
@@ -216,13 +153,6 @@
 
       function mapGeolocationError(err) {
         if (!err) return "Геолокация недоступна.";
-        if (err.isRaceTimeout) {
-          return (
-            "Первая попытка в PWA прервана по времени (" +
-            PWA_RACE_MS +
-            " мс). Пробуем дальше по цепочке…"
-          );
-        }
         var c = err.code;
         if (c === 1) return msgGeolocationDeniedIOS();
         if (c === 2) return msgPositionUnavailableIOS();
@@ -240,18 +170,6 @@
       var elMeta = document.getElementById("meta");
       var btnRetry = document.getElementById("btnRetry");
       var btnManual = document.getElementById("btnManual");
-      var btnLastGeo = document.getElementById("btnLastGeo");
-      var elGeoLoading = document.getElementById("geo-loading");
-
-      function setLoading(on) {
-        if (on) {
-          elGeoLoading.classList.add("is-active");
-          elGeoLoading.setAttribute("aria-busy", "true");
-        } else {
-          elGeoLoading.classList.remove("is-active");
-          elGeoLoading.setAttribute("aria-busy", "false");
-        }
-      }
 
       function setPanel(kind, text) {
         elMsg.textContent = text;
@@ -265,46 +183,6 @@
         elMeta.textContent = text || "";
       }
 
-      function saveLastGeo(lat, lng, accuracyM, sourceLabel) {
-        try {
-          var rec = {
-            lat: lat,
-            lng: lng,
-            accuracy: accuracyM != null && isFinite(accuracyM) ? accuracyM : null,
-            source: sourceLabel || "",
-            savedAt: Date.now(),
-          };
-          localStorage.setItem(LS_KEY, JSON.stringify(rec));
-        } catch (e) {}
-      }
-
-      function loadLastGeo() {
-        try {
-          var raw = localStorage.getItem(LS_KEY);
-          if (!raw) return null;
-          var o = JSON.parse(raw);
-          if (typeof o.lat !== "number" || typeof o.lng !== "number") return null;
-          if (!isFinite(o.lat) || !isFinite(o.lng)) return null;
-          return o;
-        } catch (e) {
-          return null;
-        }
-      }
-
-      function hasLastGeo() {
-        return loadLastGeo() != null;
-      }
-
-      function updateLastGeoButtonVisibility(show) {
-        if (show && hasLastGeo()) {
-          btnLastGeo.classList.add("is-visible");
-          btnLastGeo.disabled = false;
-        } else {
-          btnLastGeo.classList.remove("is-visible");
-          btnLastGeo.disabled = true;
-        }
-      }
-
       function removeUserPlacemark() {
         if (userPlacemark && myMap) {
           myMap.geoObjects.remove(userPlacemark);
@@ -312,7 +190,7 @@
         }
       }
 
-      function addPlacemark(coords, accuracyM, sourceLabel, saveToStorage) {
+      function addPlacemark(coords, accuracyM, sourceLabel) {
         removeUserPlacemark();
         var accText =
           accuracyM != null && isFinite(accuracyM) ? Math.round(accuracyM) + " м" : "неизвестна";
@@ -335,15 +213,8 @@
         myMap.geoObjects.add(userPlacemark);
         myMap.setCenter(coords, 16);
         userPlacemark.balloon.open();
-        if (saveToStorage !== false) {
-          saveLastGeo(coords[0], coords[1], accuracyM, sourceLabel);
-        }
-        updateLastGeoButtonVisibility(false);
       }
 
-      /**
-       * Обычный Promise вокруг getCurrentPosition (без внешнего race).
-       */
       function geoGetPromise(options) {
         return new Promise(function (resolve, reject) {
           if (!navigator.geolocation) {
@@ -354,54 +225,23 @@
         });
       }
 
-      /**
-       * PWA iOS: Promise.race с флагом isTimedOut — ответ getCurrentPosition после таймаута игнорируется.
-       */
-      function geoGetPromiseWithPWARace(options, raceMs) {
-        return new Promise(function (resolve, reject) {
-          if (!navigator.geolocation) {
-            reject({ code: 0, message: "API геолокации недоступен" });
-            return;
-          }
-          var isTimedOut = false;
-          var settled = false;
-
-          var tid = setTimeout(function () {
-            isTimedOut = true;
-            if (!settled) {
-              settled = true;
-              reject({ code: 3, message: "pwa-race", isRaceTimeout: true });
-            }
-          }, raceMs);
-
-          navigator.geolocation.getCurrentPosition(
-            function (pos) {
-              clearTimeout(tid);
-              if (isTimedOut) return;
-              if (!settled) {
-                settled = true;
-                resolve(pos);
-              }
-            },
-            function (err) {
-              clearTimeout(tid);
-              if (isTimedOut) return;
-              if (!settled) {
-                settled = true;
-                reject(err);
-              }
-            },
-            options
-          );
+      function withTimeout(ms, label) {
+        return new Promise(function (_, reject) {
+          setTimeout(function () {
+            reject({ code: 3, message: label || "timeout" });
+          }, ms);
         });
       }
 
+      /**
+       * PWA на iOS: race 4 с — снимает «вечное» зависание getCurrentPosition.
+       * При срабатывании race всё равно можно перейти к fallback (ymaps / ручной выбор).
+       */
       function getNativePosition() {
-        var opts = getGeoOptions();
         if (isIOSPWA()) {
-          return geoGetPromiseWithPWARace(opts, PWA_RACE_MS);
+          return Promise.race([geoGetPromise(GEO_OPTIONS_IOS), withTimeout(PWA_RACE_MS, "pwa-race")]);
         }
-        return geoGetPromise(opts);
+        return geoGetPromise(GEO_OPTIONS_IOS);
       }
 
       function queryGeolocationPermission() {
@@ -432,7 +272,7 @@
               provider: "browser",
               autoReverseGeocode: false,
               mapStateAutoApply: false,
-              timeout: ymapsGeoTimeoutMs(),
+              timeout: 10000,
             })
             .then(function (res) {
               var first = res.geoObjects && res.geoObjects.getLength && res.geoObjects.getLength() > 0;
@@ -459,14 +299,13 @@
 
       function startManualMode() {
         stopManualMode();
-        setLoading(false);
         setPanel("warn", "Нажмите на карту, чтобы поставить метку.");
         btnManual.textContent = "Отмена ручного выбора";
         btnManual.disabled = false;
         manualClickListener = function (e) {
           var c = e.get("coords");
           stopManualMode();
-          addPlacemark(c, null, "Вручную на карте", true);
+          addPlacemark(c, null, "Вручную на карте");
           setPanel("success", "Метка установлена вручную.");
           setMeta(platformLabel());
         };
@@ -487,18 +326,14 @@
         if (busy || !myMap) return;
         busy = true;
         disableFallbackButtons();
-        updateLastGeoButtonVisibility(false);
         stopManualMode();
-        setLoading(true);
 
         setMeta("Платформа: " + platformLabel());
         setPanel("", "Проверка разрешения и запрос координат…");
 
         if (!navigator.geolocation) {
           setPanel("error", "В этом браузере нет Geolocation API.");
-          setLoading(false);
           enableFallbackButtons();
-          updateLastGeoButtonVisibility(true);
           busy = false;
           return;
         }
@@ -506,9 +341,7 @@
         var perm = await queryGeolocationPermission();
         if (perm === "denied") {
           setPanel("error", msgGeolocationDeniedIOS());
-          setLoading(false);
           enableFallbackButtons();
-          updateLastGeoButtonVisibility(true);
           busy = false;
           return;
         }
@@ -519,19 +352,14 @@
           var lat = pos.coords.latitude;
           var lng = pos.coords.longitude;
           var acc = pos.coords.accuracy;
-          addPlacemark([lat, lng], acc, "navigator.geolocation", true);
+          addPlacemark([lat, lng], acc, "navigator.geolocation");
           setPanel(
             "success",
             isIOSPWA()
-              ? "Координаты получены (нативный API; в PWA первая фаза ограничена " +
-                  PWA_RACE_MS +
-                  " мс, при успехе — полный ответ; timeout опций iOS: " +
-                  geoTimeoutMs() +
-                  " мс)."
-              : "Координаты получены через navigator.geolocation (timeout: " + geoTimeoutMs() + " мс)."
+              ? "Координаты получены (нативный API; в PWA использован контроль по времени " + PWA_RACE_MS + " мс)."
+              : "Координаты получены через navigator.geolocation."
           );
           setMeta(platformLabel() + " · источник: нативный API");
-          setLoading(false);
           busy = false;
           return;
         } catch (e) {
@@ -543,40 +371,21 @@
 
         try {
           var yc = await tryYmapsBrowserGeolocation();
-          addPlacemark(yc, null, "ymaps.geolocation (browser)", true);
+          addPlacemark(yc, null, "ymaps.geolocation (browser)");
           setPanel("success", "Координаты получены через Яндекс.Карты (provider: browser).");
-          setMeta(platformLabel() + " · источник: ymaps.geolocation · timeout: " + ymapsGeoTimeoutMs() + " мс");
-          setLoading(false);
+          setMeta(platformLabel() + " · источник: ymaps.geolocation");
           busy = false;
           return;
         } catch (e2) {
           setPanel(
             "error",
-            errText + " Резервный способ Яндекса не сработал. Выберите точку на карте, предыдущее место или повторите попытку."
+            errText + " Резервный способ Яндекса не сработал. Выберите точку на карте или повторите попытку."
           );
-          setMeta(platformLabel() + " · fallback: ручной выбор / кэш");
+          setMeta(platformLabel() + " · fallback: ручной выбор");
         }
 
-        setLoading(false);
         enableFallbackButtons();
-        updateLastGeoButtonVisibility(true);
         busy = false;
-      }
-
-      function applyLastSavedGeo() {
-        var o = loadLastGeo();
-        if (!o || !myMap) return;
-        var acc = o.accuracy != null && isFinite(o.accuracy) ? o.accuracy : null;
-        var src = o.source ? "Сохранено: " + o.source : "Сохранённая точка";
-        addPlacemark([o.lat, o.lng], acc, src, false);
-        var ageMin = o.savedAt ? Math.round((Date.now() - o.savedAt) / 60000) : null;
-        setPanel(
-          "success",
-          "Показано предыдущее местоположение" +
-            (ageMin != null && ageMin >= 0 ? " (сохранено ~" + ageMin + " мин назад)." : ".")
-        );
-        setMeta(platformLabel() + " · из localStorage");
-        setLoading(false);
       }
 
       btnRetry.addEventListener("click", function () {
@@ -591,9 +400,6 @@
         if (!myMap) return;
         startManualMode();
       });
-      btnLastGeo.addEventListener("click", function () {
-        applyLastSavedGeo();
-      });
 
       ymaps.ready(function () {
         if (
@@ -603,7 +409,6 @@
         ) {
           setPanel("error", "Для геолокации нужен HTTPS (или localhost).");
           enableFallbackButtons();
-          updateLastGeoButtonVisibility(true);
           return;
         }
 
@@ -614,7 +419,7 @@
         );
 
         setPanel("", "Карта готова. Запрашиваем геолокацию…");
-        setMeta("Платформа: " + platformLabel() + " · getCurrentPosition timeout: iOS " + 20000 + " мс / прочие " + 10000 + " мс");
+        setMeta("Платформа: " + platformLabel());
         void runGeolocation();
       });
     </script>
