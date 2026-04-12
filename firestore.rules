@@ -159,6 +159,26 @@ service cloud.firestore {
       }
     }
 
+    /**
+     * Текущие координаты инструктора (пишет только сам инструктор с устройства).
+     * Админ читает во вкладке GPS.
+     */
+    match /instructorLiveLocations/{instructorId} {
+      allow read: if isAdmin();
+      allow create, update: if isInstructorAccount()
+        && request.auth.uid == instructorId
+        && request.resource.data.keys().hasOnly(['lat', 'lng', 'updatedAt'])
+        && request.resource.data.lat is number
+        && request.resource.data.lng is number
+        && request.resource.data.lat >= -90
+        && request.resource.data.lat <= 90
+        && request.resource.data.lng >= -180
+        && request.resource.data.lng <= 180
+        && request.resource.data.updatedAt is timestamp;
+      allow delete: if isAdmin()
+        || (isInstructorAccount() && request.auth.uid == instructorId);
+    }
+
     match /groups/{groupId} {
       /** Курсант читает только свою учебную группу (для привязки к чат-группе и self-join). */
       allow read: if isAdmin()

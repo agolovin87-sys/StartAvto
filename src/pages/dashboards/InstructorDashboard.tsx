@@ -13,6 +13,7 @@ import {
   subscribeDriveSlotsForInstructor,
   subscribeFreeDriveWindowsForInstructor,
 } from "@/firebase/drives";
+import { InstructorLocationBroadcaster } from "@/components/InstructorLocationBroadcaster";
 import { useAutoDeleteExpiredOpenFreeWindows } from "@/hooks/useAutoDeleteExpiredOpenFreeWindows";
 import { useDashboardTabHistory } from "@/hooks/useDashboardTabHistory";
 import { playDriveAlertSound } from "@/audio/playDriveAlertSound";
@@ -255,8 +256,12 @@ export function InstructorDashboard() {
 
   useAutoDeleteExpiredOpenFreeWindows(instructorUid, instructorFreeWindows);
 
+  const broadcastLocation =
+    profile?.role === "instructor" && profile?.accountStatus === "active";
+
   return (
     <ChatNavContext.Provider value={chatNavValue}>
+      <InstructorLocationBroadcaster uid={instructorUid} active={broadcastLocation} />
       <div
         className={
           chatThreadOpen && tab === "chat"
