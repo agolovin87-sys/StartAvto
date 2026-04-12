@@ -87,14 +87,26 @@ importScripts("https://www.gstatic.com/firebasejs/${fbVer}/firebase-messaging-co
 firebase.initializeApp(${json});
 const messaging = firebase.messaging();
 messaging.onBackgroundMessage((payload) => {
-  const title = (payload.notification && payload.notification.title) || "StartAvto";
-  const body = (payload.notification && payload.notification.body) || "";
-  return self.registration.showNotification(title, {
+  const d = payload.data || {};
+  const title =
+    (typeof d.title === "string" && d.title) ||
+    (payload.notification && payload.notification.title) ||
+    "StartAvto";
+  const body =
+    (typeof d.body === "string" && d.body) ||
+    (payload.notification && payload.notification.body) ||
+    "";
+  const opts = {
     body,
     icon: "/app-icon-v6.png",
     badge: "/favicon.svg",
-    data: payload.data || {},
-  });
+    data: d,
+    tag:
+      d.kind === "chat" && typeof d.chatId === "string" && d.chatId
+        ? "chat-" + d.chatId
+        : "startavto-" + (typeof d.kind === "string" ? d.kind : "msg"),
+  };
+  return self.registration.showNotification(title, opts);
 });
 self.addEventListener("install", (e) => e.waitUntil(self.skipWaiting()));
 self.addEventListener("activate", (e) => e.waitUntil(self.clients.claim()));

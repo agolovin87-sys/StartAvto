@@ -3,6 +3,7 @@ import {
   isInDoNotDisturbPeriod,
   isLikelyMobileVibrationDevice,
 } from "@/admin/notificationSettings";
+import { hasFcmVapidConfigured } from "@/firebase/fcm";
 import type { ChatMessage } from "@/types";
 
 /** Один раз на сообщение: глобальная лента + открытый чат не дублируют звук. */
@@ -156,6 +157,12 @@ export function runIncomingMessageAlerts(
   if (typeof window === "undefined" || typeof Notification === "undefined") return;
   if (Notification.permission !== "granted") return;
   if (s.browserNotifyOnlyWhenBackground && !params.documentHidden) return;
+
+  /**
+   * При включённом web-push FCM уже шлёт одно системное уведомление; иначе вкладка в фоне даёт дубль
+   * (Firestore + service worker).
+   */
+  if (s.webPushEnabled !== false && hasFcmVapidConfigured()) return;
 
   const title = `Новое сообщение от ${params.senderLabel}`;
   const body = s.browserNotifyShowMessagePreview

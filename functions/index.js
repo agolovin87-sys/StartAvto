@@ -53,10 +53,12 @@ async function sendToUsers(uids, title, body, data = {}) {
   for (const [k, v] of Object.entries(data)) {
     dataPayload[k] = v == null ? "" : String(v);
   }
+  /** Только data: иначе на Web дважды — авто-показ по `notification` + showNotification в SW. */
+  dataPayload.title = title == null ? "" : String(title);
+  dataPayload.body = body == null ? "" : String(body);
 
   const res = await admin.messaging().sendEachForMulticast({
     tokens,
-    notification: { title, body },
     data: dataPayload,
   });
 
@@ -79,12 +81,29 @@ async function sendToUsers(uids, title, body, data = {}) {
 
 function messagePreview(data) {
   const type = typeof data.type === "string" ? data.type : "text";
-  const text = typeof data.text === "string" ? data.text.trim() : "";
-  if (type === "text") return text.length > 120 ? `${text.slice(0, 117)}…` : text || "Сообщение";
+  const text = typeof data.text === "string" ? data.text.trim().replace(/\s+/g, " ") : "";
+  if (type === "text") return text.length > 100 ? `${text.slice(0, 97)}…` : text || "Сообщение";
   if (type === "voice") return "Голосовое сообщение";
   if (type === "image") return "Фото";
-  if (type === "file") return "Файл";
+  if (type === "file") {
+    const fn = typeof data.fileName === "string" ? data.fileName.trim() : "";
+    return fn ? `Файл: ${fn}` : "Файл";
+  }
   return "Сообщение";
+}
+
+async function displayNameForUser(uid) {
+  const u = (uid ?? "").trim();
+  if (!u) return "Контакт";
+  try {
+    const snap = await db.collection("users").doc(u).get();
+    if (!snap.exists) return "Контакт";
+    const dn = snap.data().displayName;
+    if (typeof dn === "string" && dn.trim()) return dn.trim();
+  } catch (e) {
+    console.warn("[FCM] displayNameForUser", e);
+  }
+  return "Контакт";
 }
 
 exports.onChatMessageCreated = onDocumentCreated(
@@ -102,8 +121,9 @@ exports.onChatMessageCreated = onDocumentCreated(
     const recipients = ids.filter((id) => typeof id === "string" && id.trim() && id.trim() !== senderId);
     if (recipients.length === 0) return;
 
-    const body = messagePreview(msg);
-    await sendToUsers(recipients, "Новое сообщение", body, {
+    const senderLabel = await displayNameForUser(senderId);
+    const preview = messagePreview(msg);
+    await sendToUsers(recipients, senderLabel, preview, {
       kind: "chat",
       chatId: event.params.chatId,
     });

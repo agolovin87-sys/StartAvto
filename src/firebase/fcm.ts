@@ -93,8 +93,10 @@ export function subscribeForegroundFcm(
   }
   return onMessage(messaging, (payload) => {
     if (payload.data?.kind === "chat") return;
-    const title = payload.notification?.title ?? "StartAvto";
-    const body = payload.notification?.body ?? "";
+    const d = payload.data ?? {};
+    const title =
+      (typeof d.title === "string" && d.title) || payload.notification?.title || "StartAvto";
+    const body = (typeof d.body === "string" && d.body) || payload.notification?.body || "";
     onNonChatNotification(title, body);
   });
 }
