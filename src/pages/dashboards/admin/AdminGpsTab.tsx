@@ -8,6 +8,7 @@ import {
   type InstructorLiveLocation,
 } from "@/firebase/instructorLiveLocation";
 import type { UserProfile } from "@/types";
+import { hasYandexMapsApiKey } from "@/yandexMapsApi";
 
 const STALE_MS = 12 * 60 * 1000;
 
@@ -130,10 +131,15 @@ function AdminGpsMapModal({
               WGS84: {lat.toFixed(6)}, {lng.toFixed(6)}
             </p>
             <p className="admin-gps-reality-hint">
-              Карта — Яндекс.Карты по тем же координатам WGS84. Для отображения нужен ключ{" "}
-              <code>VITE_YANDEX_MAPS_API_KEY</code> в <code>.env</code>. Если точка «уезжает» при малой
-              погрешности, телефон часто отдаёт сеть/Wi‑Fi вместо спутников — пусть инструктор выйдет на улицу и
-              включит точную геолокацию.
+              Координаты с устройства инструктора; карта — те же WGS84. Погрешность в километры обычно значит
+              сеть/Wi‑Fi вместо GPS — на улице с включённой точной геолокацией обычно лучше.
+              {!hasYandexMapsApiKey() ? (
+                <>
+                  {" "}
+                  Без ключа <code>VITE_YANDEX_MAPS_API_KEY</code> в <code>.env</code> и пересборки карта не
+                  подгрузится.
+                </>
+              ) : null}
             </p>
             <div className="admin-gps-map-wrap">
               <AdminGpsYandexMap
