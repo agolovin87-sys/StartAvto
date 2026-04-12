@@ -1026,6 +1026,48 @@ code {
   padding-block: 0.15rem;
 }
 
+/* Инструктор / курсант без интернета: строка 1 — ФИО + Wi‑Fi off + (нет интернета); строка 2 — роль */
+.shell-header-meta--offline-cabinet {
+  flex-direction: column;
+  align-items: stretch;
+  align-self: stretch;
+  gap: 0.1rem;
+}
+
+.shell-header-meta-row1 {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 0.45rem;
+  min-width: 0;
+  width: 100%;
+  max-width: 100%;
+}
+
+.shell-header-meta-row2 {
+  min-width: 0;
+}
+
+.shell-header-fio--single-line {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  word-break: normal;
+  overflow-wrap: normal;
+  line-height: 1.25;
+  flex: 1 1 0;
+  min-width: 0;
+  width: auto;
+  max-width: none;
+  vertical-align: middle;
+}
+
+.shell-header-meta--offline-cabinet .shell-header-meta-sep-wrap--offline {
+  flex-shrink: 0;
+}
+
 /* Без боковых полей — расстояние только от gap у .shell-header-meta */
 .shell-header-meta-sep-wrap {
   display: inline-flex;

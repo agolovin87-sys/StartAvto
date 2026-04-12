@@ -245,6 +245,11 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
     };
   }, [presenceUserId, privacyTick]);
 
+  const offlineCabinetHeader =
+    profile &&
+    !networkOnline &&
+    (profile.role === "instructor" || profile.role === "student");
+
   return (
     <div className={shellHeaderHidden ? "shell shell--chat-thread" : "shell"}>
       {shellHeaderHidden ? null : (
@@ -276,43 +281,70 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
               </span>
             </Link>
             {profile ? (
-              <div className="shell-header-meta">
-                <span className="shell-header-fio">
-                  {formatShortFio(profile.displayName ?? "")}
-                </span>
-                <span
-                  className={
-                    networkOnline
-                      ? "shell-header-meta-sep-wrap"
-                      : "shell-header-meta-sep-wrap shell-header-meta-sep-wrap--offline"
-                  }
-                  aria-hidden={networkOnline}
-                  {...(!networkOnline
-                    ? ({
-                        role: "status",
-                        "aria-label": "Нет подключения к интернету",
-                      } as const)
-                    : {})}
+              offlineCabinetHeader ? (
+                <div
+                  className="shell-header-meta shell-header-meta--offline-cabinet"
+                  role="group"
+                  aria-label="Профиль"
                 >
-                  {networkOnline ? (
-                    <span className="shell-header-meta-wifi">
-                      <IconWifi />
+                  <div className="shell-header-meta-row1">
+                    <span className="shell-header-fio shell-header-fio--single-line">
+                      {formatShortFio(profile.displayName ?? "")}
                     </span>
-                  ) : (
-                    <>
-                      <span className="shell-header-meta-sep-offline">
+                    <span
+                      className="shell-header-meta-sep-wrap shell-header-meta-sep-wrap--offline"
+                      role="status"
+                      aria-label="Нет подключения к интернету"
+                    >
+                      <span className="shell-header-meta-sep-offline" aria-hidden>
                         <IconNoSignal />
                       </span>
-                      <span className="shell-header-meta-offline-hint">
-                        (нет интернета)
+                      <span className="shell-header-meta-offline-hint">(нет интернета)</span>
+                    </span>
+                  </div>
+                  <div className="shell-header-meta-row2">
+                    <span className="shell-header-role">{roleLabel[profile.role]}</span>
+                  </div>
+                </div>
+              ) : (
+                <div className="shell-header-meta">
+                  <span className="shell-header-fio">
+                    {formatShortFio(profile.displayName ?? "")}
+                  </span>
+                  <span
+                    className={
+                      networkOnline
+                        ? "shell-header-meta-sep-wrap"
+                        : "shell-header-meta-sep-wrap shell-header-meta-sep-wrap--offline"
+                    }
+                    aria-hidden={networkOnline}
+                    {...(!networkOnline
+                      ? ({
+                          role: "status",
+                          "aria-label": "Нет подключения к интернету",
+                        } as const)
+                      : {})}
+                  >
+                    {networkOnline ? (
+                      <span className="shell-header-meta-wifi">
+                        <IconWifi />
                       </span>
-                    </>
-                  )}
-                </span>
-                <span className="shell-header-role">
-                  {roleLabel[profile.role]}
-                </span>
-              </div>
+                    ) : (
+                      <>
+                        <span className="shell-header-meta-sep-offline">
+                          <IconNoSignal />
+                        </span>
+                        <span className="shell-header-meta-offline-hint">
+                          (нет интернета)
+                        </span>
+                      </>
+                    )}
+                  </span>
+                  <span className="shell-header-role">
+                    {roleLabel[profile.role]}
+                  </span>
+                </div>
+              )
             ) : null}
           </div>
           <div className="shell-user">
