@@ -86,23 +86,22 @@
           maximumAge: 0,
         };
 
-        /** @type {[number, number] | null} широта, долгота */
-        var FIXED_COORDS = null;
-        var FIXED_ACCURACY = null;
-
         var myMap = null;
-        /** @type {ymaps.Placemark | null} */
-        var placemark = null;
 
-        var guardIntervalId = null;
-        var verifyTimeoutId = null;
+        /** @type {[number, number] | null} широта, долгота */
+        let fixedCoords = null;
+        let fixedAccuracy = null;
+        /** @type {ymaps.Placemark | null} */
+        let currentPlacemark = null;
+        let checkInterval = null;
+        let verifyTimeout = null;
 
         function logRed(text) {
           console.log("%c" + text, CONSOLE_RED);
         }
 
         /** Расстояние между двумя точками [lat, lon] в метрах */
-        function haversineMeters(a, b) {
+        function getDistance(a, b) {
           var R = 6371000;
           var lat1 = (a[0] * Math.PI) / 180;
           var lat2 = (b[0] * Math.PI) / 180;
@@ -120,131 +119,118 @@
           el.className = isError ? "error" : "";
         }
 
-        function clearGuards() {
-          if (guardIntervalId !== null) {
-            clearInterval(guardIntervalId);
-            guardIntervalId = null;
+        function stopGuards() {
+          if (checkInterval !== null) {
+            clearInterval(checkInterval);
+            checkInterval = null;
           }
-          if (verifyTimeoutId !== null) {
-            clearTimeout(verifyTimeoutId);
-            verifyTimeoutId = null;
+          if (verifyTimeout !== null) {
+            clearTimeout(verifyTimeout);
+            verifyTimeout = null;
           }
         }
 
-        function removePlacemarkFromMap() {
-          if (placemark && myMap) {
+        function removeCurrentPlacemark() {
+          if (currentPlacemark && myMap) {
             try {
-              myMap.geoObjects.remove(placemark);
+              myMap.geoObjects.remove(currentPlacemark);
             } catch (e) {
-              console.warn("removePlacemarkFromMap", e);
+              console.warn("removeCurrentPlacemark", e);
             }
           }
-          placemark = null;
+          currentPlacemark = null;
         }
 
-        function balloonHtml(lat, lon, accuracyM) {
-          var acc =
-            typeof accuracyM === "number" && !isNaN(accuracyM)
-              ? "±" + Math.round(accuracyM) + " м"
-              : "—";
-          return (
-            "<div style=\"font-size:13px;line-height:1.45\">" +
-            "<div><b>Координаты:</b> " +
-            lat.toFixed(6) +
-            ", " +
-            lon.toFixed(6) +
-            "</div>" +
-            "<div><b>Точность:</b> " +
-            acc +
-            "</div>" +
-            "<div style=\"margin-top:8px\">🔒 Координаты зафиксированы и не обновляются</div>" +
-            "</div>"
-          );
-        }
-
-        /** Новая метка только из FIXED_COORDS (не из result.geoObjects) */
+        /** Новая метка только из fixedCoords (не из result.geoObjects) */
         function createPlacemarkFromFixed() {
-          if (!myMap || !FIXED_COORDS) return;
+          if (!myMap || !fixedCoords) return null;
 
-          removePlacemarkFromMap();
+          var lat = fixedCoords[0];
+          var lon = fixedCoords[1];
+          var accLine =
+            typeof fixedAccuracy === "number" && !isNaN(fixedAccuracy)
+              ? "Точность: ±" + Math.round(fixedAccuracy) + " м<br>"
+              : "";
 
-          var lat = FIXED_COORDS[0];
-          var lon = FIXED_COORDS[1];
-
-          placemark = new ymaps.Placemark(
-            [lat, lon],
-            { balloonContent: balloonHtml(lat, lon, FIXED_ACCURACY) },
-            { preset: "islands#blueCircleIcon", draggable: false }
+          return new ymaps.Placemark(
+            fixedCoords,
+            {
+              balloonContentBody:
+                "📍 ФИКСИРОВАННОЕ положение<br>" +
+                "Координаты: " +
+                lat.toFixed(6) +
+                ", " +
+                lon.toFixed(6) +
+                "<br>" +
+                accLine +
+                "🔒 Защита от прыжков активна<br>" +
+                "🔒 Координаты зафиксированы и не обновляются",
+              iconCaption: "📍 🔒",
+            },
+            {
+              preset: "islands#redCircleIcon",
+              draggable: false,
+            }
           );
-
-          myMap.geoObjects.add(placemark);
-          placemark.balloon.open();
         }
 
-        function getPlacemarkCoords() {
-          if (!placemark || !placemark.geometry) return null;
-          try {
-            var c = placemark.geometry.getCoordinates();
-            if (!c || c.length < 2) return null;
-            return [c[0], c[1]];
-          } catch (e) {
-            return null;
+        function mountPlacemark(openBalloon) {
+          removeCurrentPlacemark();
+          currentPlacemark = createPlacemarkFromFixed();
+          if (!currentPlacemark) return;
+          myMap.geoObjects.add(currentPlacemark);
+          if (openBalloon) {
+            currentPlacemark.balloon.open();
           }
-        }
-
-        function restorePlacemarkToFixed(reason) {
-          if (!FIXED_COORDS || !myMap) return;
-          if (reason === "verify6s") {
-            logRed(RESTORE_MSG);
-          } else if (reason === "guard2s") {
-            logRed(RESTORE_MSG);
-          }
-          createPlacemarkFromFixed();
-        }
-
-        function verifyAfter6Seconds() {
-          verifyTimeoutId = null;
-          if (!FIXED_COORDS || !placemark) return;
-
-          var current = getPlacemarkCoords();
-          if (!current) {
-            restorePlacemarkToFixed("verify6s");
-            return;
-          }
-
-          var d = haversineMeters(FIXED_COORDS, current);
-          if (d > 1) {
-            restorePlacemarkToFixed("verify6s");
-          }
-        }
-
-        function guardEvery2Seconds() {
-          if (!FIXED_COORDS || !placemark) return;
-
-          var current = getPlacemarkCoords();
-          if (!current) {
-            restorePlacemarkToFixed("guard2s");
-            return;
-          }
-
-          var d = haversineMeters(FIXED_COORDS, current);
-          if (d > 10) {
-            restorePlacemarkToFixed("guard2s");
-          }
-        }
-
-        function startGuards() {
-          clearGuards();
-
-          verifyTimeoutId = window.setTimeout(verifyAfter6Seconds, 6000);
-
-          guardIntervalId = window.setInterval(guardEvery2Seconds, 2000);
         }
 
         /**
-         * Единственный разрешённый путь к геолокации (кроме кнопки — тот же вызов).
-         * После чтения координат не храним объект Position.
+         * Если метка уехала дальше minMeters от fixedCoords — пересоздаём на fixedCoords.
+         * @param {number} minMeters порог (10 — периодическая проверка; 1 — разовая через 6 с)
          */
+        function restoreFixedPosition(minMeters) {
+          if (!fixedCoords || !currentPlacemark || !myMap) return;
+
+          var currentCoords;
+          try {
+            currentCoords = currentPlacemark.geometry.getCoordinates();
+          } catch (e) {
+            return;
+          }
+          if (!currentCoords || currentCoords.length < 2) return;
+
+          var distance = getDistance(currentCoords, fixedCoords);
+          if (distance <= minMeters) return;
+
+          console.warn(
+            "⚠️ Метка прыгнула на " + Math.round(distance) + "м! Возвращаем..."
+          );
+          logRed(RESTORE_MSG);
+
+          myMap.geoObjects.remove(currentPlacemark);
+
+          currentPlacemark = createPlacemarkFromFixed();
+          if (currentPlacemark) {
+            myMap.geoObjects.add(currentPlacemark);
+          }
+
+          console.log("✅ Метка восстановлена на правильных координатах");
+        }
+
+        function startGuards() {
+          stopGuards();
+
+          verifyTimeout = window.setTimeout(function () {
+            verifyTimeout = null;
+            restoreFixedPosition(1);
+          }, 6000);
+
+          checkInterval = window.setInterval(function () {
+            restoreFixedPosition(10);
+          }, 2000);
+        }
+
+        /** Единственный путь к геолокации, кроме кнопки «Обновить» */
         function requestGeolocationOnce() {
           if (!navigator.geolocation) {
             setStatus("Геолокация не поддерживается браузером", true);
@@ -260,16 +246,15 @@
               var lat = pos.coords.latitude;
               var lon = pos.coords.longitude;
               var acc = pos.coords.accuracy;
-
               pos = null;
 
-              FIXED_COORDS = [lat, lon];
-              FIXED_ACCURACY = acc;
+              fixedCoords = [lat, lon];
+              fixedAccuracy = acc;
 
-              createPlacemarkFromFixed();
+              mountPlacemark(true);
 
               if (myMap) {
-                myMap.setCenter(FIXED_COORDS, 16, { duration: 200 });
+                myMap.setCenter(fixedCoords, 16, { duration: 200 });
               }
 
               startGuards();
@@ -289,11 +274,12 @@
           );
         }
 
-        function onRefreshClick() {
-          clearGuards();
-          removePlacemarkFromMap();
-          FIXED_COORDS = null;
-          FIXED_ACCURACY = null;
+        /** Явное обновление локации: останавливаем проверку и новый getCurrentPosition */
+        function updateLocation() {
+          stopGuards();
+          removeCurrentPlacemark();
+          fixedCoords = null;
+          fixedAccuracy = null;
           requestGeolocationOnce();
         }
 
@@ -308,7 +294,7 @@
             { searchControlProvider: "yandex#search" }
           );
 
-          document.getElementById("btnRefresh").onclick = onRefreshClick;
+          document.getElementById("btnRefresh").onclick = updateLocation;
 
           requestGeolocationOnce();
         });
