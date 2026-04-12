@@ -682,34 +682,6 @@ export function AdminSettingsTab() {
                     <span className="switch-stay-slider" aria-hidden />
                   </label>
                 </div>
-                {hasFcmVapidConfigured() ? (
-                  <div className="admin-settings-test-push-block">
-                    <button
-                      type="button"
-                      className="btn btn-secondary btn-sm"
-                      disabled={testPushBusy || !notifySettings.webPushEnabled || !uid}
-                      onClick={() => void handleTestPush()}
-                    >
-                      {testPushBusy ? "Отправка…" : "Тест push"}
-                    </button>
-                    <p className="admin-settings-toggle-hint admin-settings-test-push-hint">
-                      Проверяет доставку на это устройство. Включите переключатель выше и разрешите уведомления в блоке
-                      «Уведомления браузера».
-                    </p>
-                    {testPushResult ? (
-                      <p
-                        className={
-                          testPushResult.ok
-                            ? "admin-settings-saved-hint admin-settings-test-push-feedback"
-                            : "form-error admin-settings-test-push-feedback"
-                        }
-                        role="status"
-                      >
-                        {testPushResult.text}
-                      </p>
-                    ) : null}
-                  </div>
-                ) : null}
               </div>
 
               <div className="admin-settings-policy-block">
@@ -901,6 +873,35 @@ export function AdminSettingsTab() {
                         : "Включить"}
                   </button>
                 </div>
+                {hasFcmVapidConfigured() ? (
+                  <div className="admin-settings-test-push-block">
+                    <button
+                      type="button"
+                      className="btn btn-secondary btn-sm"
+                      disabled={testPushBusy || !notifySettings.webPushEnabled || !uid}
+                      onClick={() => void handleTestPush()}
+                    >
+                      {testPushBusy ? "Отправка…" : "Тест push"}
+                    </button>
+                    <p className="admin-settings-toggle-hint admin-settings-test-push-hint">
+                      Проверка доставки на это устройство (сообщения, запись, вождение и др.). Сначала включите
+                      «Получать на этом устройстве» в блоке «Push уведомления» выше, затем разрешите уведомления
+                      браузером.
+                    </p>
+                    {testPushResult ? (
+                      <p
+                        className={
+                          testPushResult.ok
+                            ? "admin-settings-saved-hint admin-settings-test-push-feedback"
+                            : "form-error admin-settings-test-push-feedback"
+                        }
+                        role="status"
+                      >
+                        {testPushResult.text}
+                      </p>
+                    ) : null}
+                  </div>
+                ) : null}
                 {notifyPerm === "denied" ? (
                   <details className="admin-settings-notify-denied-help">
                     <summary className="admin-settings-notify-denied-summary">
