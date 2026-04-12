@@ -22,6 +22,13 @@ const FIRST_FORCE_BEST_MS = 65_000;
 /** Не подменять уже хорошую точку грубым чтением из сети (пока не устарело). */
 const DOWNGRADE_GRACE_MS = 120_000;
 
+/** Яндекс Локатор (IP): не чаще одного вызова за интервал. */
+const LOCATOR_MIN_INTERVAL_MS = 62_000;
+const LOCATOR_INTERVAL_MS = 78_000;
+const LOCATOR_FIRST_DELAY_MS = 28_000;
+/** Если GPS уже ≤ этого радиуса (м), Локатор не дергаем. */
+const LOCATOR_SKIP_IF_GPS_ACCURACY_M = 90;
+
 function accuracyM(pos: GeolocationPosition): number {
   const a = pos.coords.accuracy;
   return typeof a === "number" && Number.isFinite(a) && a > 0 ? a : 9999;
@@ -46,6 +53,7 @@ export function InstructorLocationBroadcaster({
   const lastWrittenAccRef = useRef<number>(999_999);
   const sessionStartRef = useRef(0);
   const bestRef = useRef<Sample | null>(null);
+  const lastLocatorAtRef = useRef(0);
 
   useEffect(() => {
     if (!isFirebaseConfigured || !uidTrim || !active) return;
@@ -55,6 +63,7 @@ export function InstructorLocationBroadcaster({
     bestRef.current = null;
     lastWriteAtRef.current = 0;
     lastWrittenAccRef.current = 999_999;
+    lastLocatorAtRef.current = 0;
 
     const updateBest = (lat: number, lng: number, acc: number) => {
       const b = bestRef.current;
@@ -119,6 +128,42 @@ export function InstructorLocationBroadcaster({
       void writeInstructorLiveLocation(uidTrim, wLat, wLng, wAcc).catch(() => {});
     };
 
+    const maybeYandexLocator = async () => {
+      const now = Date.now();
+      if (now - lastLocatorAtRef.current < LOCATOR_MIN_INTERVAL_MS) return;
+      const best = bestRef.current;
+      if (best && best.acc <= LOCATOR_SKIP_IF_GPS_ACCURACY_M) return;
+
+      lastLocatorAtRef.current = now;
+      try {
+        const { callLocatorLocate } = await import("@/firebase/locatorLocate");
+        const r = await callLocatorLocate();
+        if (!r.ok) return;
+
+        const acc = r.accuracyM;
+        const lastW = lastWrittenAccRef.current;
+        const lastT = lastWriteAtRef.current;
+        if (
+          lastT > 0 &&
+          lastW <= ACC_GOOD_M &&
+          acc > Math.max(ACC_COARSE_M, lastW * 2)
+        ) {
+          return;
+        }
+        if (best && acc >= best.acc + 20) return;
+
+        updateBest(r.lat, r.lng, acc);
+        lastWriteAtRef.current = now;
+        lastWrittenAccRef.current = acc;
+        void writeInstructorLiveLocation(uidTrim, r.lat, r.lng, acc).catch(() => {});
+      } catch {
+        /* офлайн / функция не задеплоена */
+      }
+    };
+
+    const tLocatorFirst = window.setTimeout(() => void maybeYandexLocator(), LOCATOR_FIRST_DELAY_MS);
+    const tLocatorTick = window.setInterval(() => void maybeYandexLocator(), LOCATOR_INTERVAL_MS);
+
     void new Promise<void>((resolve) => {
       navigator.geolocation.getCurrentPosition(
         (pos) => {
@@ -137,6 +182,8 @@ export function InstructorLocationBroadcaster({
     );
 
     return () => {
+      window.clearTimeout(tLocatorFirst);
+      window.clearInterval(tLocatorTick);
       if (watchIdRef.current != null) {
         navigator.geolocation.clearWatch(watchIdRef.current);
         watchIdRef.current = null;
@@ -145,6 +192,7 @@ export function InstructorLocationBroadcaster({
       lastWrittenAccRef.current = 999_999;
       sessionStartRef.current = 0;
       bestRef.current = null;
+      lastLocatorAtRef.current = 0;
     };
   }, [uidTrim, active]);
 

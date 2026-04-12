@@ -4,6 +4,8 @@
  */
 const admin = require("firebase-admin");
 const { setGlobalOptions } = require("firebase-functions/v2");
+const { onCall, HttpsError } = require("firebase-functions/v2/https");
+const { defineSecret } = require("firebase-functions/params");
 const {
   onDocumentCreated,
   onDocumentUpdated,
@@ -11,6 +13,9 @@ const {
 } = require("firebase-functions/v2/firestore");
 
 setGlobalOptions({ region: "europe-west1", maxInstances: 10 });
+
+/** Ключ API Яндекс Локатора: firebase functions:secrets:set YANDEX_LOCATOR_API_KEY */
+const yandexLocatorApiKey = defineSecret("YANDEX_LOCATOR_API_KEY");
 
 admin.initializeApp();
 const db = admin.firestore();
@@ -79,6 +84,19 @@ async function sendToUsers(uids, title, body, data = {}) {
   }
 }
 
+function clientIpFromRequest(raw) {
+  if (!raw || !raw.headers) return "";
+  const xff = raw.headers["x-forwarded-for"];
+  if (typeof xff === "string" && xff.trim()) {
+    return xff.split(",")[0].trim();
+  }
+  const xri = raw.headers["x-real-ip"];
+  if (typeof xri === "string" && xri.trim()) return xri.trim();
+  const s = raw.socket && raw.socket.remoteAddress;
+  if (typeof s === "string" && s.startsWith("::ffff:")) return s.slice(7);
+  return typeof s === "string" ? s : "";
+}
+
 function messagePreview(data) {
   const type = typeof data.type === "string" ? data.type : "text";
   const text = typeof data.text === "string" ? data.text.trim().replace(/\s+/g, " ") : "";
@@ -105,6 +123,82 @@ async function displayNameForUser(uid) {
   }
   return "Контакт";
 }
+
+/**
+ * Яндекс Локатор по IP клиента (Wi‑Fi/cell в браузере недоступны).
+ * Вызывается только активными инструкторами; ключ не уходит на клиент.
+ */
+exports.locatorLocate = onCall(
+  {
+    region: "europe-west1",
+    secrets: [yandexLocatorApiKey],
+    maxInstances: 5,
+  },
+  async (request) => {
+    if (!request.auth || !request.auth.uid) {
+      throw new HttpsError("unauthenticated", "Нужна авторизация");
+    }
+    const uid = request.auth.uid.trim();
+    const userSnap = await db.collection("users").doc(uid).get();
+    if (!userSnap.exists) {
+      throw new HttpsError("permission-denied", "Профиль не найден");
+    }
+    const u = userSnap.data();
+    if (u.role !== "instructor" || u.accountStatus !== "active") {
+      throw new HttpsError("permission-denied", "Только для активных инструкторов");
+    }
+
+    const ip = clientIpFromRequest(request.rawRequest);
+    if (!ip) {
+      throw new HttpsError("failed-precondition", "Не удалось определить IP для Локатора");
+    }
+
+    const key = yandexLocatorApiKey.value();
+    const url = `https://locator.api.maps.yandex.ru/v1/locate?apikey=${encodeURIComponent(key)}`;
+    const body = { ip: [{ address: ip }] };
+
+    let res;
+    try {
+      res = await fetch(url, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "User-Agent": "StartAvto/1.0 (Firebase; instructor)",
+        },
+        body: JSON.stringify(body),
+      });
+    } catch (e) {
+      console.warn("[locatorLocate] fetch", e);
+      throw new HttpsError("unavailable", "Сеть Локатора недоступна");
+    }
+
+    if (!res.ok) {
+      const text = await res.text();
+      console.warn("[locatorLocate]", res.status, text.slice(0, 200));
+      throw new HttpsError("unavailable", `Локатор: ${res.status}`);
+    }
+
+    let data;
+    try {
+      data = await res.json();
+    } catch (e) {
+      throw new HttpsError("internal", "Некорректный ответ Локатора");
+    }
+
+    const loc = data && data.location;
+    const point = loc && loc.point;
+    if (!point || typeof point.lat !== "number" || typeof point.lon !== "number") {
+      return { ok: false };
+    }
+    const acc = typeof loc.accuracy === "number" && Number.isFinite(loc.accuracy) ? loc.accuracy : 5000;
+    return {
+      ok: true,
+      lat: point.lat,
+      lng: point.lon,
+      accuracyM: Math.max(1, Math.min(500_000, acc)),
+    };
+  }
+);
 
 exports.onChatMessageCreated = onDocumentCreated(
   "chats/{chatId}/messages/{messageId}",
