@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useAdminGpsPing } from "@/context/AdminGpsPingContext";
 import { useChatNav } from "@/context/ChatNavContext";
 import { initialsFromFullName, avatarHueFromUid } from "@/admin/instructorAvatar";
 import { INSTRUCTOR_VEHICLES } from "@/admin/vehicleOptions";
@@ -378,6 +379,10 @@ function InstructorCard({
     }
   }
 
+  const { instructorHasGpsPingUnread } = useAdminGpsPing();
+  const gpsPingUnread =
+    instructor.accountStatus === "active" && instructorHasGpsPingUnread(instructor.uid);
+
   const hue = avatarHueFromUid(instructor.uid);
   const initials = initialsFromFullName(instructor.displayName);
   const presenceOnline = isPresenceEffectivelyOnline(instructor.presence);
@@ -430,6 +435,14 @@ function InstructorCard({
               <span className="instructor-preview-name">
                 {formatShortFio(instructor.displayName)}
                 <CabinetClientKindBadge kind={instructor.lastCabinetClientKind} />
+                {gpsPingUnread ? (
+                  <span
+                    className="admin-gps-instructor-badge admin-gps-instructor-badge--inline"
+                    aria-label="Новые координаты в разделе GPS"
+                  >
+                    1
+                  </span>
+                ) : null}
               </span>
               <span className="instructor-preview-role-row">
                 <IconRole />

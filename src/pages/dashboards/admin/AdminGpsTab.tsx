@@ -1,5 +1,6 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { formatShortFio } from "@/admin/formatShortFio";
+import { useAdminGpsPing } from "@/context/AdminGpsPingContext";
 import { AdminGpsYandexMap } from "@/components/AdminGpsYandexMap";
 import { subscribeInstructors } from "@/firebase/admin";
 import {
@@ -207,6 +208,8 @@ function AdminGpsMapModal({
 }
 
 export function AdminGpsTab() {
+  const { totalGpsPingUnread, instructorHasGpsPingUnread, ackInstructorGpsPing } =
+    useAdminGpsPing();
   const [instructors, setInstructors] = useState<UserProfile[]>([]);
   const [listErr, setListErr] = useState<string | null>(null);
   const [selected, setSelected] = useState<UserProfile | null>(null);
@@ -235,28 +238,29 @@ export function AdminGpsTab() {
     return subscribeInstructorLiveLocation(uid, setLive);
   }, [selected?.uid]);
 
+  useEffect(() => {
+    const uid = selected?.uid?.trim();
+    if (!uid) return;
+    ackInstructorGpsPing(uid);
+  }, [selected?.uid, ackInstructorGpsPing]);
+
   const modalTitle = selected
     ? `Геолокация: ${formatShortFio(selected.displayName)}`
     : "";
 
-  const buttons = useMemo(
-    () =>
-      instructors.map((ins) => (
-        <button
-          key={ins.uid}
-          type="button"
-          className="btn btn-secondary admin-gps-instructor-btn"
-          onClick={() => setSelected(ins)}
-        >
-          {formatShortFio(ins.displayName)}
-        </button>
-      )),
-    [instructors]
-  );
-
   return (
     <div className="admin-tab admin-gps-tab">
-      <h1 className="admin-tab-title">GPS</h1>
+      <h1 className="admin-tab-title admin-tab-title--with-badge">
+        GPS
+        {totalGpsPingUnread > 0 ? (
+          <span
+            className="admin-gps-tab-title-badge"
+            aria-label={`Новых уведомлений по геолокации: ${totalGpsPingUnread}`}
+          >
+            {totalGpsPingUnread > 99 ? "99+" : totalGpsPingUnread}
+          </span>
+        ) : null}
+      </h1>
       <p className="admin-tab-lead">
         Координаты в режиме высокой точности (GPS). На телефоне держите инструктору открытым кабинет и разрешите
         геолокацию; под открытым небом точность обычно лучше, чем в помещении.
@@ -270,7 +274,28 @@ export function AdminGpsTab() {
         <p className="admin-empty">Нет активных инструкторов.</p>
       ) : (
         <div className="admin-gps-btn-grid" role="list">
-          {buttons}
+          {instructors.map((ins) => {
+            const unread = instructorHasGpsPingUnread(ins.uid);
+            return (
+              <span key={ins.uid} className="admin-gps-instructor-btn-wrap">
+                <button
+                  type="button"
+                  className="btn btn-secondary admin-gps-instructor-btn"
+                  onClick={() => setSelected(ins)}
+                >
+                  {formatShortFio(ins.displayName)}
+                </button>
+                {unread ? (
+                  <span
+                    className="admin-gps-instructor-badge"
+                    aria-label="Новые координаты с устройства инструктора"
+                  >
+                    1
+                  </span>
+                ) : null}
+              </span>
+            );
+          })}
         </div>
       )}
       <AdminGpsMapModal

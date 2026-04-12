@@ -10,6 +10,7 @@ const {
   onDocumentCreated,
   onDocumentUpdated,
   onDocumentDeleted,
+  onDocumentWritten,
 } = require("firebase-functions/v2/firestore");
 
 setGlobalOptions({ region: "europe-west1", maxInstances: 10 });
@@ -124,6 +125,27 @@ async function displayNameForUser(uid) {
   return "Контакт";
 }
 
+/** Как formatShortFio на клиенте: «Иванов Иван» → «Иванов И.». */
+function formatShortFioFromFullName(full) {
+  const parts = String(full ?? "")
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean);
+  if (parts.length === 0) return "—";
+  if (parts.length === 1) return parts[0];
+  const surname = parts[0];
+  const initials = parts
+    .slice(1)
+    .map((p) => `${String(p[0] || "?").toUpperCase()}.`)
+    .join("");
+  return `${surname} ${initials}`;
+}
+
+async function listAdminUids() {
+  const snap = await db.collection("users").where("role", "==", "admin").get();
+  return snap.docs.map((d) => d.id);
+}
+
 /**
  * Яндекс Локатор по IP клиента (Wi‑Fi/cell в браузере недоступны).
  * Вызывается только активными инструкторами; ключ не уходит на клиент.
@@ -197,6 +219,25 @@ exports.locatorLocate = onCall(
       lng: point.lon,
       accuracyM: Math.max(1, Math.min(500_000, acc)),
     };
+  }
+);
+
+exports.onInstructorGpsSessionPingWritten = onDocumentWritten(
+  "instructorGpsSessionPings/{instructorId}",
+  async (event) => {
+    const after = event.data.after.exists ? event.data.after.data() : null;
+    if (!after) return;
+    const instructorId = event.params.instructorId;
+    const name = await displayNameForUser(instructorId);
+    const label = formatShortFioFromFullName(name);
+    const admins = await listAdminUids();
+    if (admins.length === 0) return;
+    await sendToUsers(
+      admins,
+      "Геолокация",
+      `Доступны новые координаты инструктора ${label}.`,
+      { kind: "instructor_gps", instructorId }
+    );
   }
 );
 

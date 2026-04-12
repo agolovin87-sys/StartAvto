@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { AdminGpsPingProvider, useAdminGpsPing } from "@/context/AdminGpsPingContext";
 import { useChatUnread } from "@/context/ChatUnreadContext";
 import { ChatNavContext } from "@/context/ChatNavContext";
 import { useChatThreadShell } from "@/context/ChatThreadShellContext";
@@ -104,11 +105,20 @@ const navItems: {
 ];
 
 export function AdminDashboard() {
+  return (
+    <AdminGpsPingProvider>
+      <AdminDashboardInner />
+    </AdminGpsPingProvider>
+  );
+}
+
+function AdminDashboardInner() {
   const [tab, setTab] = useState<AdminNavTab>("home");
   useDashboardTabHistory(tab, setTab, ADMIN_DASH_TABS);
   const [chatThreadOpen, setChatThreadOpen] = useState(false);
   const { setShellHeaderHidden } = useChatThreadShell();
   const { reportDashboardTab, totalUnread } = useChatUnread();
+  const { totalGpsPingUnread } = useAdminGpsPing();
   const [pendingOpenChatUserId, setPendingOpenChatUserId] = useState<string | null>(
     null
   );
@@ -181,8 +191,18 @@ export function AdminDashboard() {
 
       <nav className="admin-bottom-nav" aria-label="Разделы админки">
         {navItems.map(({ id, label, Icon }) => {
-          const chatTabBadge =
-            id === "chat" && tab !== "chat" && totalUnread > 0 ? totalUnread : 0;
+          const navBadgeCount =
+            id === "chat" && tab !== "chat" && totalUnread > 0
+              ? totalUnread
+              : id === "gps" && tab !== "gps" && totalGpsPingUnread > 0
+                ? totalGpsPingUnread
+                : 0;
+          const navBadgeAria =
+            id === "chat" && navBadgeCount > 0
+              ? `Непрочитанных сообщений: ${navBadgeCount}`
+              : id === "gps" && navBadgeCount > 0
+                ? `Новых уведомлений по геолокации: ${navBadgeCount}`
+                : "";
           return (
             <button
               key={id}
@@ -192,12 +212,9 @@ export function AdminDashboard() {
             >
               <span className="admin-bottom-nav-ico-wrap">
                 <Icon className="admin-nav-icon" />
-                {chatTabBadge > 0 ? (
-                  <span
-                    className="admin-bottom-nav-badge"
-                    aria-label={`Непрочитанных сообщений: ${chatTabBadge}`}
-                  >
-                    {chatTabBadge > 99 ? "99+" : chatTabBadge}
+                {navBadgeCount > 0 ? (
+                  <span className="admin-bottom-nav-badge" aria-label={navBadgeAria}>
+                    {navBadgeCount > 99 ? "99+" : navBadgeCount}
                   </span>
                 ) : null}
               </span>

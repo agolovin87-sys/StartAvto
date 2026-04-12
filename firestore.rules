@@ -157,6 +157,17 @@ service cloud.firestore {
           && request.resource.data.token.size() > 40
           && request.resource.data.token.size() <= 4096;
       }
+
+      /** Админ: до какого пинга геолокации инструктора «просмотрено» (бейджи GPS). */
+      match /gpsPingSeen/{instructorId} {
+        allow read: if isAdmin() && request.auth.uid == userId;
+        allow create, update: if isAdmin() && request.auth.uid == userId
+          && request.resource.data.keys().hasOnly(['lastSeenPingAtMs'])
+          && request.resource.data.lastSeenPingAtMs is number
+          && request.resource.data.lastSeenPingAtMs >= 0
+          && request.resource.data.lastSeenPingAtMs < 10000000000000000;
+        allow delete: if isAdmin() && request.auth.uid == userId;
+      }
     }
 
     /**
@@ -169,6 +180,19 @@ service cloud.firestore {
       allow create, update: if isAdmin()
         && request.resource.data.keys().hasOnly(['requestedAt'])
         && request.resource.data.requestedAt is timestamp;
+      allow delete: if isAdmin();
+    }
+
+    /**
+     * Вход инструктора в кабинет: пинг для push админам и счётчиков на вкладке GPS.
+     */
+    match /instructorGpsSessionPings/{instructorId} {
+      allow read: if isAdmin()
+        || (isInstructorAccount() && request.auth.uid == instructorId);
+      allow create, update: if isInstructorAccount()
+        && request.auth.uid == instructorId
+        && request.resource.data.keys().hasOnly(['pingedAt'])
+        && request.resource.data.pingedAt is timestamp;
       allow delete: if isAdmin();
     }
 

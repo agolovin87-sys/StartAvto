@@ -14,6 +14,7 @@ import {
   subscribeFreeDriveWindowsForInstructor,
 } from "@/firebase/drives";
 import { InstructorLocationBroadcaster } from "@/components/InstructorLocationBroadcaster";
+import { recordInstructorGpsSessionPing } from "@/firebase/adminGpsPing";
 import { useAutoDeleteExpiredOpenFreeWindows } from "@/hooks/useAutoDeleteExpiredOpenFreeWindows";
 import { useDashboardTabHistory } from "@/hooks/useDashboardTabHistory";
 import { playDriveAlertSound } from "@/audio/playDriveAlertSound";
@@ -258,6 +259,11 @@ export function InstructorDashboard() {
 
   const broadcastLocation =
     profile?.role === "instructor" && profile?.accountStatus === "active";
+
+  useEffect(() => {
+    if (!instructorUid || !broadcastLocation) return;
+    void recordInstructorGpsSessionPing(instructorUid).catch(() => {});
+  }, [instructorUid, broadcastLocation]);
 
   return (
     <ChatNavContext.Provider value={chatNavValue}>

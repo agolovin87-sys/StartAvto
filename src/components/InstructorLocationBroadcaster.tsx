@@ -192,7 +192,7 @@ export function InstructorLocationBroadcaster({
       void writeInstructorLiveLocation(uidTrim, wLat, wLng, wAcc).catch(() => {});
     };
 
-    /** Запрос админа «Обновить» — одно чтение GPS и запись без фильтров tryWrite. */
+    /** Немедленная запись координат (запрос админа «Обновить» или первый getCurrentPosition при входе). */
     const forcePublishFromAdminRefresh = (pos: GeolocationPosition) => {
       const acc = accuracyM(pos);
       const lat = pos.coords.latitude;
@@ -267,7 +267,7 @@ export function InstructorLocationBroadcaster({
     void new Promise<void>((resolve) => {
       navigator.geolocation.getCurrentPosition(
         (pos) => {
-          tryWrite(pos);
+          forcePublishFromAdminRefresh(pos);
           resolve();
         },
         () => resolve(),
