@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>JS API 2.1 — ymaps.geolocation.get({ provider: 'browser' })</title>
+    <!--
+      Замените YOUR_API_KEY. HTTPS обязателен для браузерной геолокации (кроме localhost).
+      provider: 'browser' — только встроенный Geolocation API, без геолокации по IP Яндекса.
+    -->
+    <script src="https://api-maps.yandex.ru/2.1/?apikey=YOUR_API_KEY&lang=ru_RU"></script>
+    <style>
+      html,
+      body,
+      #map {
+        width: 100%;
+        height: 100%;
+        margin: 0;
+      }
+      #msg {
+        position: absolute;
+        z-index: 1000;
+        left: 12px;
+        right: 12px;
+        top: 12px;
+        padding: 10px 14px;
+        background: rgba(15, 23, 42, 0.92);
+        color: #e2e8f0;
+        font: 14px system-ui, sans-serif;
+        border-radius: 8px;
+        max-width: 420px;
+      }
+      #msg.error {
+        background: rgba(127, 29, 29, 0.95);
+        color: #fecaca;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="msg" role="status"></div>
+    <div id="map"></div>
+    <script>
+      function show(el, text, isError) {
+        el.textContent = text;
+        el.classList.toggle("error", !!isError);
+      }
+
+      function fallbackNavigator(myMap, msgEl) {
+        if (!navigator.geolocation) {
+          show(msgEl, "Геолокация недоступна в этом браузере.", true);
+          return;
+        }
+        navigator.geolocation.getCurrentPosition(
+          function (pos) {
+            var lat = pos.coords.latitude;
+            var lng = pos.coords.longitude;
+            myMap.setCenter([lat, lng], 16);
+            myMap.geoObjects.add(
+              new ymaps.Placemark(
+                [lat, lng],
+                { hintContent: "Вы здесь" },
+                { preset: "islands#blueCircleDotIcon" }
+              )
+            );
+            show(msgEl, "Через navigator.geolocation: " + lat.toFixed(6) + ", " + lng.toFixed(6), false);
+          },
+          function (err) {
+            var t = "Ошибка геолокации";
+            if (err.code === 1) t = "Доступ запрещён пользователем";
+            else if (err.code === 2) t = "Позиция недоступна";
+            else if (err.code === 3) t = "Таймаут";
+            show(msgEl, t, true);
+          },
+          { enableHighAccuracy: true, maximumAge: 0, timeout: 90000 }
+        );
+      }
+
+      ymaps.ready(function () {
+        var msgEl = document.getElementById("msg");
+        if (location.protocol !== "https:" && location.hostname !== "localhost" && location.hostname !== "127.0.0.1") {
+          show(msgEl, "Нужен HTTPS (или localhost) для геолокации в браузере.", true);
+        }
+
+        var myMap = new ymaps.Map("map", {
+          center: [55.76, 37.64],
+          zoom: 10,
+          controls: ["zoomControl"],
+        });
+
+        ymaps.geolocation
+          .get({
+            provider: "browser",
+            mapStateAutoApply: false,
+            autoReverseGeocode: false,
+            timeout: 90000,
+          })
+          .then(function (result) {
+            myMap.geoObjects.add(result.geoObjects);
+            myMap.setBounds(result.geoObjects.getBounds(), {
+              checkZoomRange: true,
+              zoomMargin: 40,
+            });
+            show(msgEl, "ymaps.geolocation (provider: browser) — точка добавлена на карту.", false);
+          })
+          .catch(function () {
+            show(msgEl, "ymaps.geolocation отклонён — пробуем navigator.geolocation…", true);
+            fallbackNavigator(myMap, msgEl);
+          });
+      });
+    </script>
+  </body>
+</html>
