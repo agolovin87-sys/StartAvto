@@ -1050,20 +1050,6 @@ code {
   min-width: 0;
 }
 
-.shell-header-fio--single-line {
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  word-break: normal;
-  overflow-wrap: normal;
-  line-height: 1.25;
-  flex: 1 1 0;
-  min-width: 0;
-  width: auto;
-  max-width: none;
-  vertical-align: middle;
-}
-
 .shell-header-meta--offline-cabinet .shell-header-meta-sep-wrap--offline {
   flex-shrink: 0;
 }
@@ -1186,6 +1172,24 @@ code {
   overflow-wrap: anywhere;
   line-height: 1.35;
   vertical-align: middle;
+}
+
+/**
+ * После базового .shell-header-fio (иначе normal/overflow-wrap:anywhere снова ломают строку).
+ * Офлайн инструктор/курсант: ФИО строго в одну линию, длинное — с многоточием.
+ */
+.shell-header-meta--offline-cabinet .shell-header-fio.shell-header-fio--single-line {
+  display: block;
+  flex: 1 1 0;
+  min-width: 0;
+  width: auto;
+  max-width: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  word-break: normal;
+  overflow-wrap: normal;
+  line-height: 1.25;
 }
 
 .shell-header-meta-wifi {
