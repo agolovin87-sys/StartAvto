@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1" />
+    <title>Яндекс Карты 3.0 — нативная геолокация (точность, повтор, логи)</title>
+    <!--
+      ВАЖНО ПРО ВЕРСИИ API:
+      • autoReverseGeocode — опция только у ymaps.geolocation.get() в JS API 2.1.
+        В API 3.0 этого метода нет; геокодер Яндекса к координатам здесь НЕ подключаем —
+        используем только navigator.geolocation (сырые WGS84 с устройства).
+      • При npm run build ключ подставляется из VITE_YANDEX_MAPS_API_KEY (.env).
+      • Для геолокации в браузере нужен HTTPS (localhost — исключение).
+    -->
+    <script
+      src="https://api-maps.yandex.ru/v3/?apikey=YOUR_API_KEY&lang=ru_RU"
+      type="text/javascript"
+    ></script>
+    <style>
+      * {
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        margin: 0;
+        height: 100%;
+        font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+      }
+      #app {
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+      }
+      #panel {
+        flex: 0 0 auto;
+        padding: 10px 14px;
+        background: #0f172a;
+        color: #e2e8f0;
+        font-size: 14px;
+        line-height: 1.45;
+        border-bottom: 1px solid #334155;
+      }
+      #panel .row {
+        margin: 4px 0;
+      }
+      #panel .accuracy-ok {
+        color: #86efac;
+      }
+      #panel .accuracy-warn {
+        color: #fcd34d;
+        font-weight: 600;
+      }
+      #panel .error {
+        color: #fca5a5;
+      }
+      #actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-top: 10px;
+      }
+      #actions button {
+        padding: 8px 14px;
+        border-radius: 8px;
+        border: none;
+        cursor: pointer;
+        font-size: 14px;
+        background: #38bdf8;
+        color: #0f172a;
+        font-weight: 600;
+      }
+      #actions button.secondary {
+        background: #334155;
+        color: #f1f5f9;
+      }
+      #actions button:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+      #map {
+        flex: 1 1 auto;
+        min-height: 200px;
+      }
+      /* Кастомная пульсирующая метка (контент YMapMarker) */
+      .pulse-marker {
+        position: relative;
+        width: 24px;
+        height: 24px;
+        transform: translate(-50%, -50%);
+      }
+      .pulse-marker__dot {
+        position: absolute;
+        left: 50%;
+        top: 50%;
+        width: 16px;
+        height: 16px;
+        margin: -8px 0 0 -8px;
+        border-radius: 50%;
+        background: #38bdf8;
+        border: 3px solid #fff;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.35);
+        z-index: 2;
+      }
+      .pulse-marker__ring {
+        position: absolute;
+        left: 50%;
+        top: 50%;
+        width: 40px;
+        height: 40px;
+        margin: -20px 0 0 -20px;
+        border-radius: 50%;
+        border: 2px solid rgba(56, 189, 248, 0.65);
+        animation: pulse-ring 1.8s ease-out infinite;
+        z-index: 1;
+      }
+      @keyframes pulse-ring {
+        0% {
+          transform: scale(0.5);
+          opacity: 1;
+        }
+        100% {
+          transform: scale(1.4);
+          opacity: 0;
+        }
+      }
+      /* Простой «балун» под меткой (DOM внутри маркера) */
+      .marker-balloon {
+        position: absolute;
+        left: 50%;
+        bottom: 100%;
+        transform: translateX(-50%);
+        margin-bottom: 8px;
+        min-width: 200px;
+        max-width: min(92vw, 280px);
+        padding: 8px 10px;
+        background: rgba(15, 23, 42, 0.95);
+        color: #e2e8f0;
+        font-size: 12px;
+        line-height: 1.4;
+        border-radius: 8px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.35);
+        border: 1px solid #334155;
+        pointer-events: none;
+        white-space: nowrap;
+      }
+      .marker-balloon small {
+        display: block;
+        color: #94a3b8;
+        margin-top: 4px;
+        white-space: normal;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="app">
+      <div id="panel" role="region" aria-label="Статус геолокации">
+        <div class="row" id="status-line">Загрузка API карты…</div>
+        <div class="row" id="coords-line"></div>
+        <div class="row" id="warn-line"></div>
+        <div id="actions">
+          <button type="button" id="btn-retry">Попробовать снова</button>
+          <button type="button" id="btn-cancel-retry" class="secondary" style="display: none">
+            Отменить авто-повтор
+          </button>
+        </div>
+      </div>
+      <div id="map"></div>
+    </div>
+
+    <script>
+      (function () {
+        "use strict";
+
+        const ACCURACY_WARN_M = 200;
+        const GEO_TIMEOUT_MS = 90000;
+        const AUTO_RETRY_MS = 5000;
+        const MARKER_SOURCE_ID = "native-geo-markers";
+
+        const log = function (stage, payload) {
+          const msg = "[GeoMap] " + stage + (payload !== undefined ? " " + JSON.stringify(payload) : "");
+          console.log(msg);
+        };
+
+        const el = {
+          status: document.getElementById("status-line"),
+          coords: document.getElementById("coords-line"),
+          warn: document.getElementById("warn-line"),
+          btnRetry: document.getElementById("btn-retry"),
+          btnCancelRetry: document.getElementById("btn-cancel-retry"),
+        };
+
+        let map = null;
+        /** Заполняется после ymaps3.ready (класс маркера из API 3.0). */
+        let YMapMarkerCtor = null;
+        let markerCollection = null;
+        let markerEntity = null;
+        let autoRetryTimer = null;
+        let cancelledAutoRetry = false;
+
+        function clearAutoRetry() {
+          if (autoRetryTimer) {
+            clearTimeout(autoRetryTimer);
+            autoRetryTimer = null;
+          }
+        }
+
+        function setStatus(html, className) {
+          el.status.innerHTML = html;
+          el.status.className = "row " + (className || "");
+        }
+
+        function setCoords(html, className) {
+          el.coords.innerHTML = html || "";
+          el.coords.className = "row " + (className || "");
+        }
+
+        function setWarn(html) {
+          el.warn.innerHTML = html || "";
+        }
+
+        function isSecureForGeo() {
+          if (typeof window.isSecureContext === "boolean") return window.isSecureContext;
+          var h = location.hostname;
+          return h === "localhost" || h === "127.0.0.1" || location.protocol === "https:";
+        }
+
+        function geoErrorToMessage(err) {
+          if (!err) return "Неизвестная ошибка геолокации.";
+          if (err.code === 1) return "Доступ к геолокации запрещён. Разрешите доступ для этого сайта в настройках браузера.";
+          if (err.code === 2) return "Позиция недоступна. Включите службы определения местоположения на устройстве.";
+          if (err.code === 3) return "Таймаут: GPS/сеть не успели вернуть координаты. Выйдите на открытое место или обновите страницу.";
+          return err.message || "Ошибка получения координат.";
+        }
+
+        function buildMarkerElement(lat, lng, accuracyM) {
+          var wrap = document.createElement("div");
+          wrap.className = "pulse-marker";
+          var ring = document.createElement("div");
+          ring.className = "pulse-marker__ring";
+          var dot = document.createElement("div");
+          dot.className = "pulse-marker__dot";
+          var balloon = document.createElement("div");
+          balloon.className = "marker-balloon";
+          balloon.innerHTML =
+            "<strong>Вы здесь</strong><br />" +
+            "WGS84: " +
+            lat.toFixed(6) +
+            ", " +
+            lng.toFixed(6) +
+            "<small>Точность (радиус): ±" +
+            Math.round(accuracyM) +
+            " м<br />Источник: navigator.geolocation (без геокодера Яндекса)</small>";
+          wrap.appendChild(balloon);
+          wrap.appendChild(ring);
+          wrap.appendChild(dot);
+          return wrap;
+        }
+
+        function removeMarker() {
+          if (markerEntity && markerCollection) {
+            try {
+              markerCollection.removeChild(markerEntity);
+            } catch (e) {
+              log("removeMarker_error", String(e));
+            }
+          }
+          markerEntity = null;
+        }
+
+        function flyMapTo(lng, lat, zoom) {
+          var loc = {
+            center: [lng, lat],
+            zoom: zoom,
+            duration: 700,
+            easing: "ease-in-out",
+          };
+          log("map_update_location", loc);
+          if (map && typeof map.update === "function") {
+            map.update({ location: loc });
+          }
+        }
+
+        function placeMarkerAndMap(lat, lng, accuracyM) {
+          if (!YMapMarkerCtor || !markerCollection) {
+            log("placeMarker_skip", { reason: "map_not_ready" });
+            return;
+          }
+          removeMarker();
+          var lngLat = [lng, lat];
+          var elMark = buildMarkerElement(lat, lng, accuracyM);
+          markerEntity = new YMapMarkerCtor(
+            {
+              coordinates: lngLat,
+              source: MARKER_SOURCE_ID,
+            },
+            elMark
+          );
+          markerCollection.addChild(markerEntity);
+          var zoom = accuracyM > 800 ? 12 : accuracyM > 200 ? 14 : 16;
+          flyMapTo(lng, lat, zoom);
+        }
+
+        function scheduleAutoRetry(reason) {
+          clearAutoRetry();
+          if (cancelledAutoRetry) {
+            log("auto_retry_skipped", { reason: reason, cancelled: true });
+            return;
+          }
+          el.btnCancelRetry.style.display = "inline-block";
+          log("auto_retry_scheduled", { inMs: AUTO_RETRY_MS, reason: reason });
+          autoRetryTimer = setTimeout(function () {
+            autoRetryTimer = null;
+            log("auto_retry_firing", { reason: reason });
+            requestGeolocation(false);
+          }, AUTO_RETRY_MS);
+        }
+
+        function requestGeolocation(isManual) {
+          clearAutoRetry();
+          el.btnCancelRetry.style.display = "none";
+          cancelledAutoRetry = false;
+
+          log("request_start", {
+            manual: !!isManual,
+            secureContext: isSecureForGeo(),
+            highAccuracy: true,
+          });
+
+          if (!isSecureForGeo()) {
+            var secMsg = "Нужен HTTPS (или localhost) для геолокации в браузере.";
+            log("abort_not_secure", {});
+            setStatus(secMsg, "error");
+            setCoords("");
+            setWarn("");
+            scheduleAutoRetry("not_secure");
+            return;
+          }
+
+          if (!navigator.geolocation) {
+            log("abort_no_api", {});
+            setStatus("Браузер не поддерживает геолокацию.", "error");
+            setCoords("");
+            setWarn("");
+            scheduleAutoRetry("no_geolocation_api");
+            return;
+          }
+
+          setStatus("Запрашиваем координаты у устройства…", "");
+          setCoords("");
+          setWarn("");
+          el.btnRetry.disabled = true;
+
+          var options = {
+            enableHighAccuracy: true,
+            maximumAge: 0,
+            timeout: GEO_TIMEOUT_MS,
+          };
+          log("getCurrentPosition_options", options);
+
+          navigator.geolocation.getCurrentPosition(
+            function (pos) {
+              el.btnRetry.disabled = false;
+              var lat = pos.coords.latitude;
+              var lng = pos.coords.longitude;
+              var acc =
+                typeof pos.coords.accuracy === "number" && isFinite(pos.coords.accuracy)
+                  ? pos.coords.accuracy
+                  : null;
+
+              log("position_ok", {
+                lat: lat,
+                lng: lng,
+                accuracy: acc,
+                altitude: pos.coords.altitude,
+                heading: pos.coords.heading,
+                speed: pos.coords.speed,
+              });
+
+              var accRounded = acc != null ? Math.round(acc) : "—";
+              setStatus(
+                'Позиция получена. Точность: <span class="' +
+                  (acc != null && acc > ACCURACY_WARN_M ? "accuracy-warn" : "accuracy-ok") +
+                  '">±' +
+                  accRounded +
+                  " м</span>",
+                ""
+              );
+              setCoords("Координаты WGS84: " + lat.toFixed(6) + ", " + lng.toFixed(6));
+
+              if (acc != null && acc > ACCURACY_WARN_M) {
+                var w =
+                  "⚠ Погрешность больше " +
+                  ACCURACY_WARN_M +
+                  " м. Рекомендации: включите GPS и «точное местоположение» на Android, выйдите на улицу, отключите экономию батареи для браузера; на ПК точность часто ниже (Wi‑Fi). Можно обновить страницу или нажать «Попробовать снова».";
+                setWarn('<span class="accuracy-warn">' + w + "</span>");
+                log("accuracy_warning", { accuracy: acc, threshold: ACCURACY_WARN_M });
+                scheduleAutoRetry("low_accuracy");
+              } else {
+                setWarn("");
+              }
+
+              placeMarkerAndMap(lat, lng, acc != null ? acc : 50);
+            },
+            function (err) {
+              el.btnRetry.disabled = false;
+              log("position_error", {
+                code: err.code,
+                message: err.message,
+              });
+              var msg = geoErrorToMessage(err);
+              setStatus(msg, "error");
+              setCoords("");
+              setWarn("Автоповтор через " + AUTO_RETRY_MS / 1000 + " с (или нажмите «Попробовать снова»).");
+              scheduleAutoRetry("geo_error_" + err.code);
+            },
+            options
+          );
+        }
+
+        async function main() {
+          log("main_start", { href: location.href });
+
+          await ymaps3.ready;
+          log("ymaps3_ready", {});
+
+          ymaps3.import.registerCdn(
+            "https://cdn.jsdelivr.net/npm/{package}",
+            "@yandex/ymaps3-default-ui-theme@0.0"
+          );
+
+          var YMap = ymaps3.YMap;
+          var YMapDefaultSchemeLayer = ymaps3.YMapDefaultSchemeLayer;
+          var YMapFeatureDataSource = ymaps3.YMapFeatureDataSource;
+          var YMapLayer = ymaps3.YMapLayer;
+          var YMapMarker = ymaps3.YMapMarker;
+          YMapMarkerCtor = YMapMarker;
+          var YMapCollection = ymaps3.YMapCollection;
+          var YMapControls = ymaps3.YMapControls;
+
+          var theme = await ymaps3.import("@yandex/ymaps3-default-ui-theme");
+          var YMapZoomControl = theme.YMapZoomControl;
+          log("theme_loaded", { package: "@yandex/ymaps3-default-ui-theme" });
+
+          markerCollection = new YMapCollection();
+
+          var defaultCenter = [37.6173, 55.7558];
+          map = new YMap(
+            document.getElementById("map"),
+            {
+              location: { center: defaultCenter, zoom: 10 },
+              showScaleInCopyrights: true,
+            },
+            [
+              new YMapDefaultSchemeLayer({}),
+              new YMapFeatureDataSource({ id: MARKER_SOURCE_ID }),
+              new YMapLayer({ source: MARKER_SOURCE_ID, type: "markers" }),
+              new YMapControls({ position: "right" }).addChild(new YMapZoomControl({})),
+              markerCollection,
+            ]
+          );
+          log("map_created", { defaultCenter: defaultCenter });
+
+          el.btnRetry.addEventListener("click", function () {
+            log("manual_retry_click", {});
+            clearAutoRetry();
+            cancelledAutoRetry = false;
+            requestGeolocation(true);
+          });
+
+          el.btnCancelRetry.addEventListener("click", function () {
+            cancelledAutoRetry = true;
+            clearAutoRetry();
+            el.btnCancelRetry.style.display = "none";
+            log("auto_retry_cancelled_by_user", {});
+            setWarn("Авто-повтор отменён.");
+          });
+
+          requestGeolocation(false);
+        }
+
+        main().catch(function (e) {
+          console.error("[GeoMap] fatal", e);
+          setStatus("Ошибка инициализации карты: " + (e && e.message ? e.message : String(e)), "error");
+        });
+      })();
+    </script>
+  </body>
+</html>

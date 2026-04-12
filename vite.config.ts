@@ -58,6 +58,35 @@ function firebaseJsVersionForSw(): string {
   }
 }
 
+/** Подставляет ключ Яндекс.Карт в статические примеры `public/samples/*.html` в dist. */
+function yandexSamplesApiKeyPlugin(mode: string): Plugin {
+  return {
+    name: "inject-yandex-key-samples",
+    apply: "build",
+    closeBundle() {
+      const env = loadEnv(mode, process.cwd(), "");
+      const key = (env.VITE_YANDEX_MAPS_API_KEY ?? "").trim();
+      const distSamples = path.resolve(__dirname, "dist", "samples");
+      if (!fs.existsSync(distSamples)) return;
+      const files = fs.readdirSync(distSamples).filter((f) => f.endsWith(".html"));
+      for (const f of files) {
+        const filePath = path.join(distSamples, f);
+        let html = fs.readFileSync(filePath, "utf8");
+        if (!html.includes("apikey=YOUR_API_KEY")) continue;
+        if (!key) {
+          console.warn(
+            `[vite] ${f}: VITE_YANDEX_MAPS_API_KEY пуст — в URL остаётся apikey=YOUR_API_KEY.`
+          );
+          continue;
+        }
+        const enc = encodeURIComponent(key);
+        html = html.replace(/\?apikey=YOUR_API_KEY\b/g, "?apikey=" + enc);
+        fs.writeFileSync(filePath, html, "utf8");
+      }
+    },
+  };
+}
+
 /** Генерирует `dist/firebase-messaging-sw.js` для FCM (фоновые push). */
 function firebaseMessagingSwPlugin(mode: string): Plugin {
   return {
@@ -127,6 +156,7 @@ export default defineConfig(({ mode }) => {
     basicSsl(),
     htmlOpenGraphPlugin(publicSiteOrigin),
     firebaseMessagingSwPlugin(mode),
+    yandexSamplesApiKeyPlugin(mode),
   ],
   /** Явно тянем firebase в pre-bundle, чтобы не залипала старая версия в node_modules/.vite/deps. */
   optimizeDeps: {
