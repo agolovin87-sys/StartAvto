@@ -7,6 +7,8 @@ interface ImportMetaEnv {
   readonly VITE_FIREBASE_STORAGE_BUCKET: string;
   readonly VITE_FIREBASE_MESSAGING_SENDER_ID: string;
   readonly VITE_FIREBASE_APP_ID: string;
+  /** JavaScript API Яндекс.Карт (вкладка GPS у админа). https://developer.tech.yandex.ru/services/ */
+  readonly VITE_YANDEX_MAPS_API_KEY?: string;
   /** Через запятую: email администраторов (роль admin при входе) */
   readonly VITE_ADMIN_EMAILS?: string;
   /** Опционально: uid пользователя-админа в Firestore (если контакт не находится по role/email) */
@@ -27,6 +29,38 @@ declare global {
 
   interface WindowEventMap {
     beforeinstallprompt: BeforeInstallPromptEvent;
+  }
+
+  /** Глобал после загрузки https://api-maps.yandex.ru/2.1/ */
+  interface Window {
+    ymaps?: {
+      ready: (callback: () => void) => void;
+      Map: new (
+        parentElement: HTMLElement,
+        state: Record<string, unknown>,
+        options?: Record<string, unknown>
+      ) => YandexMapInstance;
+      Placemark: new (
+        geometry: [number, number],
+        properties?: Record<string, unknown>,
+        options?: Record<string, unknown>
+      ) => unknown;
+      Circle: new (
+        geometry: [[number, number], number],
+        properties?: Record<string, unknown>,
+        options?: Record<string, unknown>
+      ) => YandexCircleGeo;
+    };
+  }
+
+  interface YandexMapInstance {
+    destroy: () => void;
+    geoObjects: { add: (object: unknown) => void };
+    setBounds: (bounds: number[][], options?: Record<string, unknown>) => void;
+  }
+
+  interface YandexCircleGeo {
+    geometry: { getBounds: () => number[][] };
   }
 }
 

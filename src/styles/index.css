@@ -6293,15 +6293,41 @@ html[data-theme="light"] .drive-live-session-panel__toolbar {
   background: var(--theme-fill-hover);
 }
 
-.admin-gps-leaflet-host {
+.admin-gps-yandex-host {
   width: 100%;
   height: 100%;
   z-index: 0;
 }
 
-.admin-gps-map-wrap .leaflet-container {
-  font: inherit;
-  background: var(--theme-fill-hover);
+.admin-gps-yandex-missing {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 200px;
+  padding: 1rem 1.1rem;
+  font-size: 0.85rem;
+  line-height: 1.5;
+  color: var(--theme-muted);
+  text-align: center;
+}
+
+.admin-gps-yandex-missing p {
+  margin: 0;
+  max-width: 28rem;
+}
+
+.admin-gps-yandex-missing code {
+  font-size: 0.82em;
+}
+
+.admin-gps-yandex-link {
+  color: var(--theme-soft);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.admin-gps-yandex-link:hover {
+  color: var(--theme-bright);
 }
 
 .admin-gps-tab .admin-tab-lead {

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { formatShortFio } from "@/admin/formatShortFio";
-import { AdminGpsLeafletMap } from "@/components/AdminGpsLeafletMap";
+import { AdminGpsYandexMap } from "@/components/AdminGpsYandexMap";
 import { subscribeInstructors } from "@/firebase/admin";
 import {
   fetchInstructorLiveLocationFromServer,
@@ -130,12 +130,13 @@ function AdminGpsMapModal({
               WGS84: {lat.toFixed(6)}, {lng.toFixed(6)}
             </p>
             <p className="admin-gps-reality-hint">
-              Карта строится по этим координатам напрямую (Leaflet + OSM). Если точка «уезжает» на километры при
-              малой цифре погрешности, телефон часто отдаёт сеть/Wi‑Fi вместо спутников — пусть инструктор выйдет
-              на улицу, включит точную геолокацию и при необходимости отключит энергосбережение для браузера.
+              Карта — Яндекс.Карты по тем же координатам WGS84. Для отображения нужен ключ{" "}
+              <code>VITE_YANDEX_MAPS_API_KEY</code> в <code>.env</code>. Если точка «уезжает» при малой
+              погрешности, телефон часто отдаёт сеть/Wi‑Fi вместо спутников — пусть инструктор выйдет на улицу и
+              включит точную геолокацию.
             </p>
             <div className="admin-gps-map-wrap">
-              <AdminGpsLeafletMap
+              <AdminGpsYandexMap
                 key={`${lat}-${lng}-${accuracyM ?? "x"}-${mapNonce}`}
                 lat={lat}
                 lng={lng}
