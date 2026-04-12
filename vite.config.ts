@@ -46,6 +46,18 @@ function htmlOpenGraphPlugin(siteOrigin: string) {
   };
 }
 
+function firebaseJsVersionForSw(): string {
+  try {
+    const raw = JSON.parse(fs.readFileSync(path.join(__dirname, "package.json"), "utf8")) as {
+      dependencies?: { firebase?: string };
+    };
+    const v = raw.dependencies?.firebase ?? "12.11.0";
+    return String(v).replace(/^[\^~]/, "");
+  } catch {
+    return "12.11.0";
+  }
+}
+
 /** Генерирует `dist/firebase-messaging-sw.js` для FCM (фоновые push). */
 function firebaseMessagingSwPlugin(mode: string): Plugin {
   return {
@@ -69,8 +81,9 @@ function firebaseMessagingSwPlugin(mode: string): Plugin {
       }
       const outDir = path.resolve(__dirname, "dist");
       const json = JSON.stringify(cfg);
-      const src = `importScripts("https://www.gstatic.com/firebasejs/11.6.0/firebase-app-compat.js");
-importScripts("https://www.gstatic.com/firebasejs/11.6.0/firebase-messaging-compat.js");
+      const fbVer = firebaseJsVersionForSw();
+      const src = `importScripts("https://www.gstatic.com/firebasejs/${fbVer}/firebase-app-compat.js");
+importScripts("https://www.gstatic.com/firebasejs/${fbVer}/firebase-messaging-compat.js");
 firebase.initializeApp(${json});
 const messaging = firebase.messaging();
 messaging.onBackgroundMessage((payload) => {

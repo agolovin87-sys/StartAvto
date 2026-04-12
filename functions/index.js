@@ -22,32 +22,59 @@ function tsMillis(v) {
   return null;
 }
 
-async function tokensForUser(uid) {
+/** Токены веб-push из подколлекции users/{uid}/fcmTokens (документ → ref для удаления просроченных). */
+async function tokenDocRefsForUser(uid) {
   const u = (uid ?? "").trim();
   if (!u) return [];
   const snap = await db.collection("users").doc(u).collection("fcmTokens").get();
-  return snap.docs.map((d) => d.data().token).filter((t) => typeof t === "string" && t.length > 40);
+  return snap.docs
+    .map((d) => ({ token: d.data().token, ref: d.ref }))
+    .filter((x) => typeof x.token === "string" && x.token.length > 40);
 }
+
+const FCM_STALE_CODES = new Set([
+  "messaging/invalid-registration-token",
+  "messaging/registration-token-not-registered",
+]);
 
 async function sendToUsers(uids, title, body, data = {}) {
   const uidSet = [...new Set((uids ?? []).map((x) => (x ?? "").trim()).filter(Boolean))];
-  const tokens = [];
+  /** Один токен — один ref (при дубликатах оставляем первый). */
+  const tokenToRef = new Map();
   for (const uid of uidSet) {
-    tokens.push(...(await tokensForUser(uid)));
+    for (const { token, ref } of await tokenDocRefsForUser(uid)) {
+      if (!tokenToRef.has(token)) tokenToRef.set(token, ref);
+    }
   }
-  const uniq = [...new Set(tokens)];
-  if (uniq.length === 0) return;
+  const tokens = [...tokenToRef.keys()];
+  if (tokens.length === 0) return;
 
   const dataPayload = {};
   for (const [k, v] of Object.entries(data)) {
     dataPayload[k] = v == null ? "" : String(v);
   }
 
-  await admin.messaging().sendEachForMulticast({
-    tokens: uniq,
+  const res = await admin.messaging().sendEachForMulticast({
+    tokens,
     notification: { title, body },
     data: dataPayload,
   });
+
+  const staleRefs = [];
+  res.responses.forEach((r, i) => {
+    if (r.success) return;
+    const code = r.error?.code || "";
+    if (FCM_STALE_CODES.has(code)) {
+      const ref = tokenToRef.get(tokens[i]);
+      if (ref) staleRefs.push(ref);
+    }
+  });
+  await Promise.all(staleRefs.map((r) => r.delete().catch(() => {})));
+
+  const failed = res.responses.filter((x) => !x.success);
+  if (failed.length > 0) {
+    console.warn("[FCM]", title, `failed ${failed.length}/${tokens.length}`, failed[0].error?.code);
+  }
 }
 
 function messagePreview(data) {

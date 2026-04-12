@@ -598,7 +598,7 @@ export function AdminSettingsTab() {
         <SettingsAccordionItem
           sectionId="settings-notify"
           title="Уведомления и звук"
-          description="Звуки чата, вибрация на устройстве и системные уведомления браузера. Настройки хранятся только на этом устройстве."
+          description="Push с сервера, звуки чата, уведомления браузера и вибрация. Настройки только на этом устройстве."
           open={openSettingsSection === "settings-notify"}
           onToggle={() => toggleSettingsSection("settings-notify")}
         >
@@ -606,6 +606,41 @@ export function AdminSettingsTab() {
             <p className="admin-settings-section-desc">Войдите, чтобы изменить параметры.</p>
           ) : (
             <div className="admin-settings-notify-blocks" aria-label="Параметры уведомлений">
+              <div className="admin-settings-policy-block">
+                <h4 className="admin-settings-policy-heading">Push уведомления</h4>
+                <p className="admin-settings-notify-perm-hint">
+                  Сообщения, запись, свободные окна, вождение, талоны — в том числе когда вкладка в фоне. Нужен
+                  разрешённый доступ в блоке «Уведомления браузера» ниже.
+                </p>
+                {!hasFcmVapidConfigured() ? (
+                  <p className="admin-settings-notify-perm-warn" role="status">
+                    На этой публикации сайта push с сервера не настроен (обратитесь к администратору). Для
+                    разработки: в <code>.env</code> задайте <code>VITE_FIREBASE_VAPID_KEY</code>, пересоберите и
+                    задеплойте.
+                  </p>
+                ) : null}
+                <div className="admin-settings-toggle-row">
+                  <div className="admin-settings-toggle-label" id="notify-web-push-label">
+                    Получать на этом устройстве
+                    <span className="admin-settings-toggle-hint">
+                      Выкл — токен удаляется из облака для этого браузера.
+                    </span>
+                  </div>
+                  <label className="switch-stay">
+                    <input
+                      type="checkbox"
+                      role="switch"
+                      checked={notifySettings.webPushEnabled}
+                      onChange={() => toggleNotify("webPushEnabled")}
+                      aria-labelledby="notify-web-push-label"
+                      aria-checked={notifySettings.webPushEnabled}
+                      disabled={!hasFcmVapidConfigured()}
+                    />
+                    <span className="switch-stay-slider" aria-hidden />
+                  </label>
+                </div>
+              </div>
+
               <div className="admin-settings-policy-block">
                 <h4 className="admin-settings-policy-heading">Звук</h4>
                 <div className="admin-settings-toggle-row">
@@ -794,35 +829,6 @@ export function AdminSettingsTab() {
                         ? "Проверить снова"
                         : "Включить"}
                   </button>
-                </div>
-                {!hasFcmVapidConfigured() ? (
-                  <p className="admin-settings-notify-perm-warn" role="status">
-                    Push с сервера: в <code>.env</code> укажите{" "}
-                    <code>VITE_FIREBASE_VAPID_KEY</code> (Web Push в Firebase Console → настройки проекта →
-                    Cloud Messaging), пересоберите сайт и задеплойте Cloud Functions из папки{" "}
-                    <code>functions/</code>.
-                  </p>
-                ) : null}
-                <div className="admin-settings-toggle-row">
-                  <div className="admin-settings-toggle-label" id="notify-web-push-label">
-                    Push-уведомления на устройство
-                    <span className="admin-settings-toggle-hint">
-                      Сообщения, запись, свободные окна, вождение, талоны — в том числе когда вкладка в фоне
-                      (нужен разрешённый доступ выше).
-                    </span>
-                  </div>
-                  <label className="switch-stay">
-                    <input
-                      type="checkbox"
-                      role="switch"
-                      checked={notifySettings.webPushEnabled}
-                      onChange={() => toggleNotify("webPushEnabled")}
-                      aria-labelledby="notify-web-push-label"
-                      aria-checked={notifySettings.webPushEnabled}
-                      disabled={!hasFcmVapidConfigured()}
-                    />
-                    <span className="switch-stay-slider" aria-hidden />
-                  </label>
                 </div>
                 {notifyPerm === "denied" ? (
                   <details className="admin-settings-notify-denied-help">

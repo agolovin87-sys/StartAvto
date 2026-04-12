@@ -35,8 +35,7 @@ createRoot(document.getElementById("root")!).render(
   </BrowserRouter>
 );
 
+/** Регистрируем сразу: на Android иначе React успевает запросить токен до `load`, и FCM зависает на SW. */
 if (import.meta.env.PROD && "serviceWorker" in navigator) {
-  window.addEventListener("load", () => {
-    navigator.serviceWorker.register("/firebase-messaging-sw.js").catch(() => {});
-  });
+  navigator.serviceWorker.register("/firebase-messaging-sw.js").catch(() => {});
 }

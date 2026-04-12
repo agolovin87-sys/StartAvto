@@ -74,7 +74,8 @@ export async function registerWebPushAndSaveToken(uid: string): Promise<boolean>
     if (!token) return false;
     await saveFcmTokenForUser(u, token);
     return true;
-  } catch {
+  } catch (e) {
+    if (import.meta.env.DEV) console.warn("[FCM] getToken / save failed", e);
     return false;
   }
 }

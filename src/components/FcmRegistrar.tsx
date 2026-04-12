@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import { NOTIFICATION_SETTINGS_EVENT } from "@/admin/notificationSettings";
 import { useAuth } from "@/context/AuthContext";
 import { isFirebaseConfigured } from "@/firebase/config";
 import {
@@ -17,7 +18,41 @@ export function FcmRegistrar() {
 
   useEffect(() => {
     if (!isFirebaseConfigured || !uid || !hasFcmVapidConfigured()) return;
-    void registerWebPushAndSaveToken(uid);
+
+    const tryRegister = () => {
+      void registerWebPushAndSaveToken(uid);
+    };
+
+    tryRegister();
+
+    const onSettings = () => tryRegister();
+    window.addEventListener(NOTIFICATION_SETTINGS_EVENT, onSettings);
+
+    const onVisible = () => {
+      if (document.visibilityState === "visible") tryRegister();
+    };
+    window.addEventListener("focus", tryRegister);
+    document.addEventListener("visibilitychange", onVisible);
+
+    let removePermListener: (() => void) | undefined;
+    try {
+      void navigator.permissions
+        ?.query({ name: "notifications" as PermissionName })
+        .then((status) => {
+          status.addEventListener("change", tryRegister);
+          removePermListener = () => status.removeEventListener("change", tryRegister);
+        })
+        .catch(() => {});
+    } catch {
+      /* Safari и др. */
+    }
+
+    return () => {
+      window.removeEventListener(NOTIFICATION_SETTINGS_EVENT, onSettings);
+      window.removeEventListener("focus", tryRegister);
+      document.removeEventListener("visibilitychange", onVisible);
+      removePermListener?.();
+    };
   }, [uid]);
 
   useEffect(() => {
