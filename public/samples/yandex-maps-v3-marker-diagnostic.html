@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1" />
+    <title>Диагностика: кто двигает YMapMarker (API 3.0)</title>
+    <!-- Ключ: при npm run build подставляется VITE_YANDEX_MAPS_API_KEY -->
+    <script
+      src="https://api-maps.yandex.ru/v3/?apikey=YOUR_API_KEY&lang=ru_RU"
+      type="text/javascript"
+    ></script>
+    <style>
+      html,
+      body {
+        margin: 0;
+        height: 100%;
+        font-family: ui-monospace, monospace;
+        font-size: 13px;
+      }
+      #bar {
+        padding: 8px 10px;
+        background: #0f172a;
+        color: #94a3b8;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        align-items: center;
+      }
+      #bar button {
+        padding: 6px 12px;
+        border-radius: 6px;
+        border: none;
+        cursor: pointer;
+        font-weight: 600;
+      }
+      #btn-start {
+        background: #22c55e;
+        color: #052e16;
+      }
+      #btn-lock {
+        background: #f59e0b;
+        color: #1c1917;
+      }
+      #map {
+        height: calc(100% - 48px);
+      }
+      .diag-dot {
+        width: 22px;
+        height: 22px;
+        border-radius: 50%;
+        background: #38bdf8;
+        border: 3px solid #fff;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
+        transform: translate(-50%, -50%);
+      }
+      .diag-dot--locked {
+        background: #a855f7;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="bar">
+      <button type="button" id="btn-start">Один раз getCurrentPosition</button>
+      <button type="button" id="btn-lock">Заблокировать метку</button>
+      <span id="hint">Смотрите консоль (F12). Опрос маркера каждые 2 с.</span>
+    </div>
+    <div id="map"></div>
+
+    <script>
+      (function () {
+        "use strict";
+
+        var SRC = "diag-marker-src";
+        var POLL_MS = 2000;
+
+        var map = null;
+        var collection = null;
+        var YMapMarkerCtor = null;
+        var markerEntity = null;
+
+        var initialCoords = null;
+        var initialTime = null;
+        var lastSeenLngLat = null;
+        var lockMode = false;
+        var lockedAt = null;
+        var pollTimer = null;
+
+        function logGreen(msg, data) {
+          console.log("%c✅ " + msg, "color: #16a34a; font-weight: bold", data !== undefined ? data : "");
+        }
+        function logRed(msg, data) {
+          console.log("%c⚠️ " + msg, "color: #dc2626; font-weight: bold", data !== undefined ? data : "");
+        }
+        function logInfo(tag, color, data) {
+          console.log("%c[" + tag + "]", "color: " + color + "; font-weight: bold", data !== undefined ? data : "");
+        }
+
+        /** Чтение [lng, lat] с сущности маркера (разные версии API). */
+        function readMarkerLngLat(entity) {
+          if (!entity) return null;
+          var c = entity.coordinates;
+          if (Array.isArray(c) && c.length >= 2 && typeof c[0] === "number" && typeof c[1] === "number") {
+            return [c[0], c[1]];
+          }
+          var p = entity._props;
+          if (p && Array.isArray(p.coordinates) && p.coordinates.length >= 2) {
+            return [p.coordinates[0], p.coordinates[1]];
+          }
+          return null;
+        }
+
+        function sameLngLat(a, b, eps) {
+          eps = eps === undefined ? 1e-7 : eps;
+          if (!a || !b) return false;
+          return Math.abs(a[0] - b[0]) < eps && Math.abs(a[1] - b[1]) < eps;
+        }
+
+        function fmtPair(ll) {
+          if (!ll) return "—";
+          return "[широта " + ll[1].toFixed(7) + ", долгота " + ll[0].toFixed(7) + "]";
+        }
+
+        function patchNavigatorGeolocation() {
+          var g = navigator.geolocation;
+          if (!g || g.__diagPatched) return;
+          g.__diagPatched = true;
+
+          var gcp = g.getCurrentPosition.bind(g);
+          g.getCurrentPosition = function (success, error, options) {
+            logInfo("navigator.geolocation.getCurrentPosition", "#a855f7", options || {});
+            return gcp(
+              function (pos) {
+                logInfo("getCurrentPosition → success", "#a855f7", {
+                  lat: pos.coords.latitude,
+                  lng: pos.coords.longitude,
+                  accuracy: pos.coords.accuracy,
+                });
+                if (success) success(pos);
+              },
+              function (err) {
+                logInfo("getCurrentPosition → error", "#a855f7", { code: err.code, message: err.message });
+                if (error) error(err);
+              },
+              options
+            );
+          };
+
+          var wp = g.watchPosition.bind(g);
+          g.watchPosition = function (success, error, options) {
+            var watchId = wp(
+              function (pos) {
+                logInfo("watchPosition → callback", "#c026d3", {
+                  lat: pos.coords.latitude,
+                  lng: pos.coords.longitude,
+                  accuracy: pos.coords.accuracy,
+                });
+                if (success) success(pos);
+              },
+              function (err) {
+                logInfo("watchPosition → error", "#c026d3", err);
+                if (error) error(err);
+              },
+              options
+            );
+            logInfo("watchPosition → START", "#c026d3", { watchId: watchId });
+            return watchId;
+          };
+
+          var cw = g.clearWatch.bind(g);
+          g.clearWatch = function (id) {
+            logInfo("clearWatch", "#c026d3", { id: id });
+            return cw(id);
+          };
+        }
+
+        function patchMapUpdate(mapInstance) {
+          if (!mapInstance || mapInstance.__diagUpdatePatched) return;
+          mapInstance.__diagUpdatePatched = true;
+          var orig = mapInstance.update.bind(mapInstance);
+          mapInstance.update = function (opts) {
+            logInfo("map.update", "#2563eb", opts);
+            return orig(opts);
+          };
+        }
+
+        function tryPatchMarkerUpdate(entity) {
+          if (!entity || entity.__diagMarkerPatched) return;
+          if (typeof entity.update !== "function") return;
+          entity.__diagMarkerPatched = true;
+          var ou = entity.update.bind(entity);
+          entity.update = function (props) {
+            logInfo("YMapMarker.update", "#ea580c", props);
+            return ou(props);
+          };
+        }
+
+        function removeMarker() {
+          if (markerEntity && collection) {
+            try {
+              collection.removeChild(markerEntity);
+            } catch (e) {
+              logInfo("removeMarker error", "#666", e);
+            }
+          }
+          markerEntity = null;
+        }
+
+        function addMarker(lng, lat, opts) {
+          opts = opts || {};
+          var draggable = opts.draggable === true;
+          var locked = !!opts.locked;
+          removeMarker();
+          var el = document.createElement("div");
+          el.className = locked ? "diag-dot diag-dot--locked" : "diag-dot";
+          var props = {
+            coordinates: [lng, lat],
+            source: SRC,
+          };
+          if (draggable) props.draggable = true;
+          else props.draggable = false;
+
+          markerEntity = new YMapMarkerCtor(props, el);
+          tryPatchMarkerUpdate(markerEntity);
+          collection.addChild(markerEntity);
+          var r = readMarkerLngLat(markerEntity);
+          lastSeenLngLat = r ? r.slice() : null;
+          return lastSeenLngLat;
+        }
+
+        function startPoll() {
+          if (pollTimer) clearInterval(pollTimer);
+          pollTimer = setInterval(function () {
+            if (!markerEntity) return;
+            var cur = readMarkerLngLat(markerEntity);
+            if (!cur) {
+              logInfo("poll: не удалось прочитать координаты маркера", "#64748b", "проверьте API сущности");
+              return;
+            }
+            if (lastSeenLngLat && !sameLngLat(cur, lastSeenLngLat, 1e-8)) {
+              var sec = initialTime ? ((Date.now() - initialTime) / 1000).toFixed(1) : "?";
+              logRed(
+                "МЕТКА ПЕРЕМЕЩЕНА! Было: " +
+                  fmtPair(lastSeenLngLat) +
+                  ", Стало: " +
+                  fmtPair(cur) +
+                  ", Прошло: " +
+                  sec +
+                  " секунд"
+              );
+              if (lockMode) {
+                console.log(
+                  "%c❌ ПРОБЛЕМА В ЯНДЕКС.КАРТАХ ИЛИ БРАУЗЕРЕ, НЕ В МОЁМ КОДЕ",
+                  "color: #b91c1c; font-weight: bold; font-size: 14px"
+                );
+              }
+            }
+            lastSeenLngLat = cur.slice();
+          }, POLL_MS);
+        }
+
+        async function main() {
+          patchNavigatorGeolocation();
+
+          await ymaps3.ready;
+          ymaps3.import.registerCdn(
+            "https://cdn.jsdelivr.net/npm/{package}",
+            "@yandex/ymaps3-default-ui-theme@0.0"
+          );
+
+          var YMap = ymaps3.YMap;
+          var YMapDefaultSchemeLayer = ymaps3.YMapDefaultSchemeLayer;
+          var YMapFeatureDataSource = ymaps3.YMapFeatureDataSource;
+          var YMapLayer = ymaps3.YMapLayer;
+          YMapMarkerCtor = ymaps3.YMapMarker;
+          var YMapCollection = ymaps3.YMapCollection;
+          var YMapControls = ymaps3.YMapControls;
+          var YMapListener = ymaps3.YMapListener;
+
+          var theme = await ymaps3.import("@yandex/ymaps3-default-ui-theme");
+          var YMapZoomControl = theme.YMapZoomControl;
+
+          collection = new YMapCollection();
+          var center = [37.6173, 55.7558];
+
+          map = new YMap(
+            document.getElementById("map"),
+            { location: { center: center, zoom: 10 }, showScaleInCopyrights: true },
+            [
+              new YMapDefaultSchemeLayer({}),
+              new YMapFeatureDataSource({ id: SRC }),
+              new YMapLayer({ source: SRC, type: "markers" }),
+              new YMapControls({ position: "right" }).addChild(new YMapZoomControl({})),
+              collection,
+            ]
+          );
+
+          patchMapUpdate(map);
+
+          map.addChild(
+            new YMapListener({
+              onUpdate: function (ev) {
+                logInfo("YMapListener.onUpdate", "#0891b2", ev);
+              },
+              onResize: function () {
+                logInfo("YMapListener.onResize", "#0891b2", { center: map.center, zoom: map.zoom });
+              },
+            })
+          );
+
+          document.getElementById("btn-start").addEventListener("click", function () {
+            if (!navigator.geolocation) {
+              console.error("Нет navigator.geolocation");
+              return;
+            }
+            navigator.geolocation.getCurrentPosition(
+              function (pos) {
+                var lat = pos.coords.latitude;
+                var lng = pos.coords.longitude;
+                initialCoords = { lat: lat, lng: lng, accuracy: pos.coords.accuracy };
+                initialTime = Date.now();
+                lockMode = false;
+
+                if (map && typeof map.update === "function") {
+                  map.update({
+                    location: {
+                      center: [lng, lat],
+                      zoom: 15,
+                      duration: 400,
+                      easing: "ease-in-out",
+                    },
+                  });
+                }
+
+                addMarker(lng, lat, { draggable: false, locked: false });
+                logGreen(
+                  "Метка установлена: [широта " +
+                    lat.toFixed(7) +
+                    ", долгота " +
+                    lng.toFixed(7) +
+                    "] в " +
+                    new Date(initialTime).toISOString()
+                );
+                startPoll();
+              },
+              function (err) {
+                console.error("getCurrentPosition failed", err);
+              },
+              { enableHighAccuracy: true, maximumAge: 0, timeout: 60000 }
+            );
+          });
+
+          document.getElementById("btn-lock").addEventListener("click", function () {
+            var cur = readMarkerLngLat(markerEntity);
+            if (!cur) {
+              console.warn("Нет маркера — сначала получите координаты");
+              return;
+            }
+            var lng = cur[0];
+            var lat = cur[1];
+            lockMode = true;
+            lockedAt = Date.now();
+            removeMarker();
+            addMarker(lng, lat, { draggable: false, locked: true });
+            lastSeenLngLat = readMarkerLngLat(markerEntity);
+            logInfo(
+              "ЗАБЛОКИРОВАНО: новая метка без геолокации, draggable=false, координаты зафиксированы",
+              "#f59e0b",
+              fmtPair([lng, lat])
+            );
+            startPoll();
+          });
+
+          console.log(
+            "%c[Диагностика] Патчи: geolocation.*, map.update, YMapMarker.update (если есть), YMapListener, опрос каждые " +
+              POLL_MS / 1000 +
+              " с",
+            "color: #64748b"
+          );
+        }
+
+        main().catch(function (e) {
+          console.error(e);
+        });
+      })();
+    </script>
+  </body>
+</html>
