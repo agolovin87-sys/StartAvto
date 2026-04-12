@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Фиксированная метка геолокации — API 2.1</title>
+    <!-- Ключ подставляется при npm run build из VITE_YANDEX_MAPS_API_KEY -->
+    <script
+      src="https://api-maps.yandex.ru/2.1/?apikey=YOUR_API_KEY&lang=ru_RU"
+      type="text/javascript"
+    ></script>
+    <style>
+      * {
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        margin: 0;
+        height: 100%;
+        font-family: system-ui, sans-serif;
+      }
+      body {
+        display: flex;
+        flex-direction: column;
+        min-height: 100%;
+      }
+      #toolbar {
+        flex-shrink: 0;
+        z-index: 1000;
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 8px;
+        padding: 10px 12px;
+        background: rgba(255, 255, 255, 0.98);
+        box-shadow: 0 1px 6px rgba(0, 0, 0, 0.12);
+      }
+      #toolbar button {
+        padding: 10px 14px;
+        font-size: 14px;
+        cursor: pointer;
+        border: 1px solid #ccc;
+        border-radius: 8px;
+        background: #fff;
+      }
+      #toolbar button:hover:not(:disabled) {
+        background: #f5f5f5;
+      }
+      #toolbar button:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+      }
+      #status {
+        width: 100%;
+        font-size: 13px;
+        color: #333;
+        min-height: 1.2em;
+      }
+      #status.error {
+        color: #c00;
+      }
+      #map {
+        flex: 1;
+        min-height: 0;
+        width: 100%;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="toolbar">
+      <button type="button" id="btnRefresh">Обновить местоположение</button>
+      <div id="status"></div>
+    </div>
+    <div id="map"></div>
+
+    <script>
+      (function () {
+        "use strict";
+
+        var CONSOLE_RED = "color:red;font-weight:bold;font-size:14px;";
+        var RESTORE_MSG = "БЫЛ ПОПЫТ ПЕРЕМЕЩЕНИЯ, МЕТКА ВОССТАНОВЛЕНА";
+
+        var GEO_OPTIONS = {
+          enableHighAccuracy: true,
+          timeout: 20000,
+          maximumAge: 0,
+        };
+
+        /** @type {[number, number] | null} широта, долгота */
+        var FIXED_COORDS = null;
+        var FIXED_ACCURACY = null;
+
+        var myMap = null;
+        /** @type {ymaps.Placemark | null} */
+        var placemark = null;
+
+        var guardIntervalId = null;
+        var verifyTimeoutId = null;
+
+        function logRed(text) {
+          console.log("%c" + text, CONSOLE_RED);
+        }
+
+        /** Расстояние между двумя точками [lat, lon] в метрах */
+        function haversineMeters(a, b) {
+          var R = 6371000;
+          var lat1 = (a[0] * Math.PI) / 180;
+          var lat2 = (b[0] * Math.PI) / 180;
+          var dLat = ((b[0] - a[0]) * Math.PI) / 180;
+          var dLon = ((b[1] - a[1]) * Math.PI) / 180;
+          var sinDLat = Math.sin(dLat / 2);
+          var sinDLon = Math.sin(dLon / 2);
+          var h = sinDLat * sinDLat + Math.cos(lat1) * Math.cos(lat2) * sinDLon * sinDLon;
+          return 2 * R * Math.asin(Math.min(1, Math.sqrt(h)));
+        }
+
+        function setStatus(text, isError) {
+          var el = document.getElementById("status");
+          el.textContent = text || "";
+          el.className = isError ? "error" : "";
+        }
+
+        function clearGuards() {
+          if (guardIntervalId !== null) {
+            clearInterval(guardIntervalId);
+            guardIntervalId = null;
+          }
+          if (verifyTimeoutId !== null) {
+            clearTimeout(verifyTimeoutId);
+            verifyTimeoutId = null;
+          }
+        }
+
+        function removePlacemarkFromMap() {
+          if (placemark && myMap) {
+            try {
+              myMap.geoObjects.remove(placemark);
+            } catch (e) {
+              console.warn("removePlacemarkFromMap", e);
+            }
+          }
+          placemark = null;
+        }
+
+        function balloonHtml(lat, lon, accuracyM) {
+          var acc =
+            typeof accuracyM === "number" && !isNaN(accuracyM)
+              ? "±" + Math.round(accuracyM) + " м"
+              : "—";
+          return (
+            "<div style=\"font-size:13px;line-height:1.45\">" +
+            "<div><b>Координаты:</b> " +
+            lat.toFixed(6) +
+            ", " +
+            lon.toFixed(6) +
+            "</div>" +
+            "<div><b>Точность:</b> " +
+            acc +
+            "</div>" +
+            "<div style=\"margin-top:8px\">🔒 Координаты зафиксированы и не обновляются</div>" +
+            "</div>"
+          );
+        }
+
+        /** Новая метка только из FIXED_COORDS (не из result.geoObjects) */
+        function createPlacemarkFromFixed() {
+          if (!myMap || !FIXED_COORDS) return;
+
+          removePlacemarkFromMap();
+
+          var lat = FIXED_COORDS[0];
+          var lon = FIXED_COORDS[1];
+
+          placemark = new ymaps.Placemark(
+            [lat, lon],
+            { balloonContent: balloonHtml(lat, lon, FIXED_ACCURACY) },
+            { preset: "islands#blueCircleIcon", draggable: false }
+          );
+
+          myMap.geoObjects.add(placemark);
+          placemark.balloon.open();
+        }
+
+        function getPlacemarkCoords() {
+          if (!placemark || !placemark.geometry) return null;
+          try {
+            var c = placemark.geometry.getCoordinates();
+            if (!c || c.length < 2) return null;
+            return [c[0], c[1]];
+          } catch (e) {
+            return null;
+          }
+        }
+
+        function restorePlacemarkToFixed(reason) {
+          if (!FIXED_COORDS || !myMap) return;
+          if (reason === "verify6s") {
+            logRed(RESTORE_MSG);
+          } else if (reason === "guard2s") {
+            logRed(RESTORE_MSG);
+          }
+          createPlacemarkFromFixed();
+        }
+
+        function verifyAfter6Seconds() {
+          verifyTimeoutId = null;
+          if (!FIXED_COORDS || !placemark) return;
+
+          var current = getPlacemarkCoords();
+          if (!current) {
+            restorePlacemarkToFixed("verify6s");
+            return;
+          }
+
+          var d = haversineMeters(FIXED_COORDS, current);
+          if (d > 1) {
+            restorePlacemarkToFixed("verify6s");
+          }
+        }
+
+        function guardEvery2Seconds() {
+          if (!FIXED_COORDS || !placemark) return;
+
+          var current = getPlacemarkCoords();
+          if (!current) {
+            restorePlacemarkToFixed("guard2s");
+            return;
+          }
+
+          var d = haversineMeters(FIXED_COORDS, current);
+          if (d > 10) {
+            restorePlacemarkToFixed("guard2s");
+          }
+        }
+
+        function startGuards() {
+          clearGuards();
+
+          verifyTimeoutId = window.setTimeout(verifyAfter6Seconds, 6000);
+
+          guardIntervalId = window.setInterval(guardEvery2Seconds, 2000);
+        }
+
+        /**
+         * Единственный разрешённый путь к геолокации (кроме кнопки — тот же вызов).
+         * После чтения координат не храним объект Position.
+         */
+        function requestGeolocationOnce() {
+          if (!navigator.geolocation) {
+            setStatus("Геолокация не поддерживается браузером", true);
+            return;
+          }
+
+          var btn = document.getElementById("btnRefresh");
+          btn.disabled = true;
+          setStatus("Получаем координаты (один запрос)…");
+
+          navigator.geolocation.getCurrentPosition(
+            function (pos) {
+              var lat = pos.coords.latitude;
+              var lon = pos.coords.longitude;
+              var acc = pos.coords.accuracy;
+
+              pos = null;
+
+              FIXED_COORDS = [lat, lon];
+              FIXED_ACCURACY = acc;
+
+              createPlacemarkFromFixed();
+
+              if (myMap) {
+                myMap.setCenter(FIXED_COORDS, 16, { duration: 200 });
+              }
+
+              startGuards();
+
+              setStatus("Метка зафиксирована. Обновление только по кнопке.");
+              btn.disabled = false;
+            },
+            function (err) {
+              var msg = "Ошибка геолокации";
+              if (err && err.code === 1) msg = "Разрешите доступ к геолокации";
+              else if (err && err.code === 2) msg = "Позиция недоступна";
+              else if (err && err.code === 3) msg = "Таймаут";
+              setStatus(msg, true);
+              btn.disabled = false;
+            },
+            GEO_OPTIONS
+          );
+        }
+
+        function onRefreshClick() {
+          clearGuards();
+          removePlacemarkFromMap();
+          FIXED_COORDS = null;
+          FIXED_ACCURACY = null;
+          requestGeolocationOnce();
+        }
+
+        ymaps.ready(function () {
+          myMap = new ymaps.Map(
+            "map",
+            {
+              center: [55.75, 37.57],
+              zoom: 10,
+              controls: ["zoomControl", "fullscreenControl"],
+            },
+            { searchControlProvider: "yandex#search" }
+          );
+
+          document.getElementById("btnRefresh").onclick = onRefreshClick;
+
+          requestGeolocationOnce();
+        });
+      })();
+    </script>
+  </body>
+</html>
