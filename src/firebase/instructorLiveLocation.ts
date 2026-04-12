@@ -3,6 +3,9 @@ import { getFirebase, isFirebaseConfigured } from "@/firebase/config";
 
 export const INSTRUCTOR_LIVE_LOCATIONS = "instructorLiveLocations";
 
+/** Админ обновляет `requestedAt` — клиент инструктора делает свежий GPS и пишет в instructorLiveLocations. */
+export const INSTRUCTOR_LIVE_LOCATION_REFRESH_REQUESTS = "instructorLiveLocationRefreshRequests";
+
 export type InstructorLiveLocation = {
   lat: number;
   lng: number;
@@ -45,6 +48,67 @@ export function normalizeInstructorLiveLocation(
 function clampAccuracyMeters(m: number): number {
   if (!Number.isFinite(m) || m < 0.5) return 9999;
   return Math.min(100_000, m);
+}
+
+/** Сигнал инструкторскому приложению: запросить геолокацию и отправить координаты (вызывает админ). */
+export async function requestInstructorLiveLocationRefresh(instructorUid: string): Promise<void> {
+  const uid = instructorUid.trim();
+  if (!uid || !isFirebaseConfigured) return;
+  const { db } = getFirebase();
+  await setDoc(
+    doc(db, INSTRUCTOR_LIVE_LOCATION_REFRESH_REQUESTS, uid),
+    { requestedAt: serverTimestamp() },
+    { merge: true }
+  );
+}
+
+/**
+ * Инструктор подписывается на свой документ; при новом `requestedAt` после «прогрева» вызывается callback.
+ * Первый снимок поглощается без вызова (чтобы не дублировать старт и не реагировать на старый запрос).
+ */
+export function subscribeInstructorLiveLocationRefreshRequests(
+  instructorUid: string,
+  onFreshRequest: () => void,
+  onError?: (e: Error) => void
+): () => void {
+  const uid = instructorUid.trim();
+  if (!uid || !isFirebaseConfigured) return () => {};
+
+  const { db } = getFirebase();
+  let primed = false;
+  let lastHandledMs = 0;
+
+  return onSnapshot(
+    doc(db, INSTRUCTOR_LIVE_LOCATION_REFRESH_REQUESTS, uid),
+    (snap) => {
+      if (!snap.exists()) {
+        if (!primed) {
+          primed = true;
+          lastHandledMs = 0;
+        }
+        return;
+      }
+      const data = snap.data() as Record<string, unknown>;
+      const ms = toMillis(data.requestedAt);
+      if (ms == null) {
+        if (!primed) {
+          primed = true;
+          lastHandledMs = 0;
+        }
+        return;
+      }
+      if (!primed) {
+        primed = true;
+        lastHandledMs = ms;
+        return;
+      }
+      if (ms > lastHandledMs) {
+        lastHandledMs = ms;
+        onFreshRequest();
+      }
+    },
+    (e) => onError?.(e)
+  );
 }
 
 export async function writeInstructorLiveLocation(

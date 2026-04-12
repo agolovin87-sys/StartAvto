@@ -1,9 +1,10 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { formatShortFio } from "@/admin/formatShortFio";
 import { AdminGpsYandexMap } from "@/components/AdminGpsYandexMap";
 import { subscribeInstructors } from "@/firebase/admin";
 import {
   fetchInstructorLiveLocationFromServer,
+  requestInstructorLiveLocationRefresh,
   subscribeInstructorLiveLocation,
   type InstructorLiveLocation,
 } from "@/firebase/instructorLiveLocation";
@@ -39,7 +40,16 @@ function AdminGpsMapModal({
 }) {
   const [display, setDisplay] = useState<InstructorLiveLocation | null>(null);
   const [refreshBusy, setRefreshBusy] = useState(false);
+  const [refreshHint, setRefreshHint] = useState<string | null>(null);
   const [mapNonce, setMapNonce] = useState(0);
+  const displayRef = useRef(display);
+  const subscriptionRef = useRef(subscriptionLocation);
+  useEffect(() => {
+    displayRef.current = display;
+  }, [display]);
+  useEffect(() => {
+    subscriptionRef.current = subscriptionLocation;
+  }, [subscriptionLocation]);
 
   useEffect(() => {
     if (!open) return;
@@ -53,16 +63,46 @@ function AdminGpsMapModal({
   useEffect(() => {
     if (!open) return;
     setDisplay(subscriptionLocation);
+    setRefreshHint(null);
   }, [open, subscriptionLocation]);
 
   const handleRefresh = useCallback(async () => {
     const uid = instructorUid.trim();
     if (!uid) return;
     setRefreshBusy(true);
+    setRefreshHint(null);
+    const beforeMs =
+      displayRef.current?.updatedAtMs ?? subscriptionRef.current?.updatedAtMs ?? null;
     try {
-      const next = await fetchInstructorLiveLocationFromServer(uid);
-      setDisplay(next);
+      await requestInstructorLiveLocationRefresh(uid);
+      const deadline = Date.now() + 22_000;
+      let next: InstructorLiveLocation | null = null;
+      while (Date.now() < deadline) {
+        await new Promise((r) => setTimeout(r, 700));
+        const cand = await fetchInstructorLiveLocationFromServer(uid);
+        if (
+          cand != null &&
+          cand.updatedAtMs != null &&
+          (beforeMs == null || cand.updatedAtMs > beforeMs)
+        ) {
+          next = cand;
+          break;
+        }
+      }
+      const latest = next ?? (await fetchInstructorLiveLocationFromServer(uid));
+      setDisplay(latest);
       setMapNonce((n) => n + 1);
+      if (
+        beforeMs != null &&
+        latest?.updatedAtMs != null &&
+        latest.updatedAtMs <= beforeMs
+      ) {
+        setRefreshHint(
+          "Запрос ушёл на устройство инструктора, но время координат в базе не изменилось. Нужен открытый кабинет инструктора, разрешённая геолокация и сеть."
+        );
+      }
+    } catch (e) {
+      setRefreshHint(e instanceof Error ? e.message : "Не удалось отправить запрос");
     } finally {
       setRefreshBusy(false);
     }
@@ -105,11 +145,16 @@ function AdminGpsMapModal({
             disabled={refreshBusy}
             onClick={() => void handleRefresh()}
             aria-busy={refreshBusy}
-            title="Загрузить последние координаты с сервера"
+            title="Запросить новое местоположение с телефона/браузера инструктора (нужен открытый кабинет)"
           >
             {refreshBusy ? "…" : "Обновить"}
           </button>
         </div>
+        {refreshHint ? (
+          <p className="form-error admin-gps-refresh-hint" role="status">
+            {refreshHint}
+          </p>
+        ) : null}
         {!hasPoint ? (
           <p className="confirm-dialog-message admin-gps-modal-hint">
             Нет данных о местоположении. Инструктору нужно открыть кабинет и разрешить доступ к геолокации в

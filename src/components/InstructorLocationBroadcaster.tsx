@@ -1,6 +1,9 @@
 import { useEffect, useRef } from "react";
 import { isFirebaseConfigured } from "@/firebase/config";
-import { writeInstructorLiveLocation } from "@/firebase/instructorLiveLocation";
+import {
+  subscribeInstructorLiveLocationRefreshRequests,
+  writeInstructorLiveLocation,
+} from "@/firebase/instructorLiveLocation";
 
 /** Высокая точность, без кэша прошлых чтений браузера. */
 const GEO_OPTIONS: PositionOptions = {
@@ -189,6 +192,28 @@ export function InstructorLocationBroadcaster({
       void writeInstructorLiveLocation(uidTrim, wLat, wLng, wAcc).catch(() => {});
     };
 
+    /** Запрос админа «Обновить» — одно чтение GPS и запись без фильтров tryWrite. */
+    const forcePublishFromAdminRefresh = (pos: GeolocationPosition) => {
+      const acc = accuracyM(pos);
+      const lat = pos.coords.latitude;
+      const lng = pos.coords.longitude;
+      const now = Date.now();
+      updateBest(lat, lng, acc);
+      lastWriteAtRef.current = now;
+      lastWrittenAccRef.current = acc;
+      lastWrittenLatRef.current = lat;
+      lastWrittenLngRef.current = lng;
+      void writeInstructorLiveLocation(uidTrim, lat, lng, acc).catch(() => {});
+    };
+
+    const unsubRefresh = subscribeInstructorLiveLocationRefreshRequests(uidTrim, () => {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => forcePublishFromAdminRefresh(pos),
+        () => {},
+        GEO_OPTIONS
+      );
+    });
+
     const maybeYandexLocator = async () => {
       const now = Date.now();
       if (now - lastLocatorAtRef.current < LOCATOR_MIN_INTERVAL_MS) return;
@@ -257,6 +282,7 @@ export function InstructorLocationBroadcaster({
     );
 
     return () => {
+      unsubRefresh();
       window.clearTimeout(tLocatorFirst);
       window.clearInterval(tLocatorTick);
       if (watchIdRef.current != null) {

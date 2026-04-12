@@ -160,6 +160,19 @@ service cloud.firestore {
     }
 
     /**
+     * Админ нажимает «Обновить» во вкладке GPS — инструкторский клиент читает и делает
+     * свежий getCurrentPosition + запись в instructorLiveLocations.
+     */
+    match /instructorLiveLocationRefreshRequests/{instructorId} {
+      allow read: if isAdmin()
+        || (isInstructorAccount() && request.auth.uid == instructorId);
+      allow create, update: if isAdmin()
+        && request.resource.data.keys().hasOnly(['requestedAt'])
+        && request.resource.data.requestedAt is timestamp;
+      allow delete: if isAdmin();
+    }
+
+    /**
      * Текущие координаты инструктора (пишет только сам инструктор с устройства).
      * Админ читает во вкладке GPS.
      */

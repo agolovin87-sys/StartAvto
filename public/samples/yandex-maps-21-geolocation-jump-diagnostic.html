@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Диагностика прыгающей геолокации (API 2.1)</title>
+    <!-- Ключ подставляется при npm run build из VITE_YANDEX_MAPS_API_KEY -->
+    <script src="https://api-maps.yandex.ru/2.1/?apikey=YOUR_API_KEY&lang=ru_RU" type="text/javascript"></script>
+    <style>
+      #map {
+        width: 100%;
+        height: 500px;
+      }
+      #log {
+        height: 200px;
+        overflow-y: scroll;
+        background: #1e1e1e;
+        color: #d4d4d4;
+        font-family: monospace;
+        padding: 10px;
+        font-size: 12px;
+      }
+      .log-error {
+        color: #f48771;
+      }
+      .log-warning {
+        color: #ffcc66;
+      }
+      .log-success {
+        color: #6a9955;
+      }
+      .log-info {
+        color: #9cdcfe;
+      }
+      button {
+        margin: 10px;
+        padding: 8px 16px;
+        font-size: 14px;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="map"></div>
+    <div>
+      <button type="button" id="fixBtn">🔒 Заблокировать метку (удалить и создать статичную)</button>
+      <button type="button" id="clearLogBtn">🗑 Очистить лог</button>
+    </div>
+    <div id="log"></div>
+
+    <script>
+      var myMap;
+      var currentPlacemark = null;
+      var initialCoords = null;
+      var isFixed = false;
+      var checkInterval = null;
+      var lastPollCoords = null;
+      var wasNearInitial = true;
+
+      function addLog(message, type) {
+        type = type || "info";
+        var logDiv = document.getElementById("log");
+        var entry = document.createElement("div");
+        var timestamp = new Date().toLocaleTimeString();
+        entry.textContent = "[" + timestamp + "] " + message;
+        entry.className = "log-" + type;
+        logDiv.appendChild(entry);
+        logDiv.scrollTop = logDiv.scrollHeight;
+      }
+
+      function getCurrentCoordsFromPlacemark() {
+        if (!currentPlacemark) return null;
+        try {
+          var geom = currentPlacemark.geometry;
+          if (geom && typeof geom.getCoordinates === "function") {
+            return geom.getCoordinates();
+          }
+        } catch (e) {
+          addLog("getCoordinates error: " + e, "error");
+        }
+        return null;
+      }
+
+      function createStaticMarker(coords, accuracy) {
+        accuracy = accuracy == null ? null : accuracy;
+        var accuracyText = accuracy != null ? "±" + Math.round(accuracy) + "м" : "точность неизвестна";
+        return new ymaps.Placemark(
+          coords,
+          {
+            balloonContentBody:
+              "📍 ЗАФИКСИРОВАННОЕ положение<br>Координаты: " +
+              coords[0].toFixed(6) +
+              ", " +
+              coords[1].toFixed(6) +
+              "<br>Точность: " +
+              accuracyText +
+              "<br>🔒 Метка НЕ ОБНОВЛЯЕТСЯ из вашего JS",
+            iconCaption: "📍 " + accuracyText + " 🔒",
+          },
+          {
+            preset: "islands#blueCircleIcon",
+            draggable: false,
+          }
+        );
+      }
+
+      function startPositionMonitoring() {
+        if (checkInterval) clearInterval(checkInterval);
+        lastPollCoords = null;
+        wasNearInitial = true;
+
+        checkInterval = setInterval(function () {
+          if (!currentPlacemark || !initialCoords) return;
+
+          var currentCoords = getCurrentCoordsFromPlacemark();
+          if (!currentCoords) return;
+
+          var refLat = initialCoords[0];
+          var refLng = initialCoords[1];
+          var latDiff = Math.abs(currentCoords[0] - refLat);
+          var lngDiff = Math.abs(currentCoords[1] - refLng);
+          var distance = Math.sqrt(latDiff * latDiff + lngDiff * lngDiff) * 111000;
+
+          if (lastPollCoords) {
+            var pdLat = Math.abs(currentCoords[0] - lastPollCoords[0]);
+            var pdLng = Math.abs(currentCoords[1] - lastPollCoords[1]);
+            var stepM = Math.sqrt(pdLat * pdLat + pdLng * pdLng) * 111000;
+            if (stepM > 10) {
+              addLog(
+                "⚠️ Координаты метки изменились между опросами: было [" +
+                  lastPollCoords[0].toFixed(6) +
+                  ", " +
+                  lastPollCoords[1].toFixed(6) +
+                  "] → стало [" +
+                  currentCoords[0].toFixed(6) +
+                  ", " +
+                  currentCoords[1].toFixed(6) +
+                  "] (~" +
+                  Math.round(stepM) +
+                  " м)" +
+                  (isFixed ? " — ПОСЛЕ ФИКСАЦИИ" : ""),
+                "warning"
+              );
+              if (isFixed) {
+                addLog(
+                  "❌ ПРОБЛЕМА В ЯНДЕКС.КАРТАХ ИЛИ БРАУЗЕРЕ: метка двигалась после статичной пересоздания (ваш код её не трогает).",
+                  "error"
+                );
+              }
+            }
+          }
+
+          if (distance <= 10) {
+            wasNearInitial = true;
+          } else if (wasNearInitial) {
+            wasNearInitial = false;
+            addLog(
+              "⚠️ Метка ушла от initialCoords: ref [" +
+                refLat.toFixed(6) +
+                ", " +
+                refLng.toFixed(6) +
+                "] → сейчас [" +
+                currentCoords[0].toFixed(6) +
+                ", " +
+                currentCoords[1].toFixed(6) +
+                "] ~" +
+                Math.round(distance) +
+                " м" +
+                (isFixed ? " (после 🔒)" : ""),
+              "warning"
+            );
+          }
+
+          lastPollCoords = [currentCoords[0], currentCoords[1]];
+        }, 1000);
+      }
+
+      function fixLocation() {
+        if (!currentPlacemark || !initialCoords) {
+          addLog("❌ Нет активной метки для фиксации", "error");
+          return;
+        }
+
+        addLog("🔒 Фиксация: удаляем метку и создаём статичную на тех же initialCoords…", "info");
+
+        var accuracy = currentPlacemark.properties.get("accuracy");
+        if (currentPlacemark && myMap.geoObjects.indexOf(currentPlacemark) !== -1) {
+          myMap.geoObjects.remove(currentPlacemark);
+        }
+
+        currentPlacemark = createStaticMarker(initialCoords, accuracy);
+        myMap.geoObjects.add(currentPlacemark);
+        isFixed = true;
+        lastPollCoords = getCurrentCoordsFromPlacemark();
+        wasNearInitial = true;
+
+        addLog(
+          "✅ Метка зафиксирована на [ " +
+            initialCoords[0].toFixed(6) +
+            ", " +
+            initialCoords[1].toFixed(6) +
+            " ]. Мониторинг продолжается — если снова поедет, это не ваш getCurrentPosition.",
+          "success"
+        );
+      }
+
+      ymaps.ready(function () {
+        myMap = new ymaps.Map("map", {
+          center: [55.76, 37.64],
+          zoom: 12,
+          controls: ["zoomControl", "fullscreenControl"],
+        });
+
+        addLog("🗺 Карта инициализирована (API 2.1)", "info");
+        addLog("📍 Запрос геолокации через navigator.geolocation (не ymaps.geolocation.get)", "info");
+
+        if (!navigator.geolocation) {
+          addLog("❌ Браузер не поддерживает геолокацию", "error");
+          return;
+        }
+
+        navigator.geolocation.getCurrentPosition(
+          function (position) {
+            var coords = [position.coords.latitude, position.coords.longitude];
+            var accuracy = position.coords.accuracy;
+
+            initialCoords = coords;
+
+            addLog(
+              "✅ Координаты от navigator.geolocation: [" + coords[0].toFixed(6) + ", " + coords[1].toFixed(6) + "]",
+              "success"
+            );
+            addLog("📊 Точность (accuracy): " + Math.round(accuracy) + " м", "info");
+
+            currentPlacemark = new ymaps.Placemark(
+              coords,
+              {
+                balloonContentBody:
+                  "📍 ТЕКУЩЕЕ положение<br>Координаты: " +
+                  coords[0].toFixed(6) +
+                  ", " +
+                  coords[1].toFixed(6) +
+                  "<br>Точность: " +
+                  Math.round(accuracy) +
+                  "м<br>⚠️ Следим за geometry.getCoordinates() раз в 1 с",
+                iconCaption: "📍 " + Math.round(accuracy) + "м",
+              },
+              {
+                preset: "islands#redCircleIcon",
+                draggable: false,
+              }
+            );
+
+            currentPlacemark.properties.set("accuracy", accuracy);
+            myMap.geoObjects.add(currentPlacemark);
+            myMap.setCenter(coords, 17);
+
+            addLog("🎯 Центр карты установлен", "info");
+            addLog("🔍 Мониторинг метки каждую 1 с (сравнение с прошлым опросом и с initialCoords)", "info");
+            addLog(
+              "⏱ Геолокация только один раз (getCurrentPosition, без watchPosition). Через 5 с метка пересоздаётся «замком» на последних координатах.",
+              "info"
+            );
+
+            startPositionMonitoring();
+
+            // Насильно не держим поток геолокации: одноразовый getCurrentPosition уже завершён.
+            // Через 5 с фиксируем положение метки так же, как по кнопке (синяя статичная).
+            setTimeout(function () {
+              if (!currentPlacemark || isFixed) return;
+              if (myMap.geoObjects.indexOf(currentPlacemark) === -1) return;
+
+              var fixedCoords;
+              try {
+                fixedCoords = currentPlacemark.geometry.getCoordinates();
+              } catch (e) {
+                addLog("❌ Авто-фиксация: не удалось прочитать координаты метки: " + e, "error");
+                return;
+              }
+
+              var acc = currentPlacemark.properties.get("accuracy");
+              myMap.geoObjects.remove(currentPlacemark);
+              currentPlacemark = createStaticMarker(fixedCoords, acc);
+              myMap.geoObjects.add(currentPlacemark);
+              isFixed = true;
+              initialCoords = [fixedCoords[0], fixedCoords[1]];
+              wasNearInitial = true;
+              lastPollCoords = getCurrentCoordsFromPlacemark();
+
+              addLog(
+                "🔒 Авто: метка пересоздана на [" +
+                  fixedCoords[0].toFixed(6) +
+                  ", " +
+                  fixedCoords[1].toFixed(6) +
+                  "]. База мониторинга = эти координаты. Дальнейшие сдвиги — не из getCurrentPosition.",
+                "success"
+              );
+            }, 5000);
+          },
+          function (error) {
+            var errorMsg = "";
+            switch (error.code) {
+              case error.PERMISSION_DENIED:
+                errorMsg = "Пользователь запретил доступ к геолокации";
+                break;
+              case error.POSITION_UNAVAILABLE:
+                errorMsg = "Информация о местоположении недоступна";
+                break;
+              case error.TIMEOUT:
+                errorMsg = "Время ожидания запроса истекло";
+                break;
+              default:
+                errorMsg = "Неизвестная ошибка";
+            }
+            addLog("❌ Ошибка геолокации: " + errorMsg, "error");
+          },
+          {
+            enableHighAccuracy: true,
+            timeout: 30000,
+            maximumAge: 0,
+          }
+        );
+
+        document.getElementById("fixBtn").addEventListener("click", fixLocation);
+        document.getElementById("clearLogBtn").addEventListener("click", function () {
+          document.getElementById("log").innerHTML = "";
+          addLog("Лог очищен", "info");
+        });
+      });
+    </script>
+  </body>
+</html>
