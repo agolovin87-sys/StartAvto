@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <!-- Для iOS/PWA: фиксированный масштаб снижает глюки жестов; для продакшена оцените доступность (user-scalable). -->
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no, viewport-fit=cover"
+    />
+    <title>JS API 2.1 — геолокация: iOS / PWA / fallback</title>
+    <!-- Ключ подставляется при npm run build из VITE_YANDEX_MAPS_API_KEY -->
+    <script src="https://api-maps.yandex.ru/2.1/?apikey=YOUR_API_KEY&lang=ru_RU"></script>
+    <style>
+      * {
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        margin: 0;
+        height: 100%;
+        font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+      }
+      #map {
+        width: 100%;
+        height: 100%;
+      }
+      #panel {
+        position: absolute;
+        z-index: 1000;
+        left: 10px;
+        right: 10px;
+        top: 10px;
+        max-width: min(100%, 420px);
+        padding: 12px 14px;
+        background: rgba(15, 23, 42, 0.94);
+        color: #e2e8f0;
+        font-size: 13px;
+        line-height: 1.45;
+        border-radius: 10px;
+        box-shadow: 0 4px 24px rgba(0, 0, 0, 0.35);
+      }
+      #panel.error {
+        border-left: 4px solid #f87171;
+      }
+      #panel.success {
+        border-left: 4px solid #4ade80;
+      }
+      #panel.warn {
+        border-left: 4px solid #fbbf24;
+      }
+      #meta {
+        margin-top: 8px;
+        font-size: 11px;
+        color: #94a3b8;
+        word-break: break-word;
+      }
+      .btn-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-top: 10px;
+      }
+      button {
+        padding: 8px 12px;
+        font-size: 13px;
+        border-radius: 8px;
+        border: none;
+        cursor: pointer;
+        background: #334155;
+        color: #f1f5f9;
+      }
+      button:disabled {
+        opacity: 0.45;
+        cursor: not-allowed;
+      }
+      button.primary {
+        background: #2563eb;
+      }
+      button.danger {
+        background: #7f1d1d;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="panel" role="status">
+      <div id="msg">Загрузка карты…</div>
+      <div id="meta"></div>
+      <div class="btn-row">
+        <button type="button" class="primary" id="btnRetry" disabled>Повторить попытку</button>
+        <button type="button" id="btnManual" disabled>Выбрать на карте вручную</button>
+      </div>
+    </div>
+    <div id="map"></div>
+
+    <script>
+      var GEO_OPTIONS_IOS = {
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 0,
+      };
+      var PWA_RACE_MS = 4000;
+
+      function isIOS() {
+        var ua = navigator.userAgent || "";
+        if (/iPad|iPhone|iPod/.test(ua)) return true;
+        if (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1) return true;
+        return false;
+      }
+
+      function isAndroid() {
+        return /Android/i.test(navigator.userAgent || "");
+      }
+
+      function isStandalonePWA() {
+        if (window.navigator.standalone === true) return true;
+        try {
+          if (window.matchMedia && window.matchMedia("(display-mode: standalone)").matches) return true;
+        } catch (e) {}
+        return false;
+      }
+
+      function isIOSPWA() {
+        return isIOS() && isStandalonePWA();
+      }
+
+      function platformLabel() {
+        if (isIOSPWA()) return "iOS PWA (standalone)";
+        if (isIOS()) return "iOS Safari";
+        if (isAndroid()) return "Android";
+        return "Desktop / другое";
+      }
+
+      function msgGeolocationDeniedIOS() {
+        return (
+          "Доступ к геолокации запрещён. Включите в Настройках → Конфиденциальность → Службы геолокации → Safari " +
+          "(или в настройках сайта для этого адреса), затем обновите страницу."
+        );
+      }
+
+      function msgPositionUnavailableIOS() {
+        return (
+          "Не удалось определить местоположение. Попробуйте выйти на улицу или включить Wi‑Fi " +
+          "(на iPhone это часто помогает GPS-службам)."
+        );
+      }
+
+      function msgTimeoutUser() {
+        return (
+          "Поиск местоположения занял слишком много времени. Попробуйте обновить страницу и снова разрешить доступ " +
+          "или нажмите «Повторить попытку»."
+        );
+      }
+
+      function mapGeolocationError(err) {
+        if (!err) return "Геолокация недоступна.";
+        var c = err.code;
+        if (c === 1) return msgGeolocationDeniedIOS();
+        if (c === 2) return msgPositionUnavailableIOS();
+        if (c === 3) return msgTimeoutUser();
+        return err.message || "Ошибка геолокации";
+      }
+
+      var myMap = null;
+      var userPlacemark = null;
+      var manualClickListener = null;
+      var busy = false;
+
+      var elPanel = document.getElementById("panel");
+      var elMsg = document.getElementById("msg");
+      var elMeta = document.getElementById("meta");
+      var btnRetry = document.getElementById("btnRetry");
+      var btnManual = document.getElementById("btnManual");
+
+      function setPanel(kind, text) {
+        elMsg.textContent = text;
+        elPanel.classList.remove("error", "success", "warn");
+        if (kind === "error") elPanel.classList.add("error");
+        else if (kind === "success") elPanel.classList.add("success");
+        else if (kind === "warn") elPanel.classList.add("warn");
+      }
+
+      function setMeta(text) {
+        elMeta.textContent = text || "";
+      }
+
+      function removeUserPlacemark() {
+        if (userPlacemark && myMap) {
+          myMap.geoObjects.remove(userPlacemark);
+          userPlacemark = null;
+        }
+      }
+
+      function addPlacemark(coords, accuracyM, sourceLabel) {
+        removeUserPlacemark();
+        var accText =
+          accuracyM != null && isFinite(accuracyM) ? Math.round(accuracyM) + " м" : "неизвестна";
+        userPlacemark = new ymaps.Placemark(
+          coords,
+          {
+            balloonContent:
+              "<strong>" +
+              (sourceLabel || "Точка") +
+              "</strong><br>Координаты: " +
+              coords[0].toFixed(6) +
+              ", " +
+              coords[1].toFixed(6) +
+              "<br>Точность (accuracy): ±" +
+              accText,
+            hintContent: (sourceLabel || "Метка") + " ±" + accText,
+          },
+          { preset: "islands#blueCircleIcon", draggable: false }
+        );
+        myMap.geoObjects.add(userPlacemark);
+        myMap.setCenter(coords, 16);
+        userPlacemark.balloon.open();
+      }
+
+      function geoGetPromise(options) {
+        return new Promise(function (resolve, reject) {
+          if (!navigator.geolocation) {
+            reject({ code: 0, message: "API геолокации недоступен" });
+            return;
+          }
+          navigator.geolocation.getCurrentPosition(resolve, reject, options);
+        });
+      }
+
+      function withTimeout(ms, label) {
+        return new Promise(function (_, reject) {
+          setTimeout(function () {
+            reject({ code: 3, message: label || "timeout" });
+          }, ms);
+        });
+      }
+
+      /**
+       * PWA на iOS: race 4 с — снимает «вечное» зависание getCurrentPosition.
+       * При срабатывании race всё равно можно перейти к fallback (ymaps / ручной выбор).
+       */
+      function getNativePosition() {
+        if (isIOSPWA()) {
+          return Promise.race([geoGetPromise(GEO_OPTIONS_IOS), withTimeout(PWA_RACE_MS, "pwa-race")]);
+        }
+        return geoGetPromise(GEO_OPTIONS_IOS);
+      }
+
+      function queryGeolocationPermission() {
+        return new Promise(function (resolve) {
+          if (!navigator.permissions || !navigator.permissions.query) {
+            resolve("unsupported");
+            return;
+          }
+          navigator.permissions
+            .query({ name: "geolocation" })
+            .then(function (status) {
+              resolve(status.state);
+            })
+            .catch(function () {
+              resolve("unsupported");
+            });
+        });
+      }
+
+      function tryYmapsBrowserGeolocation() {
+        return new Promise(function (resolve, reject) {
+          if (typeof ymaps === "undefined" || !ymaps.geolocation || !ymaps.geolocation.get) {
+            reject(new Error("ymaps.geolocation.get недоступен"));
+            return;
+          }
+          ymaps.geolocation
+            .get({
+              provider: "browser",
+              autoReverseGeocode: false,
+              mapStateAutoApply: false,
+              timeout: 10000,
+            })
+            .then(function (res) {
+              var first = res.geoObjects && res.geoObjects.getLength && res.geoObjects.getLength() > 0;
+              if (!first) {
+                reject(new Error("Пустой ответ ymaps.geolocation"));
+                return;
+              }
+              var geom = res.geoObjects.get(0).geometry;
+              var c = geom.getCoordinates();
+              resolve(c);
+            })
+            .catch(reject);
+        });
+      }
+
+      function stopManualMode() {
+        if (manualClickListener && myMap) {
+          myMap.events.remove("click", manualClickListener);
+          manualClickListener = null;
+        }
+        btnManual.disabled = false;
+        btnManual.textContent = "Выбрать на карте вручную";
+      }
+
+      function startManualMode() {
+        stopManualMode();
+        setPanel("warn", "Нажмите на карту, чтобы поставить метку.");
+        btnManual.textContent = "Отмена ручного выбора";
+        btnManual.disabled = false;
+        manualClickListener = function (e) {
+          var c = e.get("coords");
+          stopManualMode();
+          addPlacemark(c, null, "Вручную на карте");
+          setPanel("success", "Метка установлена вручную.");
+          setMeta(platformLabel());
+        };
+        myMap.events.add("click", manualClickListener);
+      }
+
+      function enableFallbackButtons() {
+        btnRetry.disabled = false;
+        btnManual.disabled = false;
+      }
+
+      function disableFallbackButtons() {
+        btnRetry.disabled = true;
+        btnManual.disabled = true;
+      }
+
+      async function runGeolocation() {
+        if (busy || !myMap) return;
+        busy = true;
+        disableFallbackButtons();
+        stopManualMode();
+
+        setMeta("Платформа: " + platformLabel());
+        setPanel("", "Проверка разрешения и запрос координат…");
+
+        if (!navigator.geolocation) {
+          setPanel("error", "В этом браузере нет Geolocation API.");
+          enableFallbackButtons();
+          busy = false;
+          return;
+        }
+
+        var perm = await queryGeolocationPermission();
+        if (perm === "denied") {
+          setPanel("error", msgGeolocationDeniedIOS());
+          enableFallbackButtons();
+          busy = false;
+          return;
+        }
+
+        var nativeErr = null;
+        try {
+          var pos = await getNativePosition();
+          var lat = pos.coords.latitude;
+          var lng = pos.coords.longitude;
+          var acc = pos.coords.accuracy;
+          addPlacemark([lat, lng], acc, "navigator.geolocation");
+          setPanel(
+            "success",
+            isIOSPWA()
+              ? "Координаты получены (нативный API; в PWA использован контроль по времени " + PWA_RACE_MS + " мс)."
+              : "Координаты получены через navigator.geolocation."
+          );
+          setMeta(platformLabel() + " · источник: нативный API");
+          busy = false;
+          return;
+        } catch (e) {
+          nativeErr = e;
+        }
+
+        var errText = mapGeolocationError(nativeErr);
+        setPanel("warn", errText + " Пробуем ymaps.geolocation.get (browser)…");
+
+        try {
+          var yc = await tryYmapsBrowserGeolocation();
+          addPlacemark(yc, null, "ymaps.geolocation (browser)");
+          setPanel("success", "Координаты получены через Яндекс.Карты (provider: browser).");
+          setMeta(platformLabel() + " · источник: ymaps.geolocation");
+          busy = false;
+          return;
+        } catch (e2) {
+          setPanel(
+            "error",
+            errText + " Резервный способ Яндекса не сработал. Выберите точку на карте или повторите попытку."
+          );
+          setMeta(platformLabel() + " · fallback: ручной выбор");
+        }
+
+        enableFallbackButtons();
+        busy = false;
+      }
+
+      btnRetry.addEventListener("click", function () {
+        void runGeolocation();
+      });
+      btnManual.addEventListener("click", function () {
+        if (manualClickListener) {
+          stopManualMode();
+          setPanel("", "Ручной режим отменён.");
+          return;
+        }
+        if (!myMap) return;
+        startManualMode();
+      });
+
+      ymaps.ready(function () {
+        if (
+          location.protocol !== "https:" &&
+          location.hostname !== "localhost" &&
+          location.hostname !== "127.0.0.1"
+        ) {
+          setPanel("error", "Для геолокации нужен HTTPS (или localhost).");
+          enableFallbackButtons();
+          return;
+        }
+
+        myMap = new ymaps.Map(
+          "map",
+          { center: [55.76, 37.64], zoom: 10, controls: ["zoomControl", "fullscreenControl"] },
+          { suppressMapOpenBlock: true }
+        );
+
+        setPanel("", "Карта готова. Запрашиваем геолокацию…");
+        setMeta("Платформа: " + platformLabel());
+        void runGeolocation();
+      });
+    </script>
+  </body>
+</html>
