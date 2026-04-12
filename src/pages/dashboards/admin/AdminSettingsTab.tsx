@@ -46,6 +46,7 @@ import {
   registerWebPushAndSaveToken,
   removeAllFcmTokensForUser,
 } from "@/firebase/fcm";
+import { callSendTestPush } from "@/firebase/sendTestPush";
 import {
   getTheme,
   setTheme,
@@ -278,6 +279,48 @@ export function AdminSettingsTab() {
       }
     });
   };
+
+  const [testPushBusy, setTestPushBusy] = useState(false);
+  const [testPushResult, setTestPushResult] = useState<{ ok: boolean; text: string } | null>(null);
+
+  const handleTestPush = useCallback(async () => {
+    if (!uid) return;
+    setTestPushBusy(true);
+    setTestPushResult(null);
+    try {
+      if (
+        notifySettings.webPushEnabled &&
+        typeof Notification !== "undefined" &&
+        Notification.permission === "granted" &&
+        hasFcmVapidConfigured()
+      ) {
+        await registerWebPushAndSaveToken(uid);
+      }
+      const r = await callSendTestPush();
+      if (r.ok) {
+        const n = r.devices;
+        const tok =
+          n % 10 === 1 && n % 100 !== 11
+            ? "токен"
+            : n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 10 || n % 100 >= 20)
+              ? "токена"
+              : "токенов";
+        setTestPushResult({
+          ok: true,
+          text: `Отправлено на ${n} ${tok}. Проверьте системное уведомление (в том числе со свёрнутой вкладкой).`,
+        });
+      } else {
+        setTestPushResult({ ok: false, text: r.message });
+      }
+    } catch (e) {
+      setTestPushResult({
+        ok: false,
+        text: e instanceof Error ? e.message : "Не удалось отправить тест",
+      });
+    } finally {
+      setTestPushBusy(false);
+    }
+  }, [uid, notifySettings.webPushEnabled]);
 
   const onPickIncomingSoundFile = (e: React.ChangeEvent<HTMLInputElement>) => {
     const f = e.target.files?.[0];
@@ -639,6 +682,34 @@ export function AdminSettingsTab() {
                     <span className="switch-stay-slider" aria-hidden />
                   </label>
                 </div>
+                {hasFcmVapidConfigured() ? (
+                  <div className="admin-settings-test-push-block">
+                    <button
+                      type="button"
+                      className="btn btn-secondary btn-sm"
+                      disabled={testPushBusy || !notifySettings.webPushEnabled || !uid}
+                      onClick={() => void handleTestPush()}
+                    >
+                      {testPushBusy ? "Отправка…" : "Тест push"}
+                    </button>
+                    <p className="admin-settings-toggle-hint admin-settings-test-push-hint">
+                      Проверяет доставку на это устройство. Включите переключатель выше и разрешите уведомления в блоке
+                      «Уведомления браузера».
+                    </p>
+                    {testPushResult ? (
+                      <p
+                        className={
+                          testPushResult.ok
+                            ? "admin-settings-saved-hint admin-settings-test-push-feedback"
+                            : "form-error admin-settings-test-push-feedback"
+                        }
+                        role="status"
+                      >
+                        {testPushResult.text}
+                      </p>
+                    ) : null}
+                  </div>
+                ) : null}
               </div>
 
               <div className="admin-settings-policy-block">

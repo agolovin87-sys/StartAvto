@@ -222,6 +222,31 @@ exports.locatorLocate = onCall(
   }
 );
 
+/** Тест web-push: любой вошедший пользователь с токенами в users/{uid}/fcmTokens. */
+exports.sendTestPush = onCall(
+  { region: "europe-west1", maxInstances: 5 },
+  async (request) => {
+    if (!request.auth || !request.auth.uid) {
+      throw new HttpsError("unauthenticated", "Нужна авторизация");
+    }
+    const uid = request.auth.uid.trim();
+    const tokenRows = await tokenDocRefsForUser(uid);
+    if (tokenRows.length === 0) {
+      throw new HttpsError(
+        "failed-precondition",
+        "Нет сохранённых токенов: включите «Получать на этом устройстве», разрешите уведомления браузера и подождите несколько секунд."
+      );
+    }
+    await sendToUsers(
+      [uid],
+      "StartAvto",
+      "Тестовое push-уведомление. Если вы его видите, доставка работает.",
+      { kind: "test_push" }
+    );
+    return { ok: true, devices: tokenRows.length };
+  }
+);
+
 exports.onInstructorGpsSessionPingWritten = onDocumentWritten(
   "instructorGpsSessionPings/{instructorId}",
   async (event) => {
