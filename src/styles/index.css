@@ -6266,11 +6266,26 @@ html[data-theme="light"] .drive-live-session-panel__toolbar {
   color: #fbbf24;
 }
 
+.admin-gps-coords {
+  margin: 0 0 0.45rem;
+  font-size: 0.78rem;
+  font-variant-numeric: tabular-nums;
+  color: var(--theme-soft);
+  word-break: break-all;
+}
+
+.admin-gps-reality-hint {
+  margin: 0 0 0.65rem;
+  font-size: 0.78rem;
+  line-height: 1.45;
+  color: var(--theme-muted);
+}
+
 .admin-gps-map-wrap {
   position: relative;
   width: 100%;
-  aspect-ratio: 4 / 3;
-  max-height: min(52vh, 420px);
+  height: min(46vh, 400px);
+  min-height: 240px;
   margin-bottom: 1rem;
   border-radius: 10px;
   overflow: hidden;
@@ -6278,11 +6293,15 @@ html[data-theme="light"] .drive-live-session-panel__toolbar {
   background: var(--theme-fill-hover);
 }
 
-.admin-gps-map-wrap iframe {
-  display: block;
+.admin-gps-leaflet-host {
   width: 100%;
   height: 100%;
-  border: 0;
+  z-index: 0;
+}
+
+.admin-gps-map-wrap .leaflet-container {
+  font: inherit;
+  background: var(--theme-fill-hover);
 }
 
 .admin-gps-tab .admin-tab-lead {

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { formatShortFio } from "@/admin/formatShortFio";
+import { AdminGpsLeafletMap } from "@/components/AdminGpsLeafletMap";
 import { subscribeInstructors } from "@/firebase/admin";
 import {
   fetchInstructorLiveLocationFromServer,
@@ -9,21 +10,6 @@ import {
 import type { UserProfile } from "@/types";
 
 const STALE_MS = 12 * 60 * 1000;
-
-/** Полуразмер карты в метрах (масштаб ~видимая область). */
-function mapHalfSpanMeters(accuracyM: number | null): number {
-  const base = accuracyM != null && accuracyM > 0 ? accuracyM : 40;
-  return Math.max(22, Math.min(120, base * 2.8));
-}
-
-function osmEmbedSrc(lat: number, lng: number, accuracyM: number | null): string {
-  const halfM = mapHalfSpanMeters(accuracyM);
-  const dLat = halfM / 111_320;
-  const cosLat = Math.cos((lat * Math.PI) / 180);
-  const dLng = halfM / (111_320 * Math.max(Math.abs(cosLat), 0.25));
-  const bbox = `${lng - dLng},${lat - dLat},${lng + dLng},${lat + dLat}`;
-  return `https://www.openstreetmap.org/export/embed.html?bbox=${bbox}&layer=mapnik&marker=${lat}%2C${lng}`;
-}
 
 function formatAgo(ms: number | null): string {
   if (ms == null) return "";
@@ -91,7 +77,6 @@ function AdminGpsMapModal({
   };
   const hasPoint = display != null && Number.isFinite(lat) && Number.isFinite(lng);
   const stale = updatedAtMs != null && Date.now() - updatedAtMs > STALE_MS;
-  const mapSrc = hasPoint ? osmEmbedSrc(lat, lng, accuracyM) : "";
 
   return (
     <div
@@ -137,17 +122,24 @@ function AdminGpsMapModal({
               {accuracyM != null ? (
                 <>
                   {" "}
-                  · оценка погрешности GPS: ±{Math.round(accuracyM)} м
+                  · браузер сообщил погрешность: ±{Math.round(accuracyM)} м (не всегда совпадает с реальностью)
                 </>
               ) : null}
             </p>
+            <p className="admin-gps-coords" title="WGS84 — как в GPS-навигаторах">
+              WGS84: {lat.toFixed(6)}, {lng.toFixed(6)}
+            </p>
+            <p className="admin-gps-reality-hint">
+              Карта строится по этим координатам напрямую (Leaflet + OSM). Если точка «уезжает» на километры при
+              малой цифре погрешности, телефон часто отдаёт сеть/Wi‑Fi вместо спутников — пусть инструктор выйдет
+              на улицу, включит точную геолокацию и при необходимости отключит энергосбережение для браузера.
+            </p>
             <div className="admin-gps-map-wrap">
-              <iframe
-                key={`${mapSrc}-${mapNonce}`}
-                title="Карта"
-                src={mapSrc}
-                loading="lazy"
-                referrerPolicy="no-referrer-when-downgrade"
+              <AdminGpsLeafletMap
+                key={`${lat}-${lng}-${accuracyM ?? "x"}-${mapNonce}`}
+                lat={lat}
+                lng={lng}
+                accuracyM={accuracyM}
               />
             </div>
           </>
