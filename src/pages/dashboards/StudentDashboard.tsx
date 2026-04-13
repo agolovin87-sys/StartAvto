@@ -1199,12 +1199,6 @@ export function StudentDashboard() {
                                         belowStatusRow={<DriveSlotShareAddressRow slotId={sl.id} />}
                                         customSideActions={
                                           <>
-                                            {showStudentDriveLocationShare && !liveAcked ? (
-                                              <StudentDriveLocationShareButton
-                                                slot={sl}
-                                                studentId={studentUid}
-                                              />
-                                            ) : null}
                                             {!liveAcked ? (
                                               <button
                                                 type="button"
