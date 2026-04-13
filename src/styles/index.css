@@ -3093,6 +3093,22 @@ html[data-theme="light"] .instructor-onboarding-actions .btn-primary.btn-sm {
   filter: brightness(1.08);
 }
 
+.admin-trip-history-open-btn--muted {
+  color: var(--theme-muted);
+  opacity: 0.85;
+}
+
+.admin-trip-history-open-btn--muted:hover {
+  opacity: 1;
+}
+
+.admin-trip-history-modal--empty .admin-trip-history-empty-text {
+  margin: 0 0 0.75rem;
+  font-size: 0.9rem;
+  line-height: 1.45;
+  color: var(--theme-soft);
+}
+
 .admin-trip-history-ico {
   display: block;
 }

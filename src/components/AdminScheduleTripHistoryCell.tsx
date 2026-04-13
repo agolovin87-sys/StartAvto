@@ -26,7 +26,7 @@ export function AdminScheduleTripHistoryCell({ slotId }: { slotId: string }) {
   const hasTrack = trip != null && trip.points.length > 0;
 
   const modal =
-    open && hasTrack && trip ? (
+    open && trip != null && hasTrack ? (
       <div
         className="modal-backdrop admin-trip-history-backdrop"
         role="presentation"
@@ -72,23 +72,54 @@ export function AdminScheduleTripHistoryCell({ slotId }: { slotId: string }) {
           </div>
         </div>
       </div>
+    ) : open && !hasTrack ? (
+      <div
+        className="modal-backdrop admin-trip-history-backdrop"
+        role="presentation"
+        onClick={() => setOpen(false)}
+      >
+        <div
+          className="modal-panel admin-trip-history-modal admin-trip-history-modal--empty"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="admin-trip-history-empty-title"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <h2 id="admin-trip-history-empty-title" className="modal-title">
+            История поездки
+          </h2>
+          <p className="admin-trip-history-empty-text">
+            Сохранённого GPS-трека по этому занятию пока нет. Трек появляется после завершения вождения, если у
+            инструктора на устройстве была включена геолокация в браузере, курсант подтвердил начало урока, а
+            правила Firestore для коллекции <code className="admin-inline-code">driveTripTracks</code>{" "}
+            опубликованы.
+          </p>
+          <div className="modal-actions">
+            <button type="button" className="btn btn-primary" onClick={() => setOpen(false)}>
+              Закрыть
+            </button>
+          </div>
+        </div>
+      </div>
     ) : null;
 
   return (
     <td className="admin-schedule-trip-history-cell">
-      {hasTrack ? (
-        <button
-          type="button"
-          className="admin-trip-history-open-btn glossy-panel"
-          onClick={() => setOpen(true)}
-          title="История поездки на карте"
-          aria-label="История поездки на карте"
-        >
-          <IconRoute />
-        </button>
-      ) : (
-        <span className="admin-schedule-trip-empty">—</span>
-      )}
+      <button
+        type="button"
+        className={`admin-trip-history-open-btn glossy-panel${
+          hasTrack ? "" : " admin-trip-history-open-btn--muted"
+        }`}
+        onClick={() => setOpen(true)}
+        title={
+          hasTrack
+            ? "Открыть трек на карте"
+            : "История поездки: трек ещё не сохранён — нажмите для пояснения"
+        }
+        aria-label="История поездки"
+      >
+        <IconRoute />
+      </button>
       {typeof document !== "undefined" && modal != null
         ? createPortal(modal, document.body)
         : null}
