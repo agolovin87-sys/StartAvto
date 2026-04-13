@@ -24,7 +24,10 @@ import {
 } from "@/firebase/drives";
 import { mapFirebaseError } from "@/firebase/errors";
 import { subscribeStudentAttachedInstructors } from "@/firebase/studentChatContacts";
-import { canStudentCancelScheduledDriveSlot } from "@/lib/driveSession";
+import {
+  canStudentCancelScheduledDriveSlot,
+  shouldHideWeekScheduleGeoShareButtons,
+} from "@/lib/driveSession";
 import { DRIVE_TIME_OCCUPIED_MSG } from "@/lib/driveTimeConflict";
 import {
   countStudentCommittedBookings,
@@ -1218,6 +1221,10 @@ export function StudentDashboard() {
                                       />
                                     );
                                   }
+                                  const hideWeekGeo = shouldHideWeekScheduleGeoShareButtons(
+                                    sl,
+                                    nowMs
+                                  );
                                   return (
                                     <DriveWeekScheduleNoticeCard
                                       key={sl.id}
@@ -1238,7 +1245,11 @@ export function StudentDashboard() {
                                           </span>
                                         )
                                       }
-                                      belowStatusRow={<DriveSlotShareAddressRow slotId={sl.id} />}
+                                      belowStatusRow={
+                                        hideWeekGeo ? null : (
+                                          <DriveSlotShareAddressRow slotId={sl.id} />
+                                        )
+                                      }
                                       cancelBusy={scheduleCancelBusyId === sl.id}
                                       onCancel={
                                         canStudentCancelScheduledDriveSlot(sl, nowMs)
@@ -1247,7 +1258,7 @@ export function StudentDashboard() {
                                       }
                                       customSideActions={
                                         <>
-                                          {showStudentDriveLocationShare ? (
+                                          {showStudentDriveLocationShare && !hideWeekGeo ? (
                                             <StudentDriveLocationShareButton
                                               slot={sl}
                                               studentId={studentUid}

@@ -24,6 +24,15 @@ export function canShowInstructorStartDriveButton(slot: DriveSlot, nowMs: number
   return nowMs >= windowStart;
 }
 
+/**
+ * В недельном графике скрывать кнопки «отправить/посмотреть геолокацию» в том же окне, где уже
+ * доступно «Начать вождение»: иначе при лаге Firestore на мобильных слот остаётся в виде
+ * «подтверждено», хотя вождение уже начато — кнопки геолокации ошибочно остаются видимыми.
+ */
+export function shouldHideWeekScheduleGeoShareButtons(slot: DriveSlot, nowMs: number): boolean {
+  return canShowInstructorStartDriveButton(slot, nowMs);
+}
+
 /** За сколько часов до начала у курсанта скрывается отмена подтверждённого вождения. */
 export const STUDENT_CANCEL_SCHEDULED_DRIVE_BEFORE_H = 6;
 

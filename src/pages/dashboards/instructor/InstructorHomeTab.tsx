@@ -32,6 +32,7 @@ import {
   canShowInstructorStartDriveButton,
   earlyStartMinutesRounded,
   isDriveStartBeforeScheduledTime,
+  shouldHideWeekScheduleGeoShareButtons,
 } from "@/lib/driveSession";
 import { useAuth } from "@/context/AuthContext";
 import { useDriveLocationSharingUi } from "@/context/DriveLocationSharingUiContext";
@@ -905,6 +906,7 @@ export function InstructorHomeTab() {
                       }
                       const canStart = canShowInstructorStartDriveButton(sl, nowMs);
                       const canRunningLate = canShowInstructorRunningLateButton(sl, nowMs);
+                      const hideWeekGeo = shouldHideWeekScheduleGeoShareButtons(sl, nowMs);
                       return (
                         <DriveWeekScheduleNoticeCard
                           key={sl.id}
@@ -920,7 +922,9 @@ export function InstructorHomeTab() {
                               <span className="drive-scheduled-status-confirmed">подтверждено</span>
                             )
                           }
-                          belowStatusRow={<DriveSlotShareAddressRow slotId={sl.id} />}
+                          belowStatusRow={
+                            hideWeekGeo ? null : <DriveSlotShareAddressRow slotId={sl.id} />
+                          }
                           cancelBusy={weekCancelBusyId === sl.id}
                           cancelAriaLabel="Отменить вождение"
                           onCancel={() => void cancelWeekDriveSlot(sl.id)}
@@ -958,7 +962,7 @@ export function InstructorHomeTab() {
                                   <IconRunningLate />
                                 </button>
                               ) : null}
-                              {showInstructorDriveLocationShare ? (
+                              {showInstructorDriveLocationShare && !hideWeekGeo ? (
                                 <InstructorStudentLocationShareButton slotId={sl.id} />
                               ) : null}
                               <button
