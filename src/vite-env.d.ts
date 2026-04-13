@@ -62,6 +62,12 @@ declare global {
   interface YandexCircleGeo {
     geometry: { getBounds: () => number[][] };
   }
+
+  /** Badging API (иконка PWA). */
+  interface Navigator {
+    setAppBadge?: (contents?: number) => Promise<void>;
+    clearAppBadge?: () => Promise<void>;
+  }
 }
 
 export {};

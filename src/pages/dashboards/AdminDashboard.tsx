@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useBadgeExtra } from "@/context/BadgeExtraContext";
 import { AdminGpsPingProvider, useAdminGpsPing } from "@/context/AdminGpsPingContext";
 import { useChatUnread } from "@/context/ChatUnreadContext";
 import { ChatNavContext } from "@/context/ChatNavContext";
@@ -119,6 +120,11 @@ function AdminDashboardInner() {
   const { setShellHeaderHidden } = useChatThreadShell();
   const { reportDashboardTab, totalUnread } = useChatUnread();
   const { totalGpsPingUnread } = useAdminGpsPing();
+  const { setAdminGpsUnread } = useBadgeExtra();
+
+  useEffect(() => {
+    setAdminGpsUnread(totalGpsPingUnread);
+  }, [totalGpsPingUnread, setAdminGpsUnread]);
   const [pendingOpenChatUserId, setPendingOpenChatUserId] = useState<string | null>(
     null
   );

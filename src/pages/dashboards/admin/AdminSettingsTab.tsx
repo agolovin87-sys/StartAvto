@@ -3,6 +3,12 @@ import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { useAuth } from "@/context/AuthContext";
 import { usePasskey } from "@/hooks/usePasskey";
 import {
+  getBadgingDiagnostics,
+  isBadgePreferenceEnabled,
+  notifyBadgePreferenceChanged,
+  setBadgePreferenceEnabled,
+} from "@/utils/badging";
+import {
   DEFAULT_CHAT_PRIVACY_SETTINGS,
   getChatPrivacySettings,
   setChatPrivacySettings,
@@ -263,6 +269,62 @@ function PasskeySettingsSection({ uid, email }: { uid: string; email: string }) 
         onConfirm={() => void onConfirmDelete()}
         onCancel={() => setConfirmOpen(false)}
       />
+    </div>
+  );
+}
+
+function AppIconBadgeSettingsSection() {
+  const [enabled, setEnabled] = useState(() => isBadgePreferenceEnabled());
+  const diag = getBadgingDiagnostics();
+
+  useEffect(() => {
+    const onStorage = (e: StorageEvent) => {
+      if (e.key === "startavto_app_badge_enabled") {
+        setEnabled(isBadgePreferenceEnabled());
+      }
+    };
+    window.addEventListener("storage", onStorage);
+    return () => window.removeEventListener("storage", onStorage);
+  }, []);
+
+  return (
+    <div className="admin-settings-app-badge-panel">
+      <h3 className="admin-settings-subtitle">Счётчик на иконке приложения</h3>
+      <p className="admin-settings-section-desc">
+        Для PWA на рабочем столе или домашнем экране число важных событий (чат, заявки, напоминания) может
+        отображаться на иконке. Нужна установка приложения и поддержка Badging API в браузере.
+      </p>
+      {diag.platform === "ios" ? (
+        <p className="admin-settings-section-desc admin-settings-app-badge-ios-hint">
+          На iPhone и iPad (Safari) отображение счётчика на иконке чаще всего недоступно. На Android и в
+          Chrome/Edge для Windows функция обычно работает после установки приложения.
+        </p>
+      ) : null}
+      <div className="admin-settings-toggle-row">
+        <div className="admin-settings-toggle-label" id="app-badge-toggle-label">
+          Показывать счётчик на иконке
+          <span className="admin-settings-toggle-hint">Локально в этом браузере; при выключении бейдж сбрасывается</span>
+        </div>
+        <label className="switch-stay">
+          <input
+            type="checkbox"
+            role="switch"
+            checked={enabled}
+            onChange={(e) => {
+              const v = e.target.checked;
+              setBadgePreferenceEnabled(v);
+              setEnabled(isBadgePreferenceEnabled());
+              notifyBadgePreferenceChanged();
+            }}
+            aria-labelledby="app-badge-toggle-label"
+            aria-checked={enabled}
+          />
+          <span className="switch-stay-slider" aria-hidden />
+        </label>
+      </div>
+      <p className="admin-settings-section-desc admin-settings-app-badge-meta">
+        Поддержка API на этом устройстве: {diag.supported ? "да" : "нет"} · платформа: {diag.platform}
+      </p>
     </div>
   );
 }
@@ -1293,10 +1355,13 @@ export function AdminSettingsTab() {
             onToggle={() => toggleSettingsSection(id)}
           >
             {id === "settings-security-passkey" ? (
-              <PasskeySettingsSection
-                uid={uid}
-                email={user?.email?.trim() ?? profile?.email?.trim() ?? ""}
-              />
+              <>
+                <PasskeySettingsSection
+                  uid={uid}
+                  email={user?.email?.trim() ?? profile?.email?.trim() ?? ""}
+                />
+                <AppIconBadgeSettingsSection />
+              </>
             ) : id === "settings-theme" ? (
               <div className="admin-settings-theme-panel" aria-label="Выбор темы оформления">
                 <p className="admin-settings-section-desc">

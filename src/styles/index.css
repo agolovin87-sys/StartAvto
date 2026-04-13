@@ -1699,6 +1699,55 @@ code {
   margin-top: 0.35rem;
 }
 
+.admin-settings-app-badge-panel {
+  margin-top: 1.25rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--theme-line-subtle);
+}
+
+.admin-settings-app-badge-ios-hint {
+  color: var(--theme-muted);
+}
+
+.admin-settings-app-badge-meta {
+  font-size: 0.8rem;
+  color: var(--theme-muted);
+}
+
+.badge-debug-panel {
+  position: fixed;
+  right: 8px;
+  bottom: 72px;
+  z-index: 99998;
+  max-width: min(320px, calc(100vw - 16px));
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: var(--theme-panel-solid);
+  border: 1px solid var(--theme-line);
+  font-size: 0.75rem;
+  color: var(--theme-soft);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.35);
+}
+
+.badge-debug-title {
+  font-weight: 700;
+  color: var(--theme-heading);
+  margin-bottom: 6px;
+}
+
+.badge-debug-row {
+  margin: 4px 0;
+  line-height: 1.35;
+  word-break: break-word;
+}
+
+.badge-debug-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+
 .admin-settings-memory-panel .admin-settings-section-desc {
   margin-bottom: 0.75rem;
 }

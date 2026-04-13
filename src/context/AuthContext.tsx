@@ -30,6 +30,7 @@ import {
   normalizeUserProfile,
 } from "@/firebase/users";
 import { mapFirebaseError } from "@/firebase/errors";
+import { clearBadge } from "@/utils/badging";
 import { hasPasskeyForUser, isPasskeySupported } from "@/utils/passkey";
 
 type AuthState = {
@@ -241,6 +242,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     }
     await firebaseSignOut(auth);
+    void clearBadge();
   }, []);
 
   const refreshProfile = useCallback(async () => {

@@ -16,7 +16,9 @@ import {
 } from "@/pages/AccountScreens";
 import { AppShell } from "@/components/AppShell";
 import { PageLoading } from "@/components/PageLoading";
+import { BadgeExtraProvider } from "@/context/BadgeExtraContext";
 import { ChatUnreadProvider } from "@/context/ChatUnreadContext";
+import { AppBadgeCoordinator } from "@/components/AppBadgeCoordinator";
 import { InstructorOnboardingProvider } from "@/context/InstructorOnboardingContext";
 import { StudentOnboardingProvider } from "@/context/StudentOnboardingContext";
 import { GlobalIncomingChatAlerts } from "@/chat/GlobalIncomingChatAlerts";
@@ -71,10 +73,13 @@ function ProtectedApp({ role }: { role: UserRole }) {
   return (
     <AppShell>
       <ChatUnreadProvider>
-        <GlobalIncomingChatAlerts />
-        {role === "admin" && <AdminDashboard />}
-        {role === "instructor" && <InstructorDashboard />}
-        {role === "student" && <StudentDashboard />}
+        <BadgeExtraProvider>
+          <AppBadgeCoordinator />
+          <GlobalIncomingChatAlerts />
+          {role === "admin" && <AdminDashboard />}
+          {role === "instructor" && <InstructorDashboard />}
+          {role === "student" && <StudentDashboard />}
+        </BadgeExtraProvider>
       </ChatUnreadProvider>
     </AppShell>
   );
