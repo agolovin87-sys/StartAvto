@@ -1221,10 +1221,7 @@ export function StudentDashboard() {
                                       />
                                     );
                                   }
-                                  const hideWeekGeo = shouldHideWeekScheduleGeoShareButtons(
-                                    sl,
-                                    nowMs
-                                  );
+                                  const hideWeekGeo = shouldHideWeekScheduleGeoShareButtons(sl);
                                   return (
                                     <DriveWeekScheduleNoticeCard
                                       key={sl.id}

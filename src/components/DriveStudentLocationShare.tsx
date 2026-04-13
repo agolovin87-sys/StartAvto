@@ -449,13 +449,13 @@ export function StudentDriveLocationShareButton({
   studentId: string;
 }) {
   const [modalOpen, setModalOpen] = useState(false);
-  const [liveStarted, setLiveStarted] = useState(() => slot.liveStartedAt != null);
+  const [timerRunning, setTimerRunning] = useState(() => slot.liveStudentAckAt != null);
 
   useEffect(() => {
-    return subscribeDriveSlot(slot.id, (s) => setLiveStarted(s?.liveStartedAt != null));
+    return subscribeDriveSlot(slot.id, (s) => setTimerRunning(s?.liveStudentAckAt != null));
   }, [slot.id]);
 
-  if (liveStarted) return null;
+  if (timerRunning) return null;
 
   return (
     <>
@@ -572,10 +572,10 @@ function InstructorStudentLocationModal({
 export function InstructorStudentLocationShareButton({ slotId }: { slotId: string }) {
   const [share, setShare] = useState<StudentDriveLocationShare | null>(null);
   const [open, setOpen] = useState(false);
-  const [liveStarted, setLiveStarted] = useState(false);
+  const [timerRunning, setTimerRunning] = useState(false);
 
   useEffect(() => {
-    return subscribeDriveSlot(slotId, (s) => setLiveStarted(s?.liveStartedAt != null));
+    return subscribeDriveSlot(slotId, (s) => setTimerRunning(s?.liveStudentAckAt != null));
   }, [slotId]);
 
   useEffect(() => {
@@ -586,7 +586,7 @@ export function InstructorStudentLocationShareButton({ slotId }: { slotId: strin
     if (!share) setOpen(false);
   }, [share]);
 
-  if (liveStarted) return null;
+  if (timerRunning) return null;
   if (!share) return null;
 
   return (

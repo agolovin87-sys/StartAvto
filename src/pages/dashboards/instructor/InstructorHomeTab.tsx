@@ -906,7 +906,7 @@ export function InstructorHomeTab() {
                       }
                       const canStart = canShowInstructorStartDriveButton(sl, nowMs);
                       const canRunningLate = canShowInstructorRunningLateButton(sl, nowMs);
-                      const hideWeekGeo = shouldHideWeekScheduleGeoShareButtons(sl, nowMs);
+                      const hideWeekGeo = shouldHideWeekScheduleGeoShareButtons(sl);
                       return (
                         <DriveWeekScheduleNoticeCard
                           key={sl.id}
