@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Высокая точность GPS — Яндекс.Карты API 2.1</title>
+    <!-- Ключ подставляется при npm run build из VITE_YANDEX_MAPS_API_KEY -->
+    <script
+      src="https://api-maps.yandex.ru/2.1/?apikey=YOUR_API_KEY&lang=ru_RU"
+      type="text/javascript"
+    ></script>
+    <style>
+      * {
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        margin: 0;
+        height: 100%;
+        font-family: system-ui, sans-serif;
+      }
+      body {
+        display: flex;
+        flex-direction: column;
+        min-height: 100%;
+      }
+      #toolbar {
+        flex-shrink: 0;
+        padding: 10px 12px;
+        background: #fff;
+        box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        align-items: center;
+      }
+      #toolbar button {
+        padding: 10px 16px;
+        font-size: 15px;
+        cursor: pointer;
+        border-radius: 8px;
+        border: 1px solid #0d6efd;
+        background: #0d6efd;
+        color: #fff;
+      }
+      #toolbar button:disabled {
+        opacity: 0.55;
+        cursor: not-allowed;
+      }
+      #hint {
+        width: 100%;
+        font-size: 12px;
+        color: #555;
+        line-height: 1.4;
+      }
+      #status {
+        width: 100%;
+        font-size: 14px;
+        min-height: 1.3em;
+      }
+      #status.error {
+        color: #b00020;
+      }
+      #map {
+        flex: 1;
+        min-height: 0;
+        width: 100%;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="toolbar">
+      <button type="button" id="btnLocate" disabled>Определить местоположение</button>
+      <button type="button" id="btnRetry" disabled>Повторить попытку</button>
+      <p id="hint">
+        Для GPS выйдите на улицу или к окну. <code>enableHighAccuracy: true</code> просит систему
+        отдать максимально точный сенсор; если спутники не пойманы, браузер может дать грубую
+        оценку по сети (ошибка в километры). Смотрите поле «Точность» в балуне.
+      </p>
+      <div id="status"></div>
+    </div>
+    <div id="map"></div>
+
+    <script>
+      (function () {
+        "use strict";
+
+        var map = null;
+        var placemark = null;
+
+        var GEO_OPTIONS = {
+          enableHighAccuracy: true,
+          timeout: 30000,
+          maximumAge: 0,
+        };
+
+        function setStatus(text, isError) {
+          var el = document.getElementById("status");
+          el.textContent = text || "";
+          el.className = isError ? "error" : "";
+        }
+
+        function geoErrorMessage(err) {
+          if (!err || typeof err.code !== "number") {
+            return "Не удалось получить координаты. Попробуйте ещё раз.";
+          }
+          switch (err.code) {
+            case err.PERMISSION_DENIED:
+            case 1:
+              return (
+                "Доступ к геолокации запрещён. Разрешите определение местоположения для этого сайта " +
+                "в настройках браузера и нажмите «Повторить попытку»."
+              );
+            case err.POSITION_UNAVAILABLE:
+            case 2:
+              return (
+                "Позиция недоступна: нет сигнала GPS или данные не пришли с устройства. " +
+                "Выйдите на открытое пространство, проверьте, что GPS включён, и повторите попытку."
+              );
+            case err.TIMEOUT:
+            case 3:
+              return (
+                "Превышено время ожидания (30 с). GPS мог не успеть поймать спутники. " +
+                "Подождите и нажмите «Повторить попытку», лучше на улице."
+              );
+            default:
+              return "Ошибка геолокации. Нажмите «Повторить попытку».";
+          }
+        }
+
+        function removePlacemark() {
+          if (placemark && map) {
+            map.geoObjects.remove(placemark);
+          }
+          placemark = null;
+        }
+
+        function showPositionOnMap(lat, lon, accuracyM) {
+          removePlacemark();
+
+          var accRounded = Math.round(accuracyM);
+          var qualityHint =
+            accRounded > 500
+              ? "<p style=\"margin:8px 0 0;color:#a60\">Точность низкая — возможно, используется сеть, а не GPS. Повторите на улице.</p>"
+              : accRounded > 50
+                ? "<p style=\"margin:8px 0 0;color:#666\">Точность средняя. При необходимости подождите и определите снова.</p>"
+                : "";
+
+          var body =
+            "<div style=\"font-size:14px;line-height:1.5\">" +
+            "<strong>Широта:</strong> " +
+            lat.toFixed(6) +
+            "<br><strong>Долгота:</strong> " +
+            lon.toFixed(6) +
+            "<br><strong>Точность (accuracy):</strong> ±" +
+            accRounded +
+            " м" +
+            qualityHint +
+            "</div>";
+
+          placemark = new ymaps.Placemark(
+            [lat, lon],
+            { balloonContentBody: body },
+            { preset: "islands#blueCircleIcon", draggable: false }
+          );
+
+          map.geoObjects.add(placemark);
+          map.setCenter([lat, lon], accRounded > 200 ? 14 : 16, { duration: 250 });
+          placemark.balloon.open();
+        }
+
+        function requestLocation() {
+          if (!navigator.geolocation) {
+            setStatus("Ваш браузер не поддерживает геолокацию.", true);
+            return;
+          }
+
+          var btnLocate = document.getElementById("btnLocate");
+          var btnRetry = document.getElementById("btnRetry");
+          btnLocate.disabled = true;
+          btnRetry.disabled = true;
+          setStatus("Запрашиваем координаты с устройства (GPS / высокая точность)…");
+
+          navigator.geolocation.getCurrentPosition(
+            function (position) {
+              var lat = position.coords.latitude;
+              var lon = position.coords.longitude;
+              var acc = position.coords.accuracy;
+
+              showPositionOnMap(lat, lon, acc);
+              setStatus("Координаты получены. Точность указана в балуне метки.");
+              btnLocate.disabled = false;
+              btnRetry.disabled = false;
+            },
+            function (error) {
+              setStatus(geoErrorMessage(error), true);
+              btnLocate.disabled = false;
+              btnRetry.disabled = false;
+            },
+            GEO_OPTIONS
+          );
+        }
+
+        ymaps.ready(function () {
+          map = new ymaps.Map(
+            "map",
+            {
+              center: [55.76, 37.64],
+              zoom: 10,
+              controls: ["zoomControl", "fullscreenControl"],
+            },
+            { searchControlProvider: "yandex#search" }
+          );
+
+          document.getElementById("btnLocate").disabled = false;
+          document.getElementById("btnRetry").disabled = false;
+
+          document.getElementById("btnLocate").onclick = requestLocation;
+          document.getElementById("btnRetry").onclick = requestLocation;
+
+          requestLocation();
+        });
+      })();
+    </script>
+  </body>
+</html>
