@@ -11,6 +11,9 @@ export const DRIVE_START_EARLY_WINDOW_MIN = 15;
 /** За сколько минут до планового начала показывается кнопка «Опаздываю» (один раз, пока сдвиг не подтверждён). */
 export const DRIVE_RUNNING_LATE_BUTTON_WINDOW_MIN = 20;
 
+/** За сколько до планового начала (пока сессия не запущена) — звук, прокрутка и подсветка карточки в недельном графике. */
+export const DRIVE_IMMINENT_ALERT_WINDOW_MS = 60_000;
+
 export function driveSlotScheduledStartMs(slot: DriveSlot): number | null {
   return parseDateKeyAndTimeToMs(slot.dateKey, slot.startTime);
 }
@@ -50,6 +53,14 @@ export function canShowInstructorRunningLateButton(slot: DriveSlot, nowMs: numbe
   if (t0 == null) return false;
   const windowStart = t0 - DRIVE_RUNNING_LATE_BUTTON_WINDOW_MIN * 60 * 1000;
   return nowMs >= windowStart && nowMs < t0;
+}
+
+/** Недельный график: с (T − 1 мин) до нажатия «Начать» / старта live — подсветка и одноразовые звук/скролл. */
+export function isDriveSlotImminentAttention(slot: DriveSlot, nowMs: number): boolean {
+  if (slot.status !== "scheduled" || slot.liveStartedAt != null) return false;
+  const t0 = driveSlotScheduledStartMs(slot);
+  if (t0 == null) return false;
+  return nowMs >= t0 - DRIVE_IMMINENT_ALERT_WINDOW_MS;
 }
 
 export function isDriveStartBeforeScheduledTime(slot: DriveSlot, nowMs: number): boolean {

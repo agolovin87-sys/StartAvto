@@ -36,6 +36,7 @@ import {
   isDriveStartBeforeScheduledTime,
   shouldHideWeekScheduleGeoShareButtons,
 } from "@/lib/driveSession";
+import { useDriveImminentWeekAlert } from "@/hooks/useDriveImminentWeekAlert";
 import { useAuth } from "@/context/AuthContext";
 import { useDriveLocationSharingUi } from "@/context/DriveLocationSharingUiContext";
 import { useChatNav } from "@/context/ChatNavContext";
@@ -607,6 +608,25 @@ export function InstructorHomeTab() {
     return n;
   }, [slotsByDateKey, weekKeys]);
 
+  const weekScheduledSlotsForImminent = useMemo(() => {
+    const out: DriveSlot[] = [];
+    for (const dk of weekKeys) {
+      for (const sl of slotsByDateKey.get(dk) ?? []) {
+        if (sl.status === "scheduled" && sl.liveStartedAt == null) {
+          out.push(sl);
+        }
+      }
+    }
+    return out;
+  }, [weekKeys, slotsByDateKey]);
+
+  const driveImminent = useDriveImminentWeekAlert({
+    weekScheduledSlots: weekScheduledSlotsForImminent,
+    nowMs,
+    viewerUid: instructorUid || undefined,
+    enabled: weekScheduleOpen,
+  });
+
   async function cancelWeekDriveSlot(slotId: string) {
     setWeekCancelBusyId(slotId);
     setWeekScheduleErr(null);
@@ -899,6 +919,8 @@ export function InstructorHomeTab() {
                           slot={sl}
                           personRowLabel="Курсант"
                           personShortName={shortName}
+                          listItemRef={driveImminent.getListItemRef(sl.id)}
+                          imminentAttention={driveImminent.isImminent(sl)}
                           statusValue={
                             sl.instructorLateShiftMin != null && sl.instructorLateShiftMin > 0 ? (
                               <span className="drive-instructor-late-shift-status">

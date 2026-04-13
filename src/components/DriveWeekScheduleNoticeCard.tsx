@@ -2,7 +2,7 @@
  * Недельный график подтверждённых вождений — тот же визуальный стиль,
  * что у карточки «Подтверждение записи» (панель, строки, статус, действия справа).
  */
-import type { ReactNode } from "react";
+import type { ReactNode, RefCallback } from "react";
 import type { DriveSlot } from "@/types";
 import { driveSlotCardDateTimeLabel, driveSlotCardTimeOnly } from "@/admin/scheduleFormat";
 import {
@@ -45,6 +45,10 @@ export function DriveWeekScheduleNoticeCard({
   belowCard,
   /** Строка под «Статус:» (например адрес после отправки геолокации). */
   belowStatusRow,
+  /** ref на корневой `<li>` (прокрутка к карточке за минуту до начала). */
+  listItemRef,
+  /** Пульс зелёного свечения до старта live (см. `useDriveImminentWeekAlert`). */
+  imminentAttention = false,
 }: {
   slot: DriveSlot;
   personRowLabel: string;
@@ -57,6 +61,8 @@ export function DriveWeekScheduleNoticeCard({
   customSideActions?: ReactNode | null;
   belowCard?: ReactNode;
   belowStatusRow?: ReactNode;
+  listItemRef?: RefCallback<HTMLLIElement>;
+  imminentAttention?: boolean;
 }) {
   const defaultDelete =
     onCancel != null ? (
@@ -76,7 +82,12 @@ export function DriveWeekScheduleNoticeCard({
     customSideActions !== undefined ? customSideActions : defaultDelete;
 
   return (
-    <li className="drive-week-schedule-notice-item">
+    <li
+      ref={listItemRef}
+      className={`drive-week-schedule-notice-item${
+        imminentAttention ? " drive-week-schedule-notice-item--imminent" : ""
+      }`}
+    >
       <div className="instructor-card instructor-card--student student-home-my-instructor">
         <div className="instructor-preview-bar">
           <div className="instructor-card-preview instructor-card-preview--student glossy-panel instructor-home-cadet-preview student-pending-drive-preview">

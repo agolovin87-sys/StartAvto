@@ -61,6 +61,7 @@ import {
 import { DriveWeekScheduleNoticeCard } from "@/components/DriveWeekScheduleNoticeCard";
 import { StudentDriveLocationShareButton } from "@/components/DriveStudentLocationShare";
 import { DriveSlotShareAddressRow } from "@/components/DriveSlotShareAddressRow";
+import { useDriveImminentWeekAlert } from "@/hooks/useDriveImminentWeekAlert";
 import { useDashboardTabHistory } from "@/hooks/useDashboardTabHistory";
 import { useMeetingGeolocationEnabled } from "@/hooks/useMeetingGeolocationEnabled";
 import { HapticButton } from "@/components/HapticButton";
@@ -828,6 +829,25 @@ export function StudentDashboard() {
     return n;
   }, [slotsByDateKey, weekKeys]);
 
+  const weekScheduledSlotsForImminent = useMemo(() => {
+    const out: DriveSlot[] = [];
+    for (const dk of weekKeys) {
+      for (const sl of slotsByDateKey.get(dk) ?? []) {
+        if (sl.status === "scheduled" && sl.liveStartedAt == null) {
+          out.push(sl);
+        }
+      }
+    }
+    return out;
+  }, [weekKeys, slotsByDateKey]);
+
+  const driveImminent = useDriveImminentWeekAlert({
+    weekScheduledSlots: weekScheduledSlotsForImminent,
+    nowMs,
+    viewerUid: studentUid || undefined,
+    enabled: weekOpen && tab === "home",
+  });
+
   async function confirmPendingDrive(slotId: string) {
     setPendingDriveBusyId(slotId);
     setPendingDriveErr(null);
@@ -1218,6 +1238,8 @@ export function StudentDashboard() {
                                       firstRow="time"
                                       personRowLabel="Инструктор"
                                       personShortName={shortName}
+                                      listItemRef={driveImminent.getListItemRef(sl.id)}
+                                      imminentAttention={driveImminent.isImminent(sl)}
                                       statusValue={
                                         sl.instructorLateShiftMin != null &&
                                         sl.instructorLateShiftMin > 0 ? (
