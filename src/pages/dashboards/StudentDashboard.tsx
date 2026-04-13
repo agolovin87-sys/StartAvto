@@ -9,6 +9,7 @@ import {
 } from "@/admin/scheduleFormat";
 import { useChatUnread } from "@/context/ChatUnreadContext";
 import { useAuth } from "@/context/AuthContext";
+import { useDriveLocationSharingUi } from "@/context/DriveLocationSharingUiContext";
 import { ChatNavContext } from "@/context/ChatNavContext";
 import { useChatThreadShell } from "@/context/ChatThreadShellContext";
 import {
@@ -51,7 +52,12 @@ import {
   groupFinishedDriveSlotsByDateKey,
 } from "@/components/DriveFinishedDayTable";
 import { DriveWeekScheduleNoticeCard } from "@/components/DriveWeekScheduleNoticeCard";
+import { StudentDriveLocationShareButton } from "@/components/DriveStudentLocationShare";
+import { DriveSlotShareAddressRow } from "@/components/DriveSlotShareAddressRow";
 import { useDashboardTabHistory } from "@/hooks/useDashboardTabHistory";
+import { useMeetingGeolocationEnabled } from "@/hooks/useMeetingGeolocationEnabled";
+import { HapticButton } from "@/components/HapticButton";
+import { hapticSelection } from "@/utils/haptics";
 import { playDriveAlertSound } from "@/audio/playDriveAlertSound";
 import {
   loadSeenDriveKeys,
@@ -578,6 +584,12 @@ const navItems: {
 
 export function StudentDashboard() {
   const { profile, user } = useAuth();
+  const meetingGeoEnabled = useMeetingGeolocationEnabled(
+    (user?.uid ?? profile?.uid ?? "").trim()
+  );
+  const driveLocUi = useDriveLocationSharingUi();
+  const showStudentDriveLocationShare =
+    driveLocUi.ready && driveLocUi.studentsEnabled && meetingGeoEnabled;
   const [tab, setTab] = useState<StudentNavTab>("home");
   useDashboardTabHistory(tab, setTab, STUDENT_DASH_TABS);
   const [chatThreadOpen, setChatThreadOpen] = useState(false);
@@ -617,6 +629,7 @@ export function StudentDashboard() {
   const openChatWithUser = useCallback((uid: string) => {
     const t = uid?.trim();
     if (!t) return;
+    hapticSelection();
     setPendingOpenChatUserId(t);
     setTab("chat");
   }, []);
@@ -1183,21 +1196,30 @@ export function StudentDashboard() {
                                                 : "Идет вождение"}
                                           </span>
                                         }
+                                        belowStatusRow={<DriveSlotShareAddressRow slotId={sl.id} />}
                                         customSideActions={
-                                          !liveAcked ? (
-                                            <button
-                                              type="button"
-                                              className="instr-side-btn glossy-btn student-drive-live-ack-btn"
-                                              onClick={() => void ackDriveLiveSession(sl.id)}
-                                              disabled={ackLiveBusyId === sl.id}
-                                              aria-label="Подтвердить вождение"
-                                              title="Подтвердить"
-                                            >
-                                              <IconPlayFill />
-                                            </button>
-                                          ) : livePaused ? null : (
-                                            <DriveLiveStudentTimerDecor slot={sl} nowMs={nowMs} />
-                                          )
+                                          <>
+                                            {showStudentDriveLocationShare && !liveAcked ? (
+                                              <StudentDriveLocationShareButton
+                                                slot={sl}
+                                                studentId={studentUid}
+                                              />
+                                            ) : null}
+                                            {!liveAcked ? (
+                                              <button
+                                                type="button"
+                                                className="instr-side-btn glossy-btn student-drive-live-ack-btn"
+                                                onClick={() => void ackDriveLiveSession(sl.id)}
+                                                disabled={ackLiveBusyId === sl.id}
+                                                aria-label="Подтвердить вождение"
+                                                title="Подтвердить"
+                                              >
+                                                <IconPlayFill />
+                                              </button>
+                                            ) : livePaused ? null : (
+                                              <DriveLiveStudentTimerDecor slot={sl} nowMs={nowMs} />
+                                            )}
+                                          </>
                                         }
                                       />
                                     );
@@ -1222,11 +1244,39 @@ export function StudentDashboard() {
                                           </span>
                                         )
                                       }
+                                      belowStatusRow={<DriveSlotShareAddressRow slotId={sl.id} />}
                                       cancelBusy={scheduleCancelBusyId === sl.id}
                                       onCancel={
                                         canStudentCancelScheduledDriveSlot(sl, nowMs)
                                           ? () => void cancelConfirmedDrive(sl.id)
                                           : undefined
+                                      }
+                                      customSideActions={
+                                        <>
+                                          {showStudentDriveLocationShare ? (
+                                            <StudentDriveLocationShareButton
+                                              slot={sl}
+                                              studentId={studentUid}
+                                            />
+                                          ) : null}
+                                          {canStudentCancelScheduledDriveSlot(sl, nowMs) ? (
+                                            <button
+                                              type="button"
+                                              className="instr-side-btn glossy-btn student-pending-decline-btn"
+                                              onClick={() => void cancelConfirmedDrive(sl.id)}
+                                              disabled={scheduleCancelBusyId === sl.id}
+                                              aria-label="Отменить вождение"
+                                              title="Отменить"
+                                            >
+                                              <svg viewBox="0 0 24 24" aria-hidden>
+                                                <path
+                                                  fill="currentColor"
+                                                  d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"
+                                                />
+                                              </svg>
+                                            </button>
+                                          ) : null}
+                                        </>
                                       }
                                     />
                                   );
@@ -1278,9 +1328,10 @@ export function StudentDashboard() {
                   ? `Новых уведомлений по вождению: ${navBadge}`
                   : "";
             return (
-              <button
+              <HapticButton
                 key={id}
                 type="button"
+                hapticType="selection"
                 data-student-onboarding-nav={id}
                 className={
                   tab === id ? "admin-bottom-nav-item is-active" : "admin-bottom-nav-item"
@@ -1296,7 +1347,7 @@ export function StudentDashboard() {
                   ) : null}
                 </span>
                 <span className="admin-bottom-nav-label">{label}</span>
-              </button>
+              </HapticButton>
             );
           })}
         </nav>

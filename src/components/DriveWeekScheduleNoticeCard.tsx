@@ -43,6 +43,8 @@ export function DriveWeekScheduleNoticeCard({
   customSideActions,
   /** Блок под карточкой (таймер инструктора). */
   belowCard,
+  /** Строка под «Статус:» (например адрес после отправки геолокации). */
+  belowStatusRow,
 }: {
   slot: DriveSlot;
   personRowLabel: string;
@@ -54,6 +56,7 @@ export function DriveWeekScheduleNoticeCard({
   statusValue?: ReactNode;
   customSideActions?: ReactNode | null;
   belowCard?: ReactNode;
+  belowStatusRow?: ReactNode;
 }) {
   const defaultDelete =
     onCancel != null ? (
@@ -102,6 +105,7 @@ export function DriveWeekScheduleNoticeCard({
                   <span className="drive-pending-notice-label">Статус:</span> {statusValue}
                 </span>
               </div>
+              {belowStatusRow}
             </div>
           </div>
           {sideCol != null ? (

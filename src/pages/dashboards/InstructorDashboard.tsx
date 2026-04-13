@@ -17,6 +17,9 @@ import { InstructorLocationBroadcaster } from "@/components/InstructorLocationBr
 import { recordInstructorGpsSessionPing } from "@/firebase/adminGpsPing";
 import { useAutoDeleteExpiredOpenFreeWindows } from "@/hooks/useAutoDeleteExpiredOpenFreeWindows";
 import { useDashboardTabHistory } from "@/hooks/useDashboardTabHistory";
+import { useMeetingGeolocationEnabled } from "@/hooks/useMeetingGeolocationEnabled";
+import { HapticButton } from "@/components/HapticButton";
+import { hapticSelection } from "@/utils/haptics";
 import { playDriveAlertSound } from "@/audio/playDriveAlertSound";
 import {
   loadInstructorSeenDriveKeys,
@@ -136,6 +139,7 @@ export function InstructorDashboard() {
   const openChatWithUser = useCallback((uid: string) => {
     const t = uid?.trim();
     if (!t) return;
+    hapticSelection();
     setPendingOpenChatUserId(t);
     setTab("chat");
   }, []);
@@ -257,8 +261,11 @@ export function InstructorDashboard() {
 
   useAutoDeleteExpiredOpenFreeWindows(instructorUid, instructorFreeWindows);
 
+  const meetingGeoEnabled = useMeetingGeolocationEnabled(instructorUid);
   const broadcastLocation =
-    profile?.role === "instructor" && profile?.accountStatus === "active";
+    profile?.role === "instructor" &&
+    profile?.accountStatus === "active" &&
+    meetingGeoEnabled;
 
   useEffect(() => {
     if (!instructorUid || !broadcastLocation) return;
@@ -314,9 +321,10 @@ export function InstructorDashboard() {
                   ? `Новых уведомлений по записи и вождению: ${navBadge}`
                   : "";
             return (
-              <button
+              <HapticButton
                 key={id}
                 type="button"
+                hapticType="selection"
                 data-instructor-onboarding-nav={id}
                 className={
                   tab === id ? "admin-bottom-nav-item is-active" : "admin-bottom-nav-item"
@@ -332,7 +340,7 @@ export function InstructorDashboard() {
                   ) : null}
                 </span>
                 <span className="admin-bottom-nav-label">{label}</span>
-              </button>
+              </HapticButton>
             );
           })}
         </nav>

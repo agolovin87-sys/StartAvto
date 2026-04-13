@@ -14,6 +14,8 @@ import { AdminHistoryTab } from "@/pages/dashboards/admin/AdminHistoryTab";
 import { AdminSettingsTab } from "@/pages/dashboards/admin/AdminSettingsTab";
 import { backfillManualGroupParticipantEmails } from "@/firebase/chat";
 import { useDashboardTabHistory } from "@/hooks/useDashboardTabHistory";
+import { HapticButton } from "@/components/HapticButton";
+import { hapticSelection } from "@/utils/haptics";
 
 type AdminNavTab = "home" | "schedule" | "chat" | "history" | "gps" | "settings";
 
@@ -132,6 +134,7 @@ function AdminDashboardInner() {
   const openChatWithUser = useCallback((uid: string) => {
     const t = uid?.trim();
     if (!t) return;
+    hapticSelection();
     setPendingOpenChatUserId(t);
     setTab("chat");
   }, []);
@@ -210,9 +213,10 @@ function AdminDashboardInner() {
                 ? `Новых уведомлений по геолокации: ${navBadgeCount}`
                 : "";
           return (
-            <button
+            <HapticButton
               key={id}
               type="button"
+              hapticType="selection"
               className={tab === id ? "admin-bottom-nav-item is-active" : "admin-bottom-nav-item"}
               onClick={() => setTab(id)}
             >
@@ -225,7 +229,7 @@ function AdminDashboardInner() {
                 ) : null}
               </span>
               <span className="admin-bottom-nav-label">{label}</span>
-            </button>
+            </HapticButton>
           );
         })}
       </nav>

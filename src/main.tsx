@@ -1,6 +1,7 @@
 import { createRoot } from "react-dom/client";
 import { BrowserRouter } from "react-router-dom";
 import { AuthProvider } from "@/context/AuthContext";
+import { DriveLocationSharingUiProvider } from "@/context/DriveLocationSharingUiContext";
 import { installWebAudioUnlockListeners } from "@/audio/unlockWebAudio";
 import { initThemeOnLoad } from "@/theme/themeSettings";
 import App from "@/App";
@@ -30,7 +31,9 @@ if (typeof window !== "undefined") {
 createRoot(document.getElementById("root")!).render(
   <BrowserRouter>
     <AuthProvider>
-      <App />
+      <DriveLocationSharingUiProvider>
+        <App />
+      </DriveLocationSharingUiProvider>
     </AuthProvider>
   </BrowserRouter>
 );

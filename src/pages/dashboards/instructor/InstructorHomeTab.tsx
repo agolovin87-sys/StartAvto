@@ -25,6 +25,8 @@ import {
 import { DriveLiveSessionPanel } from "@/components/DriveLiveSessionPanel";
 import { DriveLiveSteeringDecor } from "@/components/DriveLiveSteeringDecor";
 import { DriveWeekScheduleNoticeCard } from "@/components/DriveWeekScheduleNoticeCard";
+import { InstructorStudentLocationShareButton } from "@/components/DriveStudentLocationShare";
+import { DriveSlotShareAddressRow } from "@/components/DriveSlotShareAddressRow";
 import {
   canShowInstructorRunningLateButton,
   canShowInstructorStartDriveButton,
@@ -32,6 +34,7 @@ import {
   isDriveStartBeforeScheduledTime,
 } from "@/lib/driveSession";
 import { useAuth } from "@/context/AuthContext";
+import { useDriveLocationSharingUi } from "@/context/DriveLocationSharingUiContext";
 import { useChatNav } from "@/context/ChatNavContext";
 import type { AccountStatus, DriveSlot, TrainingGroup, UserProfile } from "@/types";
 import { isPresenceEffectivelyOnline } from "@/utils/presence";
@@ -439,6 +442,9 @@ function CadetRowCard({ student }: { student: UserProfile }) {
 
 export function InstructorHomeTab() {
   const { profile, user, refreshProfile } = useAuth();
+  const driveLocUi = useDriveLocationSharingUi();
+  const showInstructorDriveLocationShare =
+    driveLocUi.ready && driveLocUi.instructorsEnabled;
   /** Документ в Firestore всегда по uid из Auth — совпадает с users/{uid} после прикрепления админом. */
   const instructorUid = user?.uid ?? profile?.uid ?? "";
 
@@ -879,8 +885,14 @@ export function InstructorHomeTab() {
                                     : "в процессе"}
                               </span>
                             }
+                            belowStatusRow={<DriveSlotShareAddressRow slotId={sl.id} />}
                             customSideActions={
-                              liveAcked && !livePaused ? <DriveLiveSteeringDecor /> : null
+                              <>
+                                {showInstructorDriveLocationShare && !liveAcked ? (
+                                  <InstructorStudentLocationShareButton slotId={sl.id} />
+                                ) : null}
+                                {liveAcked && !livePaused ? <DriveLiveSteeringDecor /> : null}
+                              </>
                             }
                             belowCard={
                               sl.liveStartedAt != null ? (
@@ -911,6 +923,7 @@ export function InstructorHomeTab() {
                               <span className="drive-scheduled-status-confirmed">подтверждено</span>
                             )
                           }
+                          belowStatusRow={<DriveSlotShareAddressRow slotId={sl.id} />}
                           cancelBusy={weekCancelBusyId === sl.id}
                           cancelAriaLabel="Отменить вождение"
                           onCancel={() => void cancelWeekDriveSlot(sl.id)}
@@ -947,6 +960,9 @@ export function InstructorHomeTab() {
                                 >
                                   <IconRunningLate />
                                 </button>
+                              ) : null}
+                              {showInstructorDriveLocationShare ? (
+                                <InstructorStudentLocationShareButton slotId={sl.id} />
                               ) : null}
                               <button
                                 type="button"

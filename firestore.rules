@@ -219,6 +219,77 @@ service cloud.firestore {
         || (isInstructorAccount() && request.auth.uid == instructorId);
     }
 
+    /**
+     * Курсант отправляет координаты инструктору по конкретному слоту вождения.
+     */
+    match /studentDriveLocationShares/{slotId} {
+      function slotShareDoc() {
+        return get(/databases/$(database)/documents/driveSlots/$(slotId)).data;
+      }
+      function slotShareExists() {
+        return exists(/databases/$(database)/documents/driveSlots/$(slotId));
+      }
+      function slotShareAllowed() {
+        return slotShareExists()
+          && slotShareDoc().get('status', '') != 'cancelled'
+          && slotShareDoc().get('status', '') != 'completed';
+      }
+
+      allow read: if isSignedIn()
+        && (
+          isAdmin()
+          || (
+            slotShareExists()
+            && slotShareAllowed()
+            && (
+              (isStudentAccount() && slotShareDoc().studentId == request.auth.uid)
+              || (isInstructorAccount() && slotShareDoc().instructorId == request.auth.uid)
+            )
+          )
+        );
+
+      allow create, update: if isStudentAccount()
+        && slotShareExists()
+        && slotShareAllowed()
+        && slotShareDoc().studentId == request.auth.uid
+        && request.resource.data.studentId == slotShareDoc().studentId
+        && request.resource.data.instructorId == slotShareDoc().instructorId
+        && request.resource.data.keys().hasOnly(['studentId', 'instructorId', 'lat', 'lng', 'accuracy', 'addressLabel', 'locationComment', 'updatedAt'])
+        && request.resource.data.lat is number
+        && request.resource.data.lng is number
+        && request.resource.data.lat >= -90
+        && request.resource.data.lat <= 90
+        && request.resource.data.lng >= -180
+        && request.resource.data.lng <= 180
+        && request.resource.data.studentId is string
+        && request.resource.data.instructorId is string
+        && request.resource.data.accuracy is number
+        && request.resource.data.accuracy >= 1
+        && request.resource.data.accuracy <= 100000
+        && request.resource.data.addressLabel is string
+        && request.resource.data.addressLabel.size() <= 500
+        && request.resource.data.locationComment is string
+        && request.resource.data.locationComment.size() <= 300
+        && request.resource.data.updatedAt is timestamp;
+
+      allow delete: if isStudentAccount()
+        && slotShareExists()
+        && slotShareDoc().studentId == request.auth.uid;
+    }
+
+    /**
+     * Глобальные флаги UI: показывать ли кнопки геолокации в графике у инструкторов / курсантов.
+     */
+    match /appSettings/driveLocationSharing {
+      allow read: if isSignedIn();
+      allow create, update: if isAdmin()
+        && request.resource.data.keys().hasOnly(['instructorsEnabled', 'studentsEnabled', 'updatedAt'])
+        && request.resource.data.instructorsEnabled is bool
+        && request.resource.data.studentsEnabled is bool
+        && request.resource.data.updatedAt is timestamp;
+      allow delete: if false;
+    }
+
     match /groups/{groupId} {
       /** Курсант читает только свою учебную группу (для привязки к чат-группе и self-join). */
       allow read: if isAdmin()

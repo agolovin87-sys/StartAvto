@@ -35,6 +35,15 @@ import {
   type BrowserNotifyPermissionLabel,
   type NotificationSettings,
 } from "@/admin/notificationSettings";
+import {
+  browserGeolocationPermissionRu,
+  detectBrowserGeolocationPermission,
+  getMeetingGeolocationEnabled,
+  meetingGeolocationRequiresSecureContext,
+  setMeetingGeolocationEnabled,
+  subscribeMeetingGeolocationSettings,
+  type BrowserGeolocationPermissionLabel,
+} from "@/admin/meetingGeolocationSettings";
 import { playIncomingMessageSound } from "@/chat/incomingMessageAlerts";
 import { VibrationIncomingSettingRow } from "@/components/VibrationIncomingSettingRow";
 import { AVATAR_EXPORT_SIZE, drawCircularAvatar } from "@/admin/drawCircularAvatar";
@@ -61,6 +70,9 @@ import {
   subscribeTheme,
   type ThemeMode,
 } from "@/theme/themeSettings";
+import { HapticFeedbackSettings } from "@/components/Profile";
+import { PasswordRecoverySection } from "@/components/PasswordRecoverySection";
+import { hapticError, hapticSuccess } from "@/utils/haptics";
 
 const MAX_AVATAR_DATA_URL_CHARS = 450_000;
 
@@ -79,7 +91,7 @@ const OTHER_SECTIONS: { id: string; title: string; description: string }[] = [
   {
     id: "settings-security-passkey",
     title: "Безопасность",
-    description: "Биометрический вход",
+    description: "Пароль, биометрический вход",
   },
   {
     id: "settings-theme",
@@ -93,6 +105,107 @@ const OTHER_SECTIONS: { id: string; title: string; description: string }[] = [
   },
 ];
 
+function IconSectionAvatar({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" width="22" height="22" aria-hidden>
+      <path
+        fill="currentColor"
+        d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"
+      />
+    </svg>
+  );
+}
+
+function IconSectionNotify({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" width="22" height="22" aria-hidden>
+      <path
+        fill="currentColor"
+        d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.89 2 2 2zm6-6V11c0-3.07-1.64-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.63 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z"
+      />
+    </svg>
+  );
+}
+
+function IconSectionGeolocation({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" width="22" height="22" aria-hidden>
+      <path
+        fill="currentColor"
+        d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"
+      />
+    </svg>
+  );
+}
+
+function IconSectionChat({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" width="22" height="22" aria-hidden>
+      <path
+        fill="currentColor"
+        d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H6l-2 2V4h16v12z"
+      />
+    </svg>
+  );
+}
+
+function IconSectionSecurity({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" width="22" height="22" aria-hidden>
+      <path
+        fill="currentColor"
+        d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm0 10.99h7c-.53 4.12-3.28 7.79-7 8.94V12H5V6.3l7-3.11v7.8z"
+      />
+    </svg>
+  );
+}
+
+function IconSectionTheme({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" width="22" height="22" aria-hidden>
+      <path
+        fill="currentColor"
+        d="M20 8.69V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12 20 8.69zM12 18c-3.31 0-6-2.69-6-6s2.69-6 6-6 6 2.69 6 6-2.69 6-6 6zm0-10c-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4-1.79-4-4-4z"
+      />
+    </svg>
+  );
+}
+
+function IconSectionMemory({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" width="22" height="22" aria-hidden>
+      <path
+        fill="currentColor"
+        d="M2 20h20v-4H2v4zm2-3h2v2H4v-2zM2 4v4h20V4H2zm4 3H4V5h2v2zm-4 7h20v-4H2v4zm2-3h2v2H4v-2z"
+      />
+    </svg>
+  );
+}
+
+function IconSectionHaptics({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" width="22" height="22" aria-hidden>
+      <path
+        fill="currentColor"
+        d="M0 15h2V9H0v6zm3 2h2V7H3v10zm19-7v6h2V9h-2zm-3 7h2V7h-2v10zm-4-7.66l-1.41 1.41L15 9.83V20h2v-4.17l1.59 1.59L20 15l-4-4-3.33 3.34zM4 15h2V7H4v8z"
+      />
+    </svg>
+  );
+}
+
+function otherSectionIcon(id: string): ReactNode {
+  switch (id) {
+    case "settings-security-passkey":
+      return <IconSectionSecurity className="admin-settings-section-trigger-icon-svg" />;
+    case "settings-theme":
+      return <IconSectionTheme className="admin-settings-section-trigger-icon-svg" />;
+    case "settings-memory":
+      return <IconSectionMemory className="admin-settings-section-trigger-icon-svg" />;
+    default:
+      return null;
+  }
+}
+
 type SettingsAccordionItemProps = {
   sectionId: string;
   title: string;
@@ -100,6 +213,8 @@ type SettingsAccordionItemProps = {
   open: boolean;
   onToggle: () => void;
   className?: string;
+  /** Иконка слева от заголовка (декоративная) */
+  icon?: ReactNode;
   children: ReactNode;
 };
 
@@ -110,6 +225,7 @@ function SettingsAccordionItem({
   open,
   onToggle,
   className,
+  icon,
   children,
 }: SettingsAccordionItemProps) {
   const panelId = `${sectionId}-panel`;
@@ -123,6 +239,11 @@ function SettingsAccordionItem({
         id={sectionId}
         onClick={onToggle}
       >
+        {icon ? (
+          <span className="admin-settings-section-trigger-icon" aria-hidden>
+            {icon}
+          </span>
+        ) : null}
         <span className="admin-settings-section-trigger-text">
           <span className="admin-settings-section-trigger-title">{title}</span>
           {description.trim() ? (
@@ -333,6 +454,12 @@ export function AdminSettingsTab() {
   const { user, profile, refreshProfile } = useAuth();
   const uid = user?.uid ?? "";
   const isAdmin = profile?.role === "admin";
+  const isDriveGeoUser = profile?.role === "instructor" || profile?.role === "student";
+
+  const [meetingGeoEnabled, setMeetingGeoEnabledState] = useState(true);
+  const [geoPerm, setGeoPerm] = useState<BrowserGeolocationPermissionLabel>("prompt");
+  const [geoErr, setGeoErr] = useState<string | null>(null);
+  const [geoBusy, setGeoBusy] = useState(false);
 
   const [chatPrivacy, setChatPrivacy] = useState<ChatPrivacySettings>(DEFAULT_CHAT_PRIVACY_SETTINGS);
 
@@ -374,6 +501,60 @@ export function AdminSettingsTab() {
       setNotifySettings(getNotificationSettings(uid));
     });
   }, [uid]);
+
+  useEffect(() => {
+    if (!uid) {
+      setMeetingGeoEnabledState(true);
+      return;
+    }
+    if (!isDriveGeoUser) return;
+    setMeetingGeoEnabledState(getMeetingGeolocationEnabled(uid));
+  }, [uid, isDriveGeoUser]);
+
+  useEffect(() => {
+    if (!uid || !isDriveGeoUser) return;
+    return subscribeMeetingGeolocationSettings(() => {
+      setMeetingGeoEnabledState(getMeetingGeolocationEnabled(uid));
+    });
+  }, [uid, isDriveGeoUser]);
+
+  useEffect(() => {
+    if (!isDriveGeoUser) return;
+    let cancelled = false;
+    let removePerm: (() => void) | undefined;
+    const syncPerm = () => {
+      void detectBrowserGeolocationPermission().then((p) => {
+        if (!cancelled) setGeoPerm(p);
+      });
+    };
+    syncPerm();
+    window.addEventListener("focus", syncPerm);
+    document.addEventListener("visibilitychange", syncPerm);
+    window.addEventListener("pageshow", syncPerm);
+    void (async () => {
+      try {
+        if (navigator.permissions?.query) {
+          const st = await navigator.permissions.query({
+            name: "geolocation" as PermissionName,
+          });
+          const onChange = () => {
+            setGeoPerm(st.state as BrowserGeolocationPermissionLabel);
+          };
+          st.addEventListener("change", onChange);
+          removePerm = () => st.removeEventListener("change", onChange);
+        }
+      } catch {
+        /* Safari и др. */
+      }
+    })();
+    return () => {
+      cancelled = true;
+      window.removeEventListener("focus", syncPerm);
+      document.removeEventListener("visibilitychange", syncPerm);
+      window.removeEventListener("pageshow", syncPerm);
+      removePerm?.();
+    };
+  }, [isDriveGeoUser]);
 
   const incomingSoundInputRef = useRef<HTMLInputElement | null>(null);
   const [incomingSoundErr, setIncomingSoundErr] = useState<string | null>(null);
@@ -494,6 +675,54 @@ export function AdminSettingsTab() {
       setTestPushBusy(false);
     }
   }, [uid, notifySettings.webPushEnabled]);
+
+  const onMeetingGeolocationToggle = useCallback(
+    (want: boolean) => {
+      if (!uid || !isDriveGeoUser) return;
+      if (!want) {
+        setMeetingGeolocationEnabled(uid, false);
+        setMeetingGeoEnabledState(false);
+        setGeoErr(null);
+        return;
+      }
+      if (!meetingGeolocationRequiresSecureContext()) {
+        setGeoErr(
+          "Нужен безопасный адрес (HTTPS или localhost), иначе браузер не выдаёт доступ к геолокации."
+        );
+        return;
+      }
+      if (typeof navigator === "undefined" || !navigator.geolocation) {
+        setGeoErr("Геолокация не поддерживается в этом браузере.");
+        return;
+      }
+      setGeoBusy(true);
+      setGeoErr(null);
+      navigator.geolocation.getCurrentPosition(
+        () => {
+          setMeetingGeolocationEnabled(uid, true);
+          setMeetingGeoEnabledState(true);
+          setGeoBusy(false);
+          void detectBrowserGeolocationPermission().then(setGeoPerm);
+        },
+        (err) => {
+          setMeetingGeolocationEnabled(uid, false);
+          setMeetingGeoEnabledState(false);
+          setGeoBusy(false);
+          const msg =
+            err.code === 1
+              ? "Доступ к геолокации запрещён. Разрешите в настройках браузера или для этого сайта."
+              : err.code === 2
+                ? "Позиция временно недоступна. Повторите позже."
+                : err.code === 3
+                  ? "Истекло время ожидания координат. Проверьте сигнал GPS или сеть."
+                  : err.message || "Не удалось получить координаты.";
+          setGeoErr(msg);
+        },
+        { enableHighAccuracy: false, maximumAge: 0, timeout: 25_000 }
+      );
+    },
+    [uid, isDriveGeoUser]
+  );
 
   const onPickIncomingSoundFile = (e: React.ChangeEvent<HTMLInputElement>) => {
     const f = e.target.files?.[0];
@@ -699,8 +928,10 @@ export function AdminSettingsTab() {
       }
       await refreshProfile();
       setSavedOk(true);
+      hapticSuccess();
     } catch (e: unknown) {
       setLocalErr(e instanceof Error ? e.message : "Не удалось сохранить аватар");
+      hapticError();
     } finally {
       setBusy(false);
     }
@@ -721,6 +952,7 @@ export function AdminSettingsTab() {
           description="Загрузите снимок и подберите масштаб ползунком."
           open={openSettingsSection === "settings-avatar"}
           onToggle={() => toggleSettingsSection("settings-avatar")}
+          icon={<IconSectionAvatar className="admin-settings-section-trigger-icon-svg" />}
         >
           {!uid ? (
             <p className="admin-settings-section-desc">Войдите, чтобы изменить аватар.</p>
@@ -817,6 +1049,7 @@ export function AdminSettingsTab() {
           description="Push с сервера, звуки чата, уведомления браузера и вибрация. Настройки только на этом устройстве."
           open={openSettingsSection === "settings-notify"}
           onToggle={() => toggleSettingsSection("settings-notify")}
+          icon={<IconSectionNotify className="admin-settings-section-trigger-icon-svg" />}
         >
           {!uid ? (
             <p className="admin-settings-section-desc">Войдите, чтобы изменить параметры.</p>
@@ -1211,11 +1444,140 @@ export function AdminSettingsTab() {
         </SettingsAccordionItem>
 
         <SettingsAccordionItem
+          sectionId="settings-haptics"
+          title="Тактильная отдача"
+          description="Вибрация на Android, звуки на iOS при нажатиях."
+          open={openSettingsSection === "settings-haptics"}
+          onToggle={() => toggleSettingsSection("settings-haptics")}
+          icon={<IconSectionHaptics className="admin-settings-section-trigger-icon-svg" />}
+        >
+          {!uid ? (
+            <p className="admin-settings-section-desc">Войдите, чтобы изменить параметры.</p>
+          ) : (
+            <HapticFeedbackSettings />
+          )}
+        </SettingsAccordionItem>
+
+        {isDriveGeoUser ? (
+          <SettingsAccordionItem
+            sectionId="settings-geolocation"
+            title="Геолокация"
+            description="Место встречи с инструктором или курсантом на карте."
+            open={openSettingsSection === "settings-geolocation"}
+            onToggle={() => toggleSettingsSection("settings-geolocation")}
+            icon={<IconSectionGeolocation className="admin-settings-section-trigger-icon-svg" />}
+          >
+            {!uid ? (
+              <p className="admin-settings-section-desc">Войдите, чтобы изменить параметры.</p>
+            ) : (
+              <div className="admin-settings-policy-block" aria-label="Геолокация для вождения">
+                <p className="admin-settings-section-desc">
+                  Необходима для указания места встречи инструктора с курсантом, отображения на карте и
+                  сопутствующих функций. Включите переключатель — браузер запросит доступ к геолокации на
+                  этом устройстве.
+                </p>
+                {!meetingGeolocationRequiresSecureContext() ? (
+                  <p className="admin-settings-notify-perm-warn" role="status">
+                    Откройте сайт по HTTPS (или localhost при разработке) — иначе геолокация в браузере
+                    недоступна.
+                  </p>
+                ) : null}
+                <div className="admin-settings-toggle-row">
+                  <div className="admin-settings-toggle-label" id="drive-geo-enabled-label">
+                    Разрешить геолокацию для приложения
+                    <span className="admin-settings-toggle-hint">
+                      Выкл — координаты не запрашиваются, передача места встречи с этого устройства
+                      отключена.
+                    </span>
+                  </div>
+                  <label className="switch-stay">
+                    <input
+                      type="checkbox"
+                      role="switch"
+                      checked={meetingGeoEnabled}
+                      disabled={geoBusy}
+                      onChange={(e) => onMeetingGeolocationToggle(e.target.checked)}
+                      aria-labelledby="drive-geo-enabled-label"
+                      aria-checked={meetingGeoEnabled}
+                    />
+                    <span className="switch-stay-slider" aria-hidden />
+                  </label>
+                </div>
+                {geoBusy ? (
+                  <p className="admin-settings-saved-hint" role="status">
+                    Запрос доступа к геолокации…
+                  </p>
+                ) : null}
+                <p className="admin-settings-notify-perm-hint" role="status">
+                  Статус в браузере: {browserGeolocationPermissionRu(geoPerm)}.
+                </p>
+                {geoErr ? (
+                  <p className="form-error admin-settings-avatar-err" role="alert">
+                    {geoErr}
+                  </p>
+                ) : null}
+                {geoPerm === "denied" ? (
+                  <p className="admin-settings-notify-perm-warn" role="status">
+                    Доступ к геолокации для сайта сейчас запрещён. Разрешите его в настройках браузера
+                    (см. инструкцию ниже), затем снова включите переключатель.
+                  </p>
+                ) : null}
+
+                <details className="admin-settings-notify-denied-help admin-settings-geo-browser-help">
+                  <summary className="admin-settings-notify-denied-summary">
+                    Как включить геолокацию в браузере
+                  </summary>
+                  <div className="admin-settings-notify-denied-body">
+                    <p>
+                      Сайт должен открываться по защищённому адресу (HTTPS). На телефоне в настройках
+                      системы должны быть включены службы определения местоположения (GPS / геоданные).
+                    </p>
+                    <p>
+                      <strong>Google Chrome (компьютер):</strong> значок замка или «Настройки сайта»
+                      слева от адреса → «Местоположение» → «Разрешить». Либо меню ⋮ → «Настройки» →
+                      «Конфиденциальность и безопасность» → «Настройки сайта» → «Местоположение» →
+                      разрешить для нужного сайта или снять блокировку.
+                    </p>
+                    <p>
+                      <strong>Google Chrome (Android):</strong> значок замка или «i» в адресной строке
+                      → «Разрешения» / «Настройки сайта» → «Местоположение» → «Разрешить». При необходимости:
+                      «Настройки» Android → «Местоположение» — включить и разрешить доступ для Chrome.
+                    </p>
+                    <p>
+                      <strong>Safari (iPhone, iPad):</strong> «Настройки» → «Safari» → «Веб-сайты» →
+                      «Геолокация» — выберите сайт и «Разрешить» или «Спрашивать». Также: «Настройки» →
+                      «Конфиденциальность и безопасность» → «Службы геолокации» — должны быть включены;
+                      для Safari при необходимости отдельно разрешите доступ к геолокации.
+                    </p>
+                    <p>
+                      <strong>Safari (Mac):</strong> Safari → «Настройки» → «Веб-сайты» → слева
+                      «Геолокация» — для вашего сайта выберите «Разрешить» или «Спрашивать». В macOS:
+                      «Системные настройки» → «Конфиденциальность и безопасность» → «Службы геолокации»
+                      — разрешите Safari (и при необходимости браузер целиком).
+                    </p>
+                    <p>
+                      <strong>Яндекс Браузер:</strong> значок замка в адресной строке → настройки сайта
+                      → разрешить «Доступ к местоположению». Либо меню → «Настройки» → «Сайты» →
+                      «Доступ к местоположению».
+                    </p>
+                    <p>
+                      После изменения настроек обновите страницу приложения и снова включите переключатель
+                      «Разрешить геолокацию для приложения» выше.
+                    </p>
+                  </div>
+                </details>
+              </div>
+            )}
+          </SettingsAccordionItem>
+        ) : null}
+
+        <SettingsAccordionItem
           sectionId="settings-chat"
           title="Чат"
           description=""
           open={openSettingsSection === "settings-chat"}
           onToggle={() => toggleSettingsSection("settings-chat")}
+          icon={<IconSectionChat className="admin-settings-section-trigger-icon-svg" />}
         >
           {isAdmin ? (
             <div
@@ -1353,9 +1715,12 @@ export function AdminSettingsTab() {
             description={description}
             open={openSettingsSection === id}
             onToggle={() => toggleSettingsSection(id)}
+            icon={otherSectionIcon(id)}
           >
             {id === "settings-security-passkey" ? (
               <>
+                <PasswordRecoverySection />
+                <div className="admin-settings-security-sep" aria-hidden />
                 <PasskeySettingsSection
                   uid={uid}
                   email={user?.email?.trim() ?? profile?.email?.trim() ?? ""}

@@ -1,15 +1,23 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { formatShortFio } from "@/admin/formatShortFio";
+import { useDriveLocationSharingUi } from "@/context/DriveLocationSharingUiContext";
 import { useAdminGpsPing } from "@/context/AdminGpsPingContext";
+import { mapFirebaseError } from "@/firebase/errors";
+import { setDriveLocationSharingSettings } from "@/firebase/driveLocationSharingSettings";
 import { AdminGpsYandexMap } from "@/components/AdminGpsYandexMap";
-import { subscribeInstructors } from "@/firebase/admin";
+import { subscribeInstructors, subscribeStudents, subscribeTrainingGroups } from "@/firebase/admin";
 import {
   fetchInstructorLiveLocationFromServer,
   requestInstructorLiveLocationRefresh,
   subscribeInstructorLiveLocation,
   type InstructorLiveLocation,
 } from "@/firebase/instructorLiveLocation";
-import type { UserProfile } from "@/types";
+import {
+  formatDriveShareAddressLine,
+  subscribeLatestStudentDriveLocationShareForStudent,
+  type StudentDriveLocationShare,
+} from "@/firebase/studentDriveLocationShare";
+import type { TrainingGroup, UserProfile } from "@/types";
 import { hasYandexMapsApiKey } from "@/yandexMapsApi";
 
 const STALE_MS = 12 * 60 * 1000;
@@ -207,13 +215,201 @@ function AdminGpsMapModal({
   );
 }
 
+function AdminGpsStudentMapModal({
+  open,
+  student,
+  share,
+  onClose,
+}: {
+  open: boolean;
+  student: UserProfile | null;
+  share: StudentDriveLocationShare | null;
+  onClose: () => void;
+}) {
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [open, onClose]);
+
+  if (!open || !student) return null;
+
+  const lat = share?.lat ?? NaN;
+  const lng = share?.lng ?? NaN;
+  const hasPoint =
+    share != null && Number.isFinite(lat) && Number.isFinite(lng);
+  const updatedAtMs = share?.updatedAtMs ?? null;
+  const accuracyM = share?.accuracy ?? null;
+  const stale = updatedAtMs != null && Date.now() - updatedAtMs > STALE_MS;
+  const addressLine = share ? formatDriveShareAddressLine(share) : null;
+
+  const title = `Геолокация: ${formatShortFio(student.displayName)}`;
+
+  return (
+    <div
+      className="confirm-dialog-backdrop"
+      role="presentation"
+      onClick={onClose}
+      onKeyDown={(e) => {
+        if (e.key === "Escape") onClose();
+      }}
+    >
+      <div
+        className="confirm-dialog admin-gps-modal"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="admin-gps-student-modal-title"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="admin-gps-modal-head">
+          <h2 id="admin-gps-student-modal-title" className="confirm-dialog-title">
+            {title}
+          </h2>
+        </div>
+        <p className="confirm-dialog-message admin-gps-modal-hint">
+          Показана последняя отправка геолокации курсантом из раздела «График вождения» (точка на карте или по
+          адресу).
+        </p>
+        {!hasPoint ? (
+          <p className="confirm-dialog-message admin-gps-modal-hint">
+            Пока нет данных: курсант ещё не отправлял место инструктору или запись устарела.
+          </p>
+        ) : (
+          <>
+            <p className={`admin-gps-meta${stale ? " admin-gps-meta--stale" : ""}`}>
+              Обновлено: {formatAgo(updatedAtMs)}
+              {stale ? " — данные могли устареть" : ""}
+              {accuracyM != null ? (
+                <>
+                  {" "}
+                  · погрешность: ±{Math.round(accuracyM)} м
+                </>
+              ) : null}
+            </p>
+            <p className="admin-gps-coords" title="WGS84">
+              WGS84: {lat.toFixed(6)}, {lng.toFixed(6)}
+            </p>
+            {addressLine ? (
+              <p className="admin-gps-coords drive-instructor-share-address-line">{addressLine}</p>
+            ) : null}
+            <p className="admin-gps-reality-hint">
+              Координаты из отправки курсанта; карта в тех же WGS84.
+              {!hasYandexMapsApiKey() ? (
+                <>
+                  {" "}
+                  Без ключа <code>VITE_YANDEX_MAPS_API_KEY</code> карта не подгрузится.
+                </>
+              ) : null}
+            </p>
+            <div className="admin-gps-map-wrap">
+              <AdminGpsYandexMap
+                key={`${lat}-${lng}-${accuracyM ?? "x"}`}
+                lat={lat}
+                lng={lng}
+                accuracyM={accuracyM}
+              />
+            </div>
+          </>
+        )}
+        <div className="confirm-dialog-actions">
+          <button type="button" className="btn btn-primary btn-sm" onClick={onClose}>
+            Закрыть
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function AdminGpsDriveLocationSharingSettings() {
+  const { instructorsEnabled, studentsEnabled, ready } = useDriveLocationSharingUi();
+  const [settingsErr, setSettingsErr] = useState<string | null>(null);
+  const [settingsBusy, setSettingsBusy] = useState(false);
+
+  async function save(nextInstructors: boolean, nextStudents: boolean) {
+    setSettingsErr(null);
+    setSettingsBusy(true);
+    try {
+      await setDriveLocationSharingSettings({
+        instructorsEnabled: nextInstructors,
+        studentsEnabled: nextStudents,
+      });
+    } catch (e: unknown) {
+      setSettingsErr(mapFirebaseError(e));
+    } finally {
+      setSettingsBusy(false);
+    }
+  }
+
+  return (
+    <div className="admin-gps-settings-panel glossy-panel">
+      <h2 className="admin-gps-settings-title">Настройки</h2>
+      <p className="admin-gps-settings-lead">
+        Показывать геолокацию у пользователей: инструкторы и курсанты (кнопки в графике вождения). При
+        выключении соответствующая кнопка скрывается.
+      </p>
+      {settingsErr ? (
+        <div className="form-error admin-gps-settings-err" role="alert">
+          {settingsErr}
+        </div>
+      ) : null}
+      <div className="admin-settings-toggle-row admin-gps-settings-toggle-row">
+        <div className="admin-settings-toggle-label" id="admin-gps-loc-instructors-label">
+          Инструкторы
+          <span className="admin-settings-toggle-hint">Кнопка «Посмотреть геолокацию» в «Мой график»</span>
+        </div>
+        <label className="switch-stay">
+          <input
+            type="checkbox"
+            role="switch"
+            checked={instructorsEnabled}
+            disabled={!ready || settingsBusy}
+            onChange={(e) => void save(e.target.checked, studentsEnabled)}
+            aria-labelledby="admin-gps-loc-instructors-label"
+            aria-checked={instructorsEnabled}
+          />
+          <span className="switch-stay-slider" aria-hidden />
+        </label>
+      </div>
+      <div className="admin-settings-toggle-row admin-gps-settings-toggle-row">
+        <div className="admin-settings-toggle-label" id="admin-gps-loc-students-label">
+          Курсанты
+          <span className="admin-settings-toggle-hint">Кнопка «Отправить геолокацию» в «График вождения»</span>
+        </div>
+        <label className="switch-stay">
+          <input
+            type="checkbox"
+            role="switch"
+            checked={studentsEnabled}
+            disabled={!ready || settingsBusy}
+            onChange={(e) => void save(instructorsEnabled, e.target.checked)}
+            aria-labelledby="admin-gps-loc-students-label"
+            aria-checked={studentsEnabled}
+          />
+          <span className="switch-stay-slider" aria-hidden />
+        </label>
+      </div>
+    </div>
+  );
+}
+
 export function AdminGpsTab() {
   const { totalGpsPingUnread, instructorHasGpsPingUnread, ackInstructorGpsPing } =
     useAdminGpsPing();
   const [instructors, setInstructors] = useState<UserProfile[]>([]);
   const [listErr, setListErr] = useState<string | null>(null);
-  const [selected, setSelected] = useState<UserProfile | null>(null);
+  const [groups, setGroups] = useState<TrainingGroup[]>([]);
+  const [students, setStudents] = useState<UserProfile[]>([]);
+  const [cadetsErr, setCadetsErr] = useState<string | null>(null);
+  const [selectedInstructor, setSelectedInstructor] = useState<UserProfile | null>(null);
+  const [selectedStudent, setSelectedStudent] = useState<UserProfile | null>(null);
   const [live, setLive] = useState<InstructorLiveLocation | null>(null);
+  const [latestStudentShare, setLatestStudentShare] = useState<StudentDriveLocationShare | null>(
+    null
+  );
 
   useEffect(() => {
     return subscribeInstructors(
@@ -230,22 +426,83 @@ export function AdminGpsTab() {
   }, []);
 
   useEffect(() => {
-    const uid = selected?.uid?.trim() ?? "";
+    return subscribeTrainingGroups(
+      (list) => {
+        setCadetsErr(null);
+        setGroups(list);
+      },
+      (e) => setCadetsErr(e.message)
+    );
+  }, []);
+
+  useEffect(() => {
+    return subscribeStudents(
+      (list) => {
+        setCadetsErr(null);
+        setStudents(list);
+      },
+      (e) => setCadetsErr(e.message)
+    );
+  }, []);
+
+  useEffect(() => {
+    const uid = selectedInstructor?.uid?.trim() ?? "";
     if (!uid) {
       setLive(null);
       return () => {};
     }
     return subscribeInstructorLiveLocation(uid, setLive);
-  }, [selected?.uid]);
+  }, [selectedInstructor?.uid]);
 
   useEffect(() => {
-    const uid = selected?.uid?.trim();
+    const uid = selectedStudent?.uid?.trim() ?? "";
+    if (!uid) {
+      setLatestStudentShare(null);
+      return () => {};
+    }
+    return subscribeLatestStudentDriveLocationShareForStudent(uid, setLatestStudentShare);
+  }, [selectedStudent?.uid]);
+
+  useEffect(() => {
+    const uid = selectedInstructor?.uid?.trim();
     if (!uid) return;
     ackInstructorGpsPing(uid);
-  }, [selected?.uid, ackInstructorGpsPing]);
+  }, [selectedInstructor?.uid, ackInstructorGpsPing]);
 
-  const modalTitle = selected
-    ? `Геолокация: ${formatShortFio(selected.displayName)}`
+  const activeStudents = useMemo(
+    () => students.filter((s) => s.accountStatus === "active" && s.role === "student"),
+    [students]
+  );
+
+  const groupsSorted = useMemo(
+    () =>
+      [...groups].sort((a, b) =>
+        a.name.localeCompare(b.name, "ru", { sensitivity: "base" })
+      ),
+    [groups]
+  );
+
+  const studentsByGroup = useMemo(() => {
+    const m = new Map<string, UserProfile[]>();
+    for (const g of groups) {
+      m.set(
+        g.id,
+        activeStudents.filter((s) => s.groupId === g.id)
+      );
+    }
+    return m;
+  }, [groups, activeStudents]);
+
+  const ungroupedStudents = useMemo(
+    () =>
+      activeStudents.filter(
+        (s) => !s.groupId || !groups.some((g) => g.id === s.groupId)
+      ),
+    [activeStudents, groups]
+  );
+
+  const instructorModalTitle = selectedInstructor
+    ? `Геолокация: ${formatShortFio(selectedInstructor.displayName)}`
     : "";
 
   return (
@@ -262,48 +519,136 @@ export function AdminGpsTab() {
         ) : null}
       </h1>
       <p className="admin-tab-lead">
-        Координаты в режиме высокой точности (GPS). На телефоне держите инструктору открытым кабинет и разрешите
-        геолокацию; под открытым небом точность обычно лучше, чем в помещении.
+        Координаты в режиме высокой точности (GPS). У инструкторов — с открытого кабинета; у курсантов —
+        последняя отправка из графика вождения.
       </p>
       {listErr ? (
         <div className="form-error" role="alert">
           {listErr}
         </div>
       ) : null}
-      {instructors.length === 0 ? (
-        <p className="admin-empty">Нет активных инструкторов.</p>
-      ) : (
-        <div className="admin-gps-btn-grid" role="list">
-          {instructors.map((ins) => {
-            const unread = instructorHasGpsPingUnread(ins.uid);
-            return (
-              <span key={ins.uid} className="admin-gps-instructor-btn-wrap">
-                <button
-                  type="button"
-                  className="btn btn-secondary admin-gps-instructor-btn"
-                  onClick={() => setSelected(ins)}
-                >
-                  {formatShortFio(ins.displayName)}
-                </button>
-                {unread ? (
-                  <span
-                    className="admin-gps-instructor-badge"
-                    aria-label="Новые координаты с устройства инструктора"
+
+      <section className="admin-gps-section glossy-panel" aria-labelledby="admin-gps-instructors-heading">
+        <h2 id="admin-gps-instructors-heading" className="admin-gps-section-title">
+          Инструкторы
+        </h2>
+        <p className="admin-gps-section-lead">
+          Живая геолокация с устройства инструктора (как в кабинете). Нажмите на ФИО, чтобы открыть карту.
+        </p>
+        {instructors.length === 0 ? (
+          <p className="admin-empty">Нет активных инструкторов.</p>
+        ) : (
+          <div className="admin-gps-btn-grid" role="list">
+            {instructors.map((ins) => {
+              const unread = instructorHasGpsPingUnread(ins.uid);
+              return (
+                <span key={ins.uid} className="admin-gps-instructor-btn-wrap">
+                  <button
+                    type="button"
+                    className="btn btn-secondary admin-gps-instructor-btn"
+                    onClick={() => {
+                      setSelectedStudent(null);
+                      setSelectedInstructor(ins);
+                    }}
                   >
-                    1
-                  </span>
-                ) : null}
-              </span>
-            );
-          })}
-        </div>
-      )}
+                    {formatShortFio(ins.displayName)}
+                  </button>
+                  {unread ? (
+                    <span
+                      className="admin-gps-instructor-badge"
+                      aria-label="Новые координаты с устройства инструктора"
+                    >
+                      1
+                    </span>
+                  ) : null}
+                </span>
+              );
+            })}
+          </div>
+        )}
+      </section>
+
+      <section className="admin-gps-section glossy-panel" aria-labelledby="admin-gps-cadets-heading">
+        <h2 id="admin-gps-cadets-heading" className="admin-gps-section-title">
+          Курсанты
+        </h2>
+        <p className="admin-gps-section-lead">
+          Список по учебным группам с вкладки «Главная». Нажмите на ФИО — карта с последней отправленной
+          геолокацией из «График вождения».
+        </p>
+        {cadetsErr ? (
+          <div className="form-error" role="alert">
+            {cadetsErr}
+          </div>
+        ) : null}
+        {groupsSorted.length === 0 && ungroupedStudents.length === 0 ? (
+          <p className="admin-empty">Нет курсантов с активным доступом.</p>
+        ) : (
+          <div className="admin-gps-cadets-by-group">
+            {groupsSorted.map((g) => {
+              const members = studentsByGroup.get(g.id) ?? [];
+              return (
+                <div key={g.id} className="admin-gps-cadet-group">
+                  <h3 className="admin-gps-cadet-group-title">{g.name}</h3>
+                  {members.length === 0 ? (
+                    <p className="admin-empty admin-gps-cadet-group-empty">В группе пока никого нет.</p>
+                  ) : (
+                    <div className="admin-gps-btn-grid" role="list">
+                      {members.map((st) => (
+                        <button
+                          key={st.uid}
+                          type="button"
+                          className="btn btn-secondary admin-gps-instructor-btn"
+                          onClick={() => {
+                            setSelectedInstructor(null);
+                            setSelectedStudent(st);
+                          }}
+                        >
+                          {formatShortFio(st.displayName)}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+            {ungroupedStudents.length > 0 ? (
+              <div className="admin-gps-cadet-group">
+                <h3 className="admin-gps-cadet-group-title">Не в группе</h3>
+                <div className="admin-gps-btn-grid" role="list">
+                  {ungroupedStudents.map((st) => (
+                    <button
+                      key={st.uid}
+                      type="button"
+                      className="btn btn-secondary admin-gps-instructor-btn"
+                      onClick={() => {
+                        setSelectedInstructor(null);
+                        setSelectedStudent(st);
+                      }}
+                    >
+                      {formatShortFio(st.displayName)}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ) : null}
+          </div>
+        )}
+      </section>
+
+      <AdminGpsDriveLocationSharingSettings />
       <AdminGpsMapModal
-        open={selected != null}
-        instructorUid={selected?.uid ?? ""}
+        open={selectedInstructor != null}
+        instructorUid={selectedInstructor?.uid ?? ""}
         subscriptionLocation={live}
-        title={modalTitle}
-        onClose={() => setSelected(null)}
+        title={instructorModalTitle}
+        onClose={() => setSelectedInstructor(null)}
+      />
+      <AdminGpsStudentMapModal
+        open={selectedStudent != null}
+        student={selectedStudent}
+        share={latestStudentShare}
+        onClose={() => setSelectedStudent(null)}
       />
     </div>
   );

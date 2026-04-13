@@ -25,6 +25,8 @@ export function mapFirebaseError(err: unknown): string {
     case "auth/wrong-password":
     case "auth/invalid-credential":
       return "Неверный email или пароль.";
+    case "auth/requires-recent-login":
+      return "Нужен повторный вход. Выйдите из аккаунта и войдите снова, затем смените пароль.";
     case "auth/too-many-requests":
       return "Слишком много попыток. Попробуйте позже.";
     case "auth/network-request-failed":

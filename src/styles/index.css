@@ -785,6 +785,82 @@ code {
   width: 100%;
 }
 
+.auth-reset-password-row {
+  margin: -0.35rem 0 0;
+  text-align: right;
+}
+
+.auth-reset-password-link {
+  padding: 0;
+  margin: 0;
+  border: none;
+  background: none;
+  font: inherit;
+  font-size: 0.88rem;
+  color: #93c5fd;
+  text-decoration: underline;
+  text-underline-offset: 0.15em;
+  cursor: pointer;
+}
+
+.auth-reset-password-link:hover:not(:disabled) {
+  color: var(--theme-soft);
+}
+
+.auth-reset-password-link:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.auth-password-wrap {
+  position: relative;
+  display: block;
+}
+
+.auth-password-wrap .auth-password-input {
+  width: 100%;
+  padding-right: 2.75rem;
+  box-sizing: border-box;
+}
+
+.auth-password-toggle {
+  position: absolute;
+  right: 0.25rem;
+  top: 50%;
+  transform: translateY(-50%);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.35rem;
+  height: 2.35rem;
+  padding: 0;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--theme-muted);
+  cursor: pointer;
+}
+
+.auth-password-toggle:hover {
+  background: var(--theme-fill-pill);
+  color: var(--theme-soft);
+}
+
+.auth-password-toggle:focus-visible {
+  outline: 2px solid rgba(96, 165, 250, 0.65);
+  outline-offset: 0;
+}
+
+.form-hint--reset-ok {
+  padding: 0.65rem 0.75rem;
+  border-radius: 10px;
+  background: rgba(20, 83, 45, 0.28);
+  border: 1px solid rgba(74, 222, 128, 0.25);
+  color: #bbf7d0;
+  font-size: 0.88rem;
+  line-height: 1.45;
+}
+
 .field {
   display: flex;
   flex-direction: column;
@@ -1493,7 +1569,7 @@ code {
 
 .admin-settings-section-trigger {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: space-between;
   gap: 0.75rem 1rem;
   width: 100%;
@@ -1515,6 +1591,24 @@ code {
 .admin-settings-section-trigger:focus-visible {
   outline: 2px solid rgba(96, 165, 250, 0.65);
   outline-offset: -2px;
+}
+
+.admin-settings-section-trigger-icon {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.65rem;
+  height: 2.65rem;
+  border-radius: 12px;
+  background: var(--theme-fill-pill);
+  color: var(--theme-accent, #a78bfa);
+}
+
+.admin-settings-section-trigger-icon-svg {
+  width: 1.4rem;
+  height: 1.4rem;
+  display: block;
 }
 
 .admin-settings-section-trigger-text {
@@ -1542,7 +1636,6 @@ code {
   flex-shrink: 0;
   font-size: 0.65rem;
   color: var(--theme-muted);
-  margin-top: 0.35rem;
   line-height: 1;
   opacity: 0.9;
 }
@@ -1697,6 +1790,46 @@ code {
   flex-wrap: wrap;
   gap: 0.5rem;
   margin-top: 0.35rem;
+}
+
+.admin-settings-password-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.admin-settings-password-panel .admin-settings-subtitle {
+  margin: 0 0 0.15rem;
+}
+
+.admin-settings-password-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  max-width: 22rem;
+}
+
+.admin-settings-password-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.admin-settings-password-label {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--theme-soft);
+}
+
+.admin-settings-password-actions {
+  margin-top: 0.15rem;
+}
+
+.admin-settings-security-sep {
+  margin: 1.25rem 0;
+  border: 0;
+  border-top: 1px solid var(--theme-line-subtle);
+  height: 0;
 }
 
 .admin-settings-app-badge-panel {
@@ -2076,6 +2209,10 @@ code {
 
 .admin-settings-notify-denied-body strong {
   color: var(--theme-soft);
+}
+
+.admin-settings-geo-browser-help {
+  margin-top: 1rem;
 }
 
 .admin-settings-incoming-sound-block {
@@ -3149,6 +3286,23 @@ html[data-theme="light"] .instructor-onboarding-actions .btn-primary.btn-sm {
 
 .instr-side-chat {
   background: linear-gradient(165deg, #8b5cf6 0%, #6d28d9 55%, #4c1d95 100%);
+}
+
+/** Геолокация в графике вождения — тот же формат, что «Позвонить» / «Чат» */
+.instr-side-loc {
+  background: linear-gradient(165deg, #0ea5e9 0%, #0284c7 55%, #075985 100%);
+}
+
+html[data-theme="light"] .instr-side-btn.instr-side-loc,
+html[data-theme="purple"] .instr-side-btn.instr-side-loc {
+  color: #fff;
+  border-color: rgba(255, 255, 255, 0.22);
+  background: linear-gradient(165deg, #0ea5e9 0%, #0284c7 55%, #075985 100%);
+}
+
+html[data-theme="light"] .instr-side-btn.instr-side-loc:hover,
+html[data-theme="purple"] .instr-side-btn.instr-side-loc:hover {
+  filter: brightness(1.06);
 }
 
 .instr-side-btn--disabled {
@@ -5132,15 +5286,17 @@ html[data-theme="light"] .instructor-week-schedule-hint-em {
   width: min(164px, 100%);
 }
 
-/** Кнопки справа в ряд — без отдельной рамки (кнопки со своими стилями) */
+/** Кнопки у таймера — сразу после циферблата, без прижатия к правому краю широкой полосы */
 .drive-live-session-panel__toolbar {
   display: flex;
   flex-direction: row;
   flex-wrap: wrap;
   align-items: center;
-  justify-content: flex-end;
+  justify-content: flex-start;
   flex: 0 0 auto;
   min-width: 0;
+  width: auto;
+  max-width: 100%;
   padding: 0;
   border: none;
   border-radius: 0;
@@ -6054,7 +6210,8 @@ html[data-theme="light"] .drive-live-session-panel__toolbar {
     flex-wrap: wrap;
   }
 
-  .instructor-preview-actions {
+  /* Не трогаем панель таймера инструктора — иначе кнопки на узком Android уезжают вправо */
+  .instructor-preview-actions:not(.drive-live-session-panel__toolbar) {
     flex-direction: row;
     width: 100%;
     justify-content: flex-end;
@@ -6514,6 +6671,172 @@ html[data-theme="light"] .drive-live-session-panel__toolbar {
   z-index: 0;
 }
 
+/* Курсант: выбор точки на карте перед отправкой инструктору */
+.student-loc-pick-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.65rem;
+  margin-bottom: 0.65rem;
+}
+
+.student-loc-whereami-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.student-loc-clear-point-btn {
+  flex-shrink: 0;
+}
+
+.student-loc-address-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 0.65rem;
+  margin-bottom: 0.85rem;
+}
+
+.student-loc-address-field {
+  flex: 1 1 12rem;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.student-loc-address-label-text {
+  font-size: 0.82rem;
+  color: var(--theme-muted);
+}
+
+.student-loc-address-input {
+  width: 100%;
+  padding: 0.5rem 0.6rem;
+  border-radius: 8px;
+  border: 1px solid var(--theme-line);
+  background: var(--theme-bg-soft);
+  color: inherit;
+  font-size: 0.9rem;
+}
+
+.student-loc-address-find-btn {
+  flex-shrink: 0;
+}
+
+.student-loc-comment-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  width: 100%;
+  margin-bottom: 0.75rem;
+}
+
+.student-loc-comment-textarea {
+  width: 100%;
+  min-height: 2.75rem;
+  padding: 0.45rem 0.55rem;
+  border-radius: 8px;
+  border: 1px solid var(--theme-line);
+  background: var(--theme-bg-soft);
+  color: inherit;
+  font-size: 0.88rem;
+  line-height: 1.4;
+  resize: vertical;
+}
+
+.drive-slot-share-address-row .drive-slot-share-address-text {
+  font-size: 0.82rem;
+  line-height: 1.35;
+  color: var(--theme-soft);
+  word-break: break-word;
+}
+
+.drive-instructor-share-address-line {
+  margin-top: 0.25rem;
+}
+
+.student-loc-whereami-ico {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+}
+
+.student-loc-whereami-label {
+  font-weight: 600;
+}
+
+.student-loc-toolbar-hint {
+  font-size: 0.85rem;
+  color: var(--theme-muted);
+}
+
+.student-loc-geo-err,
+.student-loc-send-err {
+  margin: 0 0 0.65rem;
+}
+
+.student-loc-pick-map-wrap {
+  margin-bottom: 0.75rem;
+}
+
+.student-loc-no-key-wrap {
+  margin-bottom: 0.75rem;
+}
+
+.student-loc-manual-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.student-loc-manual-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.65rem;
+}
+
+@media (max-width: 480px) {
+  .student-loc-manual-row {
+    grid-template-columns: 1fr;
+  }
+}
+
+.student-loc-manual-label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  font-size: 0.82rem;
+  color: var(--theme-muted);
+}
+
+.student-loc-manual-input {
+  padding: 0.45rem 0.55rem;
+  border-radius: 8px;
+  border: 1px solid var(--theme-line);
+  background: var(--theme-bg-soft);
+  color: inherit;
+  font-size: 0.9rem;
+}
+
+.student-loc-manual-apply {
+  align-self: flex-start;
+}
+
+.student-loc-manual-err {
+  margin: 0;
+}
+
+.student-loc-acc-hint {
+  font-weight: 400;
+  color: var(--theme-muted);
+}
+
+.student-loc-pick-prompt {
+  margin-bottom: 0.35rem;
+}
+
 .admin-gps-yandex-missing {
   display: flex;
   align-items: center;
@@ -6555,6 +6878,79 @@ html[data-theme="light"] .drive-live-session-panel__toolbar {
   gap: 0.65rem;
   margin-top: 0.65rem;
   align-items: stretch;
+}
+
+.admin-gps-section {
+  margin-top: 1.25rem;
+  padding: 1rem 1.1rem;
+  border-radius: 12px;
+}
+
+.admin-gps-section:first-of-type {
+  margin-top: 0.75rem;
+}
+
+.admin-gps-section-title {
+  margin: 0 0 0.4rem;
+  font-size: 1.15rem;
+  font-weight: 700;
+}
+
+.admin-gps-section-lead {
+  margin: 0 0 0.85rem;
+  font-size: 0.88rem;
+  line-height: 1.45;
+  color: var(--theme-muted);
+  max-width: 42rem;
+}
+
+.admin-gps-cadets-by-group {
+  display: flex;
+  flex-direction: column;
+  gap: 1.15rem;
+}
+
+.admin-gps-cadet-group-title {
+  margin: 0 0 0.5rem;
+  font-size: 0.98rem;
+  font-weight: 700;
+  color: var(--theme-heading);
+}
+
+.admin-gps-cadet-group-empty {
+  margin: 0;
+  font-size: 0.88rem;
+}
+
+.admin-gps-settings-panel {
+  margin-top: 1.35rem;
+  padding: 1rem 1.1rem;
+  border-radius: 12px;
+}
+
+.admin-gps-settings-title {
+  margin: 0 0 0.35rem;
+  font-size: 1.05rem;
+  font-weight: 700;
+}
+
+.admin-gps-settings-lead {
+  margin: 0 0 1rem;
+  font-size: 0.88rem;
+  line-height: 1.45;
+  color: var(--theme-muted);
+}
+
+.admin-gps-settings-toggle-row {
+  margin-bottom: 0.65rem;
+}
+
+.admin-gps-settings-toggle-row:last-of-type {
+  margin-bottom: 0;
+}
+
+.admin-gps-settings-err {
+  margin: 0 0 0.75rem;
 }
 
 .admin-gps-tab .admin-gps-instructor-btn {
