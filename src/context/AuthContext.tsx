@@ -8,6 +8,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import { PasskeyOfferDialog } from "@/components/PasskeyOfferDialog";
 import {
   browserLocalPersistence,
   browserSessionPersistence,
@@ -29,6 +30,7 @@ import {
   normalizeUserProfile,
 } from "@/firebase/users";
 import { mapFirebaseError } from "@/firebase/errors";
+import { hasPasskeyForUser, isPasskeySupported } from "@/utils/passkey";
 
 type AuthState = {
   user: import("firebase/auth").User | null;
@@ -63,6 +65,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(isFirebaseConfigured);
   const [error, setError] = useState<string | null>(null);
+  const [passkeyOffer, setPasskeyOffer] = useState<{ uid: string; email: string } | null>(null);
   /** Чтобы setProfile после ensureProfileAfterLogin не затирал свежие данные из onSnapshot. */
   const profileSnapshotSeenRef = useRef(false);
   /** Последний uid, для которого уже шла первичная загрузка профиля (см. onAuthStateChanged). */
@@ -80,6 +83,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         authSessionUidRef.current = null;
         profileSnapshotSeenRef.current = false;
         setProfile(null);
+        setPasskeyOffer(null);
         setLoading(false);
         return;
       }
@@ -170,7 +174,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           auth,
           stayLoggedIn ? browserLocalPersistence : browserSessionPersistence
         );
-        await signInWithEmailAndPassword(auth, email.trim(), password);
+        const cred = await signInWithEmailAndPassword(auth, email.trim(), password);
+        if (isPasskeySupported() && !hasPasskeyForUser(cred.user.uid)) {
+          setPasskeyOffer({
+            uid: cred.user.uid,
+            email: (cred.user.email ?? email).trim(),
+          });
+        }
       } catch (e) {
         const msg = mapFirebaseError(e);
         setError(msg);
@@ -277,7 +287,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   );
 
   return (
-    <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
+    <AuthContext.Provider value={value}>
+      {children}
+      <PasskeyOfferDialog
+        open={passkeyOffer != null}
+        uid={passkeyOffer?.uid ?? ""}
+        email={passkeyOffer?.email ?? ""}
+        onDismiss={() => setPasskeyOffer(null)}
+        onRegistered={() => setPasskeyOffer(null)}
+      />
+    </AuthContext.Provider>
   );
 }
 

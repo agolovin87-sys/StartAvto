@@ -159,3 +159,12 @@ export interface ChatMessage {
   deletedForMeBy?: string[];
   deletedForAll?: boolean;
 }
+
+/** Локальная демо-запись о привязке WebAuthn / passkey к пользователю (см. `utils/passkey`). */
+export interface PasskeyRegistration {
+  credentialId: string;
+  userId: string;
+  email: string;
+  registeredAt: string;
+  deviceInfo?: string;
+}
