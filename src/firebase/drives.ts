@@ -166,6 +166,26 @@ export function subscribeDriveSlotsForStudent(
   );
 }
 
+/** Один слот по id — чтобы кнопки геолокации скрывались по факту `liveStartedAt`, даже если список слотов в UI отстаёт. */
+export function subscribeDriveSlot(
+  slotId: string,
+  onUpdate: (slot: DriveSlot | null) => void,
+  onError?: (e: Error) => void
+): () => void {
+  const { db } = getFirebase();
+  return onSnapshot(
+    doc(db, DRIVES, slotId),
+    (snap) => {
+      if (!snap.exists()) {
+        onUpdate(null);
+        return;
+      }
+      onUpdate(normalizeDriveSlot(snap.data() as Record<string, unknown>, snap.id));
+    },
+    (e) => onError?.(e)
+  );
+}
+
 function normalizeFreeDriveWindow(
   data: Record<string, unknown>,
   id: string

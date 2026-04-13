@@ -8,6 +8,13 @@ export const DRIVE_LIVE_DURATION_MS = DRIVE_LIVE_DURATION_MIN * 60 * 1000;
 /** За сколько минут до начала слота доступна кнопка «Начать вождение». */
 export const DRIVE_START_EARLY_WINDOW_MIN = 15;
 
+/**
+ * За сколько минут до начала слота в недельном графике скрываются кнопки геолокации на карточке
+ * «подтверждено» (шире окна «Начать»): иначе при лаге/частичном снимке Firestore `liveStartedAt`
+ * уже есть на сервере, а клиент всё ещё рисует scheduled — кнопки не исчезают.
+ */
+export const DRIVE_WEEK_GEO_HIDE_BEFORE_START_MIN = 90;
+
 /** За сколько минут до планового начала показывается кнопка «Опаздываю» (один раз, пока сдвиг не подтверждён). */
 export const DRIVE_RUNNING_LATE_BUTTON_WINDOW_MIN = 20;
 
@@ -25,12 +32,17 @@ export function canShowInstructorStartDriveButton(slot: DriveSlot, nowMs: number
 }
 
 /**
- * В недельном графике скрывать кнопки «отправить/посмотреть геолокацию» в том же окне, где уже
- * доступно «Начать вождение»: иначе при лаге Firestore на мобильных слот остаётся в виде
- * «подтверждено», хотя вождение уже начато — кнопки геолокации ошибочно остаются видимыми.
+ * Недельный график, карточка ещё выглядит как «подтверждено» (в снимке нет `liveStartedAt`):
+ * не полагаться на `canShowInstructorStartDriveButton` — там нужен `liveStartedAt == null`, из‑за
+ * чего при «полусинхронном» состоянии кнопки геолокации оставались видимыми. Достаточно часов и
+ * времени слота.
  */
 export function shouldHideWeekScheduleGeoShareButtons(slot: DriveSlot, nowMs: number): boolean {
-  return canShowInstructorStartDriveButton(slot, nowMs);
+  if (slot.status !== "scheduled") return true;
+  const t0 = driveSlotScheduledStartMs(slot);
+  if (t0 == null) return false;
+  const quietStart = t0 - DRIVE_WEEK_GEO_HIDE_BEFORE_START_MIN * 60 * 1000;
+  return nowMs >= quietStart;
 }
 
 /** За сколько часов до начала у курсанта скрывается отмена подтверждённого вождения. */

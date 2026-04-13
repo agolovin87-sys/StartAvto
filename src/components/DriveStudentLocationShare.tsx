@@ -7,6 +7,7 @@ import {
   MAX_DRIVE_SHARE_COMMENT_LEN,
   type StudentDriveLocationShare,
 } from "@/firebase/studentDriveLocationShare";
+import { subscribeDriveSlot } from "@/firebase/drives";
 import type { DriveSlot } from "@/types";
 import { AdminGpsYandexMap } from "@/components/AdminGpsYandexMap";
 import { StudentLocationPickMap } from "@/components/StudentLocationPickMap";
@@ -448,6 +449,13 @@ export function StudentDriveLocationShareButton({
   studentId: string;
 }) {
   const [modalOpen, setModalOpen] = useState(false);
+  const [liveStarted, setLiveStarted] = useState(() => slot.liveStartedAt != null);
+
+  useEffect(() => {
+    return subscribeDriveSlot(slot.id, (s) => setLiveStarted(s?.liveStartedAt != null));
+  }, [slot.id]);
+
+  if (liveStarted) return null;
 
   return (
     <>
@@ -564,6 +572,11 @@ function InstructorStudentLocationModal({
 export function InstructorStudentLocationShareButton({ slotId }: { slotId: string }) {
   const [share, setShare] = useState<StudentDriveLocationShare | null>(null);
   const [open, setOpen] = useState(false);
+  const [liveStarted, setLiveStarted] = useState(false);
+
+  useEffect(() => {
+    return subscribeDriveSlot(slotId, (s) => setLiveStarted(s?.liveStartedAt != null));
+  }, [slotId]);
 
   useEffect(() => {
     return subscribeStudentDriveLocationShare(slotId, setShare);
@@ -573,6 +586,7 @@ export function InstructorStudentLocationShareButton({ slotId }: { slotId: strin
     if (!share) setOpen(false);
   }, [share]);
 
+  if (liveStarted) return null;
   if (!share) return null;
 
   return (
