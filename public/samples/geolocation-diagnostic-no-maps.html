@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Диагностика геолокации (без карт)</title>
+    <style>
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        min-height: 100vh;
+        font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+        background: #12141a;
+        color: #e8eaef;
+        line-height: 1.45;
+        padding: 16px;
+        font-size: 15px;
+      }
+      h1 {
+        font-size: 1.25rem;
+        font-weight: 600;
+        margin: 0 0 12px;
+        color: #fff;
+      }
+      .panel {
+        background: #1a1d26;
+        border: 1px solid #2a3040;
+        border-radius: 10px;
+        padding: 14px 16px;
+        margin-bottom: 14px;
+      }
+      .panel h2 {
+        font-size: 0.85rem;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        color: #8b93a7;
+        margin: 0 0 10px;
+      }
+      button {
+        padding: 10px 16px;
+        margin: 0 8px 8px 0;
+        font-size: 15px;
+        cursor: pointer;
+        border: none;
+        border-radius: 8px;
+        background: #3d5afe;
+        color: #fff;
+      }
+      button:hover:not(:disabled) {
+        background: #536dfe;
+      }
+      button:disabled {
+        opacity: 0.45;
+        cursor: not-allowed;
+      }
+      button.secondary {
+        background: #2d3344;
+        color: #e8eaef;
+        border: 1px solid #3d4558;
+      }
+      button.secondary:hover:not(:disabled) {
+        background: #363d52;
+      }
+      .mono {
+        font-family: ui-monospace, "Cascadia Code", Consolas, monospace;
+        font-size: 13px;
+        word-break: break-all;
+      }
+      .result-line {
+        margin: 6px 0;
+      }
+      .label {
+        color: #8b93a7;
+        display: inline-block;
+        min-width: 200px;
+      }
+      .error {
+        color: #ff8a80;
+      }
+      .ok {
+        color: #a5d6a7;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 12px;
+        margin-top: 8px;
+      }
+      th,
+      td {
+        border: 1px solid #2a3040;
+        padding: 8px 10px;
+        text-align: left;
+        vertical-align: top;
+      }
+      th {
+        background: #222633;
+        color: #b0b8c8;
+        font-weight: 600;
+      }
+      tr:nth-child(even) td {
+        background: #151821;
+      }
+      .muted {
+        color: #6c7385;
+        font-size: 13px;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Диагностика геолокации (чистый Geolocation API)</h1>
+    <p class="muted">Без Яндекс.Карт и других библиотек — только браузер.</p>
+
+    <div class="panel">
+      <h2>Устройство</h2>
+      <div class="result-line mono" id="devUa"></div>
+      <div class="result-line"><span class="label">Платформа (navigator.platform)</span><span class="mono" id="devPlatform"></span></div>
+      <div class="result-line"><span class="label">Экран (screen)</span><span class="mono" id="devScreen"></span></div>
+      <div class="result-line"><span class="label">Окно (inner)</span><span class="mono" id="devInner"></span></div>
+    </div>
+
+    <div class="panel">
+      <h2>Запрос</h2>
+      <button type="button" id="btnOnce">Получить координаты</button>
+      <button type="button" class="secondary" id="btnFive">Повторить 5 раз</button>
+      <div id="singleOut" class="mono" style="margin-top: 12px"></div>
+    </div>
+
+    <div class="panel" id="tablePanel" style="display: none">
+      <h2>5 последовательных запросов</h2>
+      <div id="tableWrap"></div>
+    </div>
+
+    <script>
+      (function () {
+        "use strict";
+
+        var GEO_OPTIONS = {
+          enableHighAccuracy: true,
+          timeout: 20000,
+          maximumAge: 0,
+        };
+
+        function fillDeviceInfo() {
+          document.getElementById("devUa").textContent = "userAgent: " + (navigator.userAgent || "—");
+          document.getElementById("devPlatform").textContent = navigator.platform || "—";
+          document.getElementById("devScreen").textContent =
+            (typeof screen !== "undefined" ? screen.width + " × " + screen.height : "—") +
+            (typeof devicePixelRatio !== "undefined" ? " (DPR " + devicePixelRatio + ")" : "");
+          document.getElementById("devInner").textContent =
+            window.innerWidth + " × " + window.innerHeight;
+        }
+
+        function formatTime(ms) {
+          if (ms == null || isNaN(ms)) return "—";
+          var d = new Date(ms);
+          return d.toLocaleString("ru-RU", {
+            day: "2-digit",
+            month: "2-digit",
+            year: "numeric",
+            hour: "2-digit",
+            minute: "2-digit",
+            second: "2-digit",
+          }) + " (" + ms + " ms)";
+        }
+
+        function fmtNum(n, decimals) {
+          if (n == null || typeof n !== "number" || isNaN(n)) return "—";
+          return n.toFixed(decimals);
+        }
+
+        function geoErrorText(code) {
+          switch (code) {
+            case 1:
+              return "PERMISSION_DENIED — доступ к геолокации запрещён пользователем или политикой сайта.";
+            case 2:
+              return "POSITION_UNAVAILABLE — позиция недоступна (нет источника данных / GPS).";
+            case 3:
+              return "TIMEOUT — превышено время ожидания (20 с).";
+            default:
+              return "Неизвестная ошибка.";
+          }
+        }
+
+        function renderSuccess(elOrAppend, pos, prefix) {
+          var c = pos.coords;
+          var lines = [];
+          if (prefix) lines.push(prefix);
+          lines.push('<span class="label">Широта</span> ' + fmtNum(c.latitude, 6));
+          lines.push('<span class="label">Долгота</span> ' + fmtNum(c.longitude, 6));
+          lines.push('<span class="label">Точность (accuracy)</span> ' + fmtNum(c.accuracy, 1) + " м");
+          lines.push(
+            '<span class="label">Высота (altitude)</span> ' +
+              (c.altitude != null ? fmtNum(c.altitude, 1) + " м" : "нет данных")
+          );
+          if (c.altitudeAccuracy != null && !isNaN(c.altitudeAccuracy)) {
+            lines.push('<span class="label">Точность высоты</span> ' + fmtNum(c.altitudeAccuracy, 1) + " м");
+          }
+          lines.push(
+            '<span class="label">Скорость (speed)</span> ' +
+              (c.speed != null && !isNaN(c.speed) ? fmtNum(c.speed, 2) + " м/с" : "нет данных")
+          );
+          if (c.heading != null && !isNaN(c.heading)) {
+            lines.push('<span class="label">Направление (heading)</span> ' + fmtNum(c.heading, 1) + "°");
+          }
+          lines.push('<span class="label">Время (timestamp)</span> ' + formatTime(pos.timestamp));
+          var html = lines.map(function (l) {
+            return '<div class="result-line ok">' + l + "</div>";
+          }).join("");
+          if (typeof elOrAppend === "string") {
+            return html;
+          }
+          elOrAppend.innerHTML = html;
+        }
+
+        function renderError(el, err) {
+          var code = err && typeof err.code === "number" ? err.code : "—";
+          var msg = geoErrorText(code);
+          el.innerHTML =
+            '<div class="result-line error"><span class="label">Код ошибки</span> ' +
+            code +
+            "</div>" +
+            '<div class="result-line error">' +
+            msg +
+            "</div>" +
+            (err && err.message
+              ? '<div class="result-line muted">message: ' +
+                String(err.message).replace(/</g, "&lt;") +
+                "</div>"
+              : "");
+        }
+
+        function getOnce() {
+          var out = document.getElementById("singleOut");
+          if (!navigator.geolocation) {
+            out.innerHTML =
+              '<div class="result-line error">Геолокация не поддерживается этим браузером.</div>';
+            return;
+          }
+          out.innerHTML = '<div class="muted">Запрос… (до 20 с)</div>';
+          navigator.geolocation.getCurrentPosition(
+            function (pos) {
+              renderSuccess(out, pos);
+            },
+            function (err) {
+              renderError(out, err);
+            },
+            GEO_OPTIONS
+          );
+        }
+
+        function runFiveSequential() {
+          var tablePanel = document.getElementById("tablePanel");
+          var tableWrap = document.getElementById("tableWrap");
+          var singleOut = document.getElementById("singleOut");
+
+          if (!navigator.geolocation) {
+            singleOut.innerHTML =
+              '<div class="result-line error">Геолокация не поддерживается.</div>';
+            return;
+          }
+
+          var btnOnce = document.getElementById("btnOnce");
+          var btnFive = document.getElementById("btnFive");
+          btnOnce.disabled = true;
+          btnFive.disabled = true;
+          tablePanel.style.display = "block";
+          tableWrap.innerHTML = '<p class="muted">Выполняется серия из 5 запросов…</p>';
+
+          var rows = [];
+          var index = 0;
+
+          function next() {
+            if (index >= 5) {
+              var thead =
+                "<tr><th>#</th><th>Широта</th><th>Долгота</th><th>Точность, м</th><th>Высота</th><th>Скорость</th><th>Время</th><th>Ошибка</th></tr>";
+              var tbody = rows
+                .map(function (r) {
+                  return "<tr>" + r.cells + "</tr>";
+                })
+                .join("");
+              tableWrap.innerHTML = "<table>" + thead + tbody + "</table>";
+              btnOnce.disabled = false;
+              btnFive.disabled = false;
+              singleOut.innerHTML =
+                '<div class="ok">Серия из 5 запросов завершена. Смотрите таблицу ниже.</div>';
+              return;
+            }
+
+            var n = index + 1;
+            index += 1;
+
+            navigator.geolocation.getCurrentPosition(
+              function (pos) {
+                var c = pos.coords;
+                rows.push({
+                  cells:
+                    "<td>" +
+                    n +
+                    "</td><td>" +
+                    fmtNum(c.latitude, 6) +
+                    "</td><td>" +
+                    fmtNum(c.longitude, 6) +
+                    "</td><td>" +
+                    fmtNum(c.accuracy, 1) +
+                    "</td><td>" +
+                    (c.altitude != null ? fmtNum(c.altitude, 1) : "—") +
+                    "</td><td>" +
+                    (c.speed != null && !isNaN(c.speed) ? fmtNum(c.speed, 2) : "—") +
+                    "</td><td class=\"mono\">" +
+                    formatTime(pos.timestamp) +
+                    "</td><td>—</td>",
+                });
+                next();
+              },
+              function (err) {
+                var code = err && typeof err.code === "number" ? err.code : "?";
+                rows.push({
+                  cells:
+                    "<td>" +
+                    n +
+                    '</td><td colspan="7" class="error">' +
+                    "Код " +
+                    code +
+                    ": " +
+                    geoErrorText(code) +
+                    "</td>",
+                });
+                next();
+              },
+              GEO_OPTIONS
+            );
+          }
+
+          next();
+        }
+
+        document.getElementById("btnOnce").onclick = getOnce;
+        document.getElementById("btnFive").onclick = runFiveSequential;
+
+        fillDeviceInfo();
+        window.addEventListener("resize", function () {
+          document.getElementById("devInner").textContent =
+            window.innerWidth + " × " + window.innerHeight;
+        });
+      })();
+    </script>
+  </body>
+</html>
