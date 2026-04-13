@@ -3061,6 +3061,13 @@ html[data-theme="light"] .instructor-onboarding-actions .btn-primary.btn-sm {
   color: var(--theme-soft);
 }
 
+.admin-schedule-table-address-cell {
+  max-width: 22rem;
+  word-wrap: break-word;
+  color: var(--theme-soft);
+  line-height: 1.4;
+}
+
 .admin-schedule-table-empty {
   text-align: center;
   color: var(--theme-dim);

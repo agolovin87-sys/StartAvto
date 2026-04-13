@@ -9,6 +9,11 @@ import {
 } from "@/admin/scheduleFormat";
 import { subscribeDriveSlotsForInstructor } from "@/firebase/drives";
 import { subscribeInstructors, subscribeStudents } from "@/firebase/admin";
+import {
+  formatDriveShareAdminScheduleCell,
+  subscribeStudentDriveLocationShare,
+  type StudentDriveLocationShare,
+} from "@/firebase/studentDriveLocationShare";
 import type { DriveSlot, UserProfile } from "@/types";
 
 function groupByDateKey(slots: DriveSlot[]): Map<string, DriveSlot[]> {
@@ -35,6 +40,20 @@ function historyDateKeysOrdered(
   const future = keys.filter((k) => k > todayKey).sort((a, b) => a.localeCompare(b));
   const past = keys.filter((k) => k < todayKey).sort((a, b) => b.localeCompare(a));
   return [...future, ...past];
+}
+
+function ScheduleSlotAddressCell({ slotId }: { slotId: string }) {
+  const [share, setShare] = useState<StudentDriveLocationShare | null>(null);
+
+  useEffect(() => {
+    return subscribeStudentDriveLocationShare(slotId, setShare);
+  }, [slotId]);
+
+  return (
+    <td className="admin-schedule-table-address-cell">
+      {formatDriveShareAdminScheduleCell(share)}
+    </td>
+  );
 }
 
 function ScheduleDayBlock({
@@ -67,12 +86,13 @@ function ScheduleDayBlock({
               <th scope="col">Время</th>
               <th scope="col">Фамилия И.О. курсанта</th>
               <th scope="col">Статус</th>
+              <th scope="col">Адрес</th>
             </tr>
           </thead>
           <tbody>
             {slots.length === 0 ? (
               <tr>
-                <td colSpan={4} className="admin-schedule-table-empty">
+                <td colSpan={5} className="admin-schedule-table-empty">
                   Нет записей на эту дату.
                 </td>
               </tr>
@@ -87,6 +107,7 @@ function ScheduleDayBlock({
                     )}
                   </td>
                   <td>{formatDriveSlotStatus(slot)}</td>
+                  <ScheduleSlotAddressCell slotId={slot.id} />
                 </tr>
               ))
             )}

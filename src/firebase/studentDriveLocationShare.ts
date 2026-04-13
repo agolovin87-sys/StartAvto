@@ -78,6 +78,43 @@ export function formatDriveShareAddressLine(share: StudentDriveLocationShare): s
   return `Адрес: ${addr} (${com || "-"})`;
 }
 
+/**
+ * Убирает из строки Яндекса страну и субъект РФ, оставляя ориентир «город, улица, дом».
+ */
+export function shortenDriveShareAddressLabelForAdmin(full: string): string {
+  const t = full.trim();
+  if (!t) return "";
+  const parts = t.split(/,\s*/).map((p) => p.trim()).filter((p) => p.length > 0);
+  if (parts.length === 0) return t;
+  const out: string[] = [];
+  for (const p of parts) {
+    if (out.length === 0 && /^россия$/i.test(p)) continue;
+    if (/область|республика|край\b|автономн|округ\b|федеральный/i.test(p)) {
+      continue;
+    }
+    out.push(p);
+  }
+  return out.length > 0 ? out.join(", ") : t;
+}
+
+/**
+ * Ячейка админской таблицы «График»: город/улица/дом (без страны и региона) и комментарий курсанта.
+ */
+export function formatDriveShareAdminScheduleCell(
+  share: StudentDriveLocationShare | null
+): string {
+  if (!share) return "—";
+  const raw = share.addressLabel?.trim() ?? "";
+  const comment = share.locationComment?.trim() ?? "";
+  const isCoordFallback = /^координаты\s/i.test(raw);
+  const hasTextAddress = raw.length > 0 && !isCoordFallback;
+  const shortAddr = hasTextAddress ? shortenDriveShareAddressLabelForAdmin(raw) : "";
+  if (!shortAddr.trim() && !comment) return "—";
+  if (!shortAddr.trim()) return `— · ${comment}`;
+  if (!comment) return shortAddr;
+  return `${shortAddr} · ${comment}`;
+}
+
 export async function writeStudentDriveLocationShare(
   slotId: string,
   params: {
