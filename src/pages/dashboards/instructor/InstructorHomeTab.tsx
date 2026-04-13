@@ -1,11 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { initialsFromFullName, avatarHueFromUid } from "@/admin/instructorAvatar";
 import { formatShortFio } from "@/admin/formatShortFio";
-import {
-  dateKeyToRuDisplay,
-  localDateKey,
-  sortSlotsByTime,
-} from "@/admin/scheduleFormat";
+import { dateKeyToRuDisplay, sortSlotsByTime } from "@/admin/scheduleFormat";
 import { subscribeTrainingGroups } from "@/firebase/admin";
 import {
   instructorApplyRunningLateShift,
@@ -16,6 +12,12 @@ import {
 } from "@/firebase/drives";
 import { mapFirebaseError } from "@/firebase/errors";
 import { subscribeUsersByIds } from "@/firebase/instructorData";
+import {
+  addCalendarDaysToDateKey,
+  scheduleDateKeyFromUtcMs,
+  scheduleMondayDateKeyForWeekContaining,
+  weekDateKeysFromMondayDateKey,
+} from "@/lib/scheduleTimezone";
 import { isValidRuMobilePhone, normalizeRuPhone } from "@/lib/phoneRu";
 import { AlertDialog } from "@/components/ConfirmDialog";
 import {
@@ -62,27 +64,8 @@ function telHrefFromPhone(phone: string): string | undefined {
   return n && isValidRuMobilePhone(n) ? `tel:${n}` : undefined;
 }
 
-function mondayOfWeekContaining(d: Date): Date {
-  const c = new Date(d.getFullYear(), d.getMonth(), d.getDate());
-  const day = c.getDay();
-  const diff = day === 0 ? -6 : 1 - day;
-  c.setDate(c.getDate() + diff);
-  return c;
-}
-
-function addDays(d: Date, n: number): Date {
-  const x = new Date(d);
-  x.setDate(x.getDate() + n);
-  return x;
-}
-
-function weekDateKeys(monday: Date): string[] {
-  return Array.from({ length: 7 }, (_, i) => localDateKey(addDays(monday, i)));
-}
-
 function formatRuDate(ms: number): string {
-  const d = new Date(ms);
-  return `${String(d.getDate()).padStart(2, "0")}.${String(d.getMonth() + 1).padStart(2, "0")}.${d.getFullYear()}`;
+  return dateKeyToRuDisplay(scheduleDateKeyFromUtcMs(ms));
 }
 
 function IconRole() {
@@ -601,12 +584,15 @@ export function InstructorHomeTab() {
     [slots]
   );
 
-  const scheduleWeekMonday = useMemo(() => {
-    const base = mondayOfWeekContaining(new Date(nowMs));
-    return addDays(base, weekScheduleOffset * 7);
+  const scheduleWeekMondayDateKey = useMemo(() => {
+    const base = scheduleMondayDateKeyForWeekContaining(nowMs);
+    return addCalendarDaysToDateKey(base, weekScheduleOffset * 7);
   }, [nowMs, weekScheduleOffset]);
 
-  const weekKeys = useMemo(() => weekDateKeys(scheduleWeekMonday), [scheduleWeekMonday]);
+  const weekKeys = useMemo(
+    () => weekDateKeysFromMondayDateKey(scheduleWeekMondayDateKey),
+    [scheduleWeekMondayDateKey]
+  );
 
   const scheduleWeekRangeLabel = useMemo(() => {
     if (weekKeys.length < 7) return "";

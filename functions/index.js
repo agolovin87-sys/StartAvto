@@ -12,6 +12,7 @@ const {
   onDocumentDeleted,
   onDocumentWritten,
 } = require("firebase-functions/v2/firestore");
+const { onSchedule } = require("firebase-functions/v2/scheduler");
 
 setGlobalOptions({ region: "europe-west1", maxInstances: 10 });
 
@@ -109,6 +110,39 @@ function messagePreview(data) {
     return fn ? `Файл: ${fn}` : "Файл";
   }
   return "Сообщение";
+}
+
+/** Расписание вождения и напоминания: дата/время слота в UTC+5 (IANA без перехода на летнее время). */
+const SCHEDULE_TIMEZONE = "Asia/Yekaterinburg";
+
+/** YYYY-MM-DD в календаре SCHEDULE_TIMEZONE для момента ms (UTC). */
+function scheduleDateKeyFromMs(ms) {
+  return new Date(ms).toLocaleDateString("sv-SE", { timeZone: SCHEDULE_TIMEZONE });
+}
+
+/**
+ * Начало слота (dateKey + startTime) как UTC-мс; часы на графике — местное время UTC+5.
+ */
+function driveSlotStartUtcMillis(dateKey, startTime) {
+  const dm = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(dateKey ?? "").trim());
+  const tm = /^(\d{1,2}):(\d{2})$/.exec(String(startTime ?? "").trim());
+  if (!dm || !tm) return null;
+  const y = Number(dm[1]);
+  const mo = Number(dm[2]);
+  const d = Number(dm[3]);
+  const h = Number(tm[1]);
+  const mi = Number(tm[2]);
+  if (![y, mo, d, h, mi].every((x) => Number.isFinite(x))) return null;
+  return Date.UTC(y, mo - 1, d, h - 5, mi, 0, 0);
+}
+
+/** Несколько dateKey вокруг «сейчас» в зоне UTC+5 (на стыке суток). */
+function scheduleDateKeysAroundNow(nowMs) {
+  const keys = new Set();
+  for (const off of [-36, -12, 0, 12, 36]) {
+    keys.add(scheduleDateKeyFromMs(nowMs + off * 60 * 60 * 1000));
+  }
+  return [...keys];
 }
 
 async function displayNameForUser(uid) {
@@ -434,6 +468,108 @@ exports.onFreeWindowUpdated = onDocumentUpdated("freeDriveWindows/{windowId}", a
     windowId: event.params.windowId,
   });
 });
+
+/**
+ * За ~15 минут до начала подтверждённого вождения — push курсанту и инструктору (один раз на слот и время).
+ */
+exports.sendDriveReminder15Min = onSchedule(
+  {
+    schedule: "every 1 minutes",
+    timeZone: SCHEDULE_TIMEZONE,
+    region: "europe-west1",
+    maxInstances: 2,
+  },
+  async () => {
+    const now = Date.now();
+    const lower = 14 * 60 * 1000;
+    const upper = 16 * 60 * 1000;
+    const title = "Напоминаем!";
+    const bodyStudent = "Через 15 мин. у Вас вождение.";
+    const dateKeys = scheduleDateKeysAroundNow(now);
+
+    for (const dk of dateKeys) {
+      let snap;
+      try {
+        snap = await db.collection("driveSlots").where("dateKey", "==", dk).get();
+      } catch (e) {
+        console.warn("[sendDriveReminder15Min] query", dk, e);
+        continue;
+      }
+
+      for (const docSnap of snap.docs) {
+        const slotId = docSnap.id;
+        const d = docSnap.data();
+        const status = typeof d.status === "string" ? d.status : "";
+        if (status !== "scheduled") continue;
+
+        const studentId = typeof d.studentId === "string" ? d.studentId.trim() : "";
+        const instructorId = typeof d.instructorId === "string" ? d.instructorId.trim() : "";
+        const st = typeof d.startTime === "string" ? d.startTime : "";
+        const slotDk = typeof d.dateKey === "string" ? d.dateKey : "";
+
+        const startMs = driveSlotStartUtcMillis(slotDk, st);
+        if (startMs == null || !studentId || !instructorId) continue;
+
+        const delta = startMs - now;
+        if (delta < lower || delta > upper) continue;
+
+        if (typeof d.fcmDriveReminder15MinForStartMs === "number" && d.fcmDriveReminder15MinForStartMs === startMs) {
+          continue;
+        }
+
+        let payload = null;
+        try {
+          payload = await db.runTransaction(async (tx) => {
+            const fresh = await tx.get(docSnap.ref);
+            if (!fresh.exists) return null;
+            const fd = fresh.data();
+            if (typeof fd.status !== "string" || fd.status !== "scheduled") return null;
+            const fs = typeof fd.startTime === "string" ? fd.startTime : "";
+            const fdk = typeof fd.dateKey === "string" ? fd.dateKey : "";
+            const sm = driveSlotStartUtcMillis(fdk, fs);
+            if (sm == null) return null;
+            const dlt = sm - now;
+            if (dlt < lower || dlt > upper) return null;
+            if (typeof fd.fcmDriveReminder15MinForStartMs === "number" && fd.fcmDriveReminder15MinForStartMs === sm) {
+              return null;
+            }
+            const sid = typeof fd.studentId === "string" ? fd.studentId.trim() : "";
+            const iid = typeof fd.instructorId === "string" ? fd.instructorId.trim() : "";
+            if (!sid || !iid) return null;
+            tx.update(docSnap.ref, { fcmDriveReminder15MinForStartMs: sm });
+            return { studentId: sid, instructorId: iid, slotId };
+          });
+        } catch (e) {
+          console.warn("[sendDriveReminder15Min] tx", slotId, e);
+          continue;
+        }
+
+        if (!payload) continue;
+
+        const name = await displayNameForUser(payload.studentId);
+        const short = formatShortFioFromFullName(name);
+        const bodyInstructor = `Через 15 мин. у Вас вождение с ${short}.`;
+
+        try {
+          await sendToUsers([payload.studentId], title, bodyStudent, {
+            kind: "drive_reminder_15",
+            slotId: payload.slotId,
+          });
+        } catch (e) {
+          console.warn("[sendDriveReminder15Min] student FCM", payload.slotId, e);
+        }
+        try {
+          await sendToUsers([payload.instructorId], title, bodyInstructor, {
+            kind: "drive_reminder_15",
+            slotId: payload.slotId,
+          });
+        } catch (e) {
+          console.warn("[sendDriveReminder15Min] instructor FCM", payload.slotId, e);
+        }
+      }
+    }
+  }
+);
 
 exports.onTalonHistoryCreated = onDocumentCreated("adminTalonHistory/{entryId}", async (event) => {
   const d = event.data.data();

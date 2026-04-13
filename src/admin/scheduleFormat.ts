@@ -1,12 +1,16 @@
 import { driveSlotScheduledStartMs } from "@/lib/driveSession";
+import {
+  formatUtcMsAsScheduleHHmm,
+  parseDateKeyAndTimeToUtcMs,
+  scheduleDateKey,
+  scheduleDateKeyFromUtcMs,
+  SCHEDULE_TIMEZONE,
+} from "@/lib/scheduleTimezone";
 import type { DriveCancelledBy, DriveSlot } from "@/types";
 
-/** Сегодня в локальной зоне → YYYY-MM-DD */
+/** «Сегодня» и даты графика — зона UTC+5 (`SCHEDULE_TIMEZONE`). */
 export function localDateKey(d = new Date()): string {
-  const y = d.getFullYear();
-  const m = d.getMonth() + 1;
-  const day = d.getDate();
-  return `${y}-${String(m).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+  return scheduleDateKey(d);
 }
 
 /** YYYY-MM-DD → дд.мм.гггг */
@@ -26,14 +30,17 @@ const WEEKDAY_LABELS_RU = [
   "Воскресенье",
 ] as const;
 
-/** День недели по локальной дате YYYY-MM-DD (неделя с понедельника). */
+/** День недели по дате YYYY-MM-DD в зоне расписания (неделя с понедельника). */
 export function weekdayRuFromDateKey(dateKey: string): string {
-  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(dateKey.trim());
-  if (!m) return "";
-  const dt = new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
-  const day = dt.getDay();
-  const idx = day === 0 ? 6 : day - 1;
-  return WEEKDAY_LABELS_RU[idx] ?? "";
+  const ms = parseDateKeyAndTimeToUtcMs(dateKey, "12:00");
+  if (ms == null) return "";
+  const long = new Intl.DateTimeFormat("ru-RU", {
+    timeZone: SCHEDULE_TIMEZONE,
+    weekday: "long",
+  }).format(new Date(ms));
+  const idx = WEEKDAY_LABELS_RU.findIndex((w) => w.toLowerCase() === long.toLowerCase());
+  if (idx >= 0) return WEEKDAY_LABELS_RU[idx];
+  return long ? long.charAt(0).toUpperCase() + long.slice(1) : "";
 }
 
 const cancelByLabel: Record<DriveCancelledBy, string> = {
@@ -68,13 +75,11 @@ export function sortSlotsByTime(a: DriveSlot, b: DriveSlot): number {
 }
 
 export function formatMsLocalHHmm(ms: number): string {
-  const d = new Date(ms);
-  return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+  return formatUtcMsAsScheduleHHmm(ms);
 }
 
-function localDateKeyFromMs(ms: number): string {
-  const d = new Date(ms);
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+function scheduleDateKeyFromLiveMs(ms: number): string {
+  return scheduleDateKeyFromUtcMs(ms);
 }
 
 /** Ранний старт: liveStartedAt раньше планового слота по dateKey + startTime. */
@@ -89,7 +94,7 @@ export function isDriveStartedBeforeScheduled(slot: DriveSlot): boolean {
  */
 export function driveSlotCardDateTimeLabel(slot: DriveSlot): string {
   if (isDriveStartedBeforeScheduled(slot) && slot.liveStartedAt != null) {
-    const dk = localDateKeyFromMs(slot.liveStartedAt);
+    const dk = scheduleDateKeyFromLiveMs(slot.liveStartedAt);
     return `${weekdayRuFromDateKey(dk)}, ${dateKeyToRuDisplay(dk)} · ${formatMsLocalHHmm(slot.liveStartedAt)}`;
   }
   return `${weekdayRuFromDateKey(slot.dateKey)}, ${dateKeyToRuDisplay(slot.dateKey)} · ${(slot.startTime || "—").trim()}`;
@@ -106,7 +111,7 @@ export function driveSlotCardTimeOnly(slot: DriveSlot): string {
 /** Колонка «Дата» в истории вождения: при раннем старте — дата фактического начала (локально). */
 export function driveHistoryTableDateCell(slot: DriveSlot): string {
   if (isDriveStartedBeforeScheduled(slot) && slot.liveStartedAt != null) {
-    return dateKeyToRuDisplay(localDateKeyFromMs(slot.liveStartedAt));
+    return dateKeyToRuDisplay(scheduleDateKeyFromLiveMs(slot.liveStartedAt));
   }
   return dateKeyToRuDisplay(slot.dateKey);
 }

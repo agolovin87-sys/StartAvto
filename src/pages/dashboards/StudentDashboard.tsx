@@ -3,7 +3,6 @@ import { initialsFromFullName, avatarHueFromUid } from "@/admin/instructorAvatar
 import { formatShortFio } from "@/admin/formatShortFio";
 import {
   dateKeyToRuDisplay,
-  localDateKey,
   sortSlotsByTime,
   weekdayRuFromDateKey,
 } from "@/admin/scheduleFormat";
@@ -22,6 +21,11 @@ import {
   subscribeFreeDriveWindowsForStudent,
   subscribeDriveSlotsForStudent,
 } from "@/firebase/drives";
+import {
+  addCalendarDaysToDateKey,
+  scheduleMondayDateKeyForWeekContaining,
+  weekDateKeysFromMondayDateKey,
+} from "@/lib/scheduleTimezone";
 import { mapFirebaseError } from "@/firebase/errors";
 import { subscribeStudentAttachedInstructors } from "@/firebase/studentChatContacts";
 import {
@@ -94,24 +98,6 @@ const WEEKDAY_LABELS = [
   "Суббота",
   "Воскресенье",
 ];
-
-function mondayOfWeekContaining(d: Date): Date {
-  const c = new Date(d.getFullYear(), d.getMonth(), d.getDate());
-  const day = c.getDay();
-  const diff = day === 0 ? -6 : 1 - day;
-  c.setDate(c.getDate() + diff);
-  return c;
-}
-
-function addDays(d: Date, n: number): Date {
-  const x = new Date(d);
-  x.setDate(x.getDate() + n);
-  return x;
-}
-
-function weekDateKeys(monday: Date): string[] {
-  return Array.from({ length: 7 }, (_, i) => localDateKey(addDays(monday, i)));
-}
 
 function telHrefFromPhone(phone: string): string | undefined {
   const n = normalizeRuPhone(phone);
@@ -819,12 +805,15 @@ export function StudentDashboard() {
     [slots]
   );
 
-  const scheduleWeekMonday = useMemo(() => {
-    const base = mondayOfWeekContaining(new Date(nowMs));
-    return addDays(base, weekScheduleOffset * 7);
+  const scheduleWeekMondayDateKey = useMemo(() => {
+    const base = scheduleMondayDateKeyForWeekContaining(nowMs);
+    return addCalendarDaysToDateKey(base, weekScheduleOffset * 7);
   }, [nowMs, weekScheduleOffset]);
 
-  const weekKeys = useMemo(() => weekDateKeys(scheduleWeekMonday), [scheduleWeekMonday]);
+  const weekKeys = useMemo(
+    () => weekDateKeysFromMondayDateKey(scheduleWeekMondayDateKey),
+    [scheduleWeekMondayDateKey]
+  );
 
   const scheduleWeekRangeLabel = useMemo(() => {
     if (weekKeys.length < 7) return "";
