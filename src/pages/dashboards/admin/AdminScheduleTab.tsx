@@ -14,6 +14,7 @@ import {
   subscribeStudentDriveLocationShare,
   type StudentDriveLocationShare,
 } from "@/firebase/studentDriveLocationShare";
+import { AdminScheduleTripHistoryCell } from "@/components/AdminScheduleTripHistoryCell";
 import type { DriveSlot, UserProfile } from "@/types";
 
 function groupByDateKey(slots: DriveSlot[]): Map<string, DriveSlot[]> {
@@ -87,12 +88,13 @@ function ScheduleDayBlock({
               <th scope="col">Фамилия И.О. курсанта</th>
               <th scope="col">Статус</th>
               <th scope="col">Адрес</th>
+              <th scope="col">История поездки</th>
             </tr>
           </thead>
           <tbody>
             {slots.length === 0 ? (
               <tr>
-                <td colSpan={5} className="admin-schedule-table-empty">
+                <td colSpan={6} className="admin-schedule-table-empty">
                   Нет записей на эту дату.
                 </td>
               </tr>
@@ -108,6 +110,7 @@ function ScheduleDayBlock({
                   </td>
                   <td>{formatDriveSlotStatus(slot)}</td>
                   <ScheduleSlotAddressCell slotId={slot.id} />
+                  <AdminScheduleTripHistoryCell slotId={slot.id} />
                 </tr>
               ))
             )}

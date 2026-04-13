@@ -50,7 +50,16 @@ declare global {
         properties?: Record<string, unknown>,
         options?: Record<string, unknown>
       ) => YandexCircleGeo;
+      Polyline: new (
+        geometry: [number, number][],
+        properties?: Record<string, unknown>,
+        options?: Record<string, unknown>
+      ) => YandexPolylineGeo;
     };
+  }
+
+  interface YandexPolylineGeo {
+    geometry: { getBounds: () => number[][] | null };
   }
 
   interface YandexMapInstance {

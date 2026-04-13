@@ -168,3 +168,12 @@ export interface PasskeyRegistration {
   registeredAt: string;
   deviceInfo?: string;
 }
+
+export type {
+  Trip,
+  TripError,
+  TripPoint,
+  TripStatistics,
+  TripStatus,
+  TripSyncStatus,
+} from "./types/tripHistory";

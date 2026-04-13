@@ -9,6 +9,7 @@ import {
 import { mapFirebaseError } from "@/firebase/errors";
 import { driveLiveEffectiveElapsedMs } from "@/lib/driveLiveElapsed";
 import { DRIVE_LIVE_DURATION_MS } from "@/lib/driveSession";
+import { useDriveTripRecorder } from "@/hooks/useDriveTripRecorder";
 
 function IconPause() {
   return (
@@ -82,6 +83,10 @@ export function DriveLiveSessionPanel({
    */
   const [pauseSticky, setPauseSticky] = useState(false);
 
+  const tripRecordingEnabled =
+    slot.liveStudentAckAt != null && slot.status === "scheduled";
+  const tripRec = useDriveTripRecorder(slot, tripRecordingEnabled);
+
   const serverPauseActive =
     slot.liveStudentAckAt != null &&
     slot.livePausedAt != null &&
@@ -121,8 +126,15 @@ export function DriveLiveSessionPanel({
       return;
     }
     autoCompleteFiredRef.current = true;
-    void onCompleteLive();
-  }, [isPaused, awaitingStudentAck, effectiveElapsedMs, onCompleteLive]);
+    void (async () => {
+      try {
+        await tripRec.finalizeAndUpload();
+      } catch {
+        /* завершаем слот даже при сбое сохранения трека */
+      }
+      await onCompleteLive();
+    })();
+  }, [isPaused, awaitingStudentAck, effectiveElapsedMs, onCompleteLive, tripRec.finalizeAndUpload]);
 
   const remainingMin = Math.max(0, Math.ceil((DRIVE_LIVE_DURATION_MS - effectiveElapsedMs) / 60000));
 
@@ -130,6 +142,7 @@ export function DriveLiveSessionPanel({
     setStopBusy(true);
     onActionError("");
     try {
+      await tripRec.finalizeAndUpload();
       await onCompleteLive();
       setStopConfirmOpen(false);
     } catch (e: unknown) {
@@ -211,6 +224,20 @@ export function DriveLiveSessionPanel({
 
   return (
     <div className="drive-live-session-panel">
+      {tripRecordingEnabled ? (
+        <p className="field-hint drive-live-trip-rec-hint" aria-live="polite">
+          История поездки:{" "}
+          {tripRec.pointsCount > 0
+            ? `${tripRec.pointsCount} точек GPS`
+            : "ожидание сигнала…"}
+          {tripRec.geoState === "denied"
+            ? " (нет доступа к геолокации — разрешите в браузере)"
+            : null}
+          {tripRec.lastSyncStatus === "error"
+            ? " (сервер: ошибка синхронизации, повтор при сети)"
+            : null}
+        </p>
+      ) : null}
       <div className="drive-live-session-panel__hud">
         <div className="drive-live-session-panel__dial">
           <div className="drive-live-session-panel__dial-student-timer">

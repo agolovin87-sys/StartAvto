@@ -582,6 +582,47 @@ service cloud.firestore {
         || (isInstructorAccount() && resource.data.instructorId == request.auth.uid);
     }
 
+    /** GPS-трек урока (id документа = id слота `driveSlots`). */
+    match /driveTripTracks/{slotId} {
+      function driveTripSlotData() {
+        return get(/databases/$(database)/documents/driveSlots/$(slotId)).data;
+      }
+
+      allow read: if isAdmin()
+        || (
+          isInstructorAccount()
+          && exists(/databases/$(database)/documents/driveSlots/$(slotId))
+          && driveTripSlotData().instructorId == request.auth.uid
+        )
+        || (
+          isStudentAccount()
+          && exists(/databases/$(database)/documents/driveSlots/$(slotId))
+          && driveTripSlotData().studentId == request.auth.uid
+        );
+
+      allow create: if isAdmin()
+        || (
+          isInstructorAccount()
+          && exists(/databases/$(database)/documents/driveSlots/$(slotId))
+          && driveTripSlotData().instructorId == request.auth.uid
+          && request.resource.data.get('driveSlotId', '') == slotId
+          && request.resource.data.get('userId', '') == driveTripSlotData().studentId
+          && request.resource.data.get('instructorId', '') == driveTripSlotData().instructorId
+        );
+
+      allow update: if isAdmin()
+        || (
+          isInstructorAccount()
+          && exists(/databases/$(database)/documents/driveSlots/$(slotId))
+          && driveTripSlotData().instructorId == request.auth.uid
+          && request.resource.data.get('driveSlotId', '') == slotId
+          && request.resource.data.get('userId', '') == driveTripSlotData().studentId
+          && request.resource.data.get('instructorId', '') == driveTripSlotData().instructorId
+        );
+
+      allow delete: if isAdmin();
+    }
+
     /**
      * Опциональные поля «от кого»: если fromUid непустой — роль и контрагент должны совпадать с парой инструктор↔курсант.
      */

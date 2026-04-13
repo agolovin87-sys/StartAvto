@@ -3068,6 +3068,55 @@ html[data-theme="light"] .instructor-onboarding-actions .btn-primary.btn-sm {
   line-height: 1.4;
 }
 
+.admin-schedule-trip-history-cell {
+  text-align: center;
+  vertical-align: middle;
+  white-space: nowrap;
+}
+
+.admin-schedule-trip-empty {
+  color: var(--theme-dim);
+}
+
+.admin-trip-history-open-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.35rem 0.45rem;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  color: #15803d;
+}
+
+.admin-trip-history-open-btn:hover {
+  filter: brightness(1.08);
+}
+
+.admin-trip-history-ico {
+  display: block;
+}
+
+.admin-trip-history-modal {
+  max-width: min(42rem, 96vw);
+}
+
+.admin-trip-history-meta {
+  margin: 0 0 0.75rem;
+  padding-left: 1.1rem;
+  font-size: 0.88rem;
+  color: var(--theme-soft);
+}
+
+.admin-trip-history-meta li {
+  margin-bottom: 0.25rem;
+}
+
+.admin-trip-track-map-host {
+  min-height: 280px;
+  margin-bottom: 0.75rem;
+}
+
 .admin-schedule-table-empty {
   text-align: center;
   color: var(--theme-dim);
@@ -5199,6 +5248,12 @@ html[data-theme="light"] .instructor-week-schedule-hint-em {
   .drive-live-student-timer-decor__digit-cell.is-flipping .drive-live-student-timer-decor__digits-face {
     transition-duration: 0.12s !important;
   }
+}
+
+.drive-live-trip-rec-hint {
+  margin: 0 0 0.4rem;
+  font-size: 0.78rem;
+  max-width: 28rem;
 }
 
 /** Панель живого вождения: по ширине таймера и кнопок, по центру строки карточки */
