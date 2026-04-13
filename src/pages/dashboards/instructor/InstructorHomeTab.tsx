@@ -888,9 +888,6 @@ export function InstructorHomeTab() {
                             belowStatusRow={<DriveSlotShareAddressRow slotId={sl.id} />}
                             customSideActions={
                               <>
-                                {showInstructorDriveLocationShare && !liveAcked ? (
-                                  <InstructorStudentLocationShareButton slotId={sl.id} />
-                                ) : null}
                                 {liveAcked && !livePaused ? <DriveLiveSteeringDecor /> : null}
                               </>
                             }
