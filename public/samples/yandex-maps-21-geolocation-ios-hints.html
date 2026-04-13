@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Геолокация (iOS) — Яндекс.Карты API 2.1</title>
+    <!-- Ключ подставляется при npm run build из VITE_YANDEX_MAPS_API_KEY -->
+    <script
+      src="https://api-maps.yandex.ru/2.1/?apikey=YOUR_API_KEY&lang=ru_RU"
+      type="text/javascript"
+    ></script>
+    <style>
+      * {
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        margin: 0;
+        height: 100%;
+        font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+      }
+      body {
+        display: flex;
+        flex-direction: column;
+        min-height: 100%;
+        background: #f0f2f5;
+      }
+      #toolbar {
+        flex-shrink: 0;
+        padding: 10px 12px;
+        background: #fff;
+        box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+      }
+      #toolbar-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        align-items: center;
+        margin-bottom: 8px;
+      }
+      button {
+        padding: 10px 14px;
+        font-size: 14px;
+        cursor: pointer;
+        border-radius: 8px;
+        border: 1px solid #c5cad3;
+        background: #fff;
+      }
+      button.primary {
+        background: #fc3f1d;
+        border-color: #fc3f1d;
+        color: #fff;
+      }
+      button:disabled {
+        opacity: 0.45;
+        cursor: not-allowed;
+      }
+      #notice {
+        font-size: 14px;
+        line-height: 1.5;
+        color: #1a1a1a;
+        white-space: pre-line;
+        padding: 10px 12px;
+        border-radius: 8px;
+        background: #fff8e6;
+        border: 1px solid #f0d78c;
+        margin-top: 8px;
+        display: none;
+      }
+      #notice.show {
+        display: block;
+      }
+      #notice.error {
+        background: #fff0f0;
+        border-color: #f0b4b4;
+      }
+      #notice.info {
+        background: #e8f4fc;
+        border-color: #a8d4f0;
+      }
+      #status {
+        font-size: 13px;
+        color: #555;
+        margin-top: 6px;
+      }
+      #map {
+        flex: 1;
+        min-height: 0;
+        width: 100%;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="toolbar">
+      <div id="toolbar-row">
+        <button type="button" class="primary" id="btnLocate" disabled>Определить по GPS</button>
+        <button type="button" id="btnManual" disabled>Выбрать на карте вручную</button>
+        <button type="button" id="btnApprox" disabled>Использовать примерное местоположение</button>
+      </div>
+      <div id="notice"></div>
+      <div id="status"></div>
+    </div>
+    <div id="map"></div>
+
+    <script>
+      (function () {
+        "use strict";
+
+        var LS_KEY = "yandex_maps_21_last_coords_v1";
+
+        var GEO_OPTIONS = {
+          enableHighAccuracy: true,
+          timeout: 30000,
+          maximumAge: 0,
+        };
+
+        var ACCURACY_WARN_M = 500;
+
+        var MSG_LOW_ACCURACY =
+          "Низкая точность определения (более 500 м). Для повышения точности:\n" +
+          "• Включите GPS в настройках iPhone\n" +
+          "• Включите Wi-Fi (даже без подключения)\n" +
+          "• Выйдите на улицу";
+
+        var MSG_POS_UNAVAILABLE =
+          "GPS недоступен. Проверьте настройки: Настройки → Конфиденциальность → Службы геолокации → Включено";
+
+        var MSG_TIMEOUT =
+          "Поиск GPS занял слишком много времени. Попробуйте выйти на открытое пространство.";
+
+        var map = null;
+        var placemark = null;
+        var mapClickHandler = null;
+        var manualMode = false;
+
+        /** Последний ответ с accuracy > 500 — для кнопки «примерное» */
+        var pendingApproximate = null;
+
+        function setNotice(html, kind) {
+          var el = document.getElementById("notice");
+          el.className = "show" + (kind ? " " + kind : "");
+          el.textContent = "";
+          el.innerHTML = html;
+        }
+
+        function hideNotice() {
+          var el = document.getElementById("notice");
+          el.className = "";
+          el.textContent = "";
+        }
+
+        function setStatus(t) {
+          document.getElementById("status").textContent = t || "";
+        }
+
+        function saveToLocalStorage(payload) {
+          try {
+            localStorage.setItem(LS_KEY, JSON.stringify(payload));
+            setStatus("Координаты сохранены в localStorage (" + LS_KEY + ").");
+          } catch (e) {
+            setStatus("Не удалось записать в localStorage: " + (e.message || e));
+          }
+        }
+
+        function loadFromLocalStorage() {
+          try {
+            var raw = localStorage.getItem(LS_KEY);
+            if (!raw) return null;
+            return JSON.parse(raw);
+          } catch (e) {
+            return null;
+          }
+        }
+
+        function removePlacemark() {
+          if (placemark && map) {
+            map.geoObjects.remove(placemark);
+          }
+          placemark = null;
+        }
+
+        function balloonBody(lat, lon, accuracyM, extraHtml) {
+          var acc =
+            typeof accuracyM === "number" && !isNaN(accuracyM)
+              ? "±" + Math.round(accuracyM) + " м"
+              : "—";
+          var base =
+            "<div style=\"font-size:14px;line-height:1.5\">" +
+            "<div><b>Широта:</b> " +
+            lat.toFixed(6) +
+            "</div>" +
+            "<div><b>Долгота:</b> " +
+            lon.toFixed(6) +
+            "</div>" +
+            "<div><b>Точность:</b> " +
+            acc +
+            "</div>" +
+            (extraHtml || "") +
+            "</div>";
+          return base;
+        }
+
+        function placeMarker(lat, lon, accuracyM, source) {
+          removePlacemark();
+          var extra = "";
+          if (source === "approximate") {
+            extra =
+              "<div style=\"margin-top:8px;color:#a60\">Использовано примерное местоположение (низкая точность).</div>";
+          } else if (source === "manual") {
+            extra = "<div style=\"margin-top:8px;color:#06c\">Точка выбрана вручную на карте.</div>";
+          }
+
+          placemark = new ymaps.Placemark(
+            [lat, lon],
+            { balloonContentBody: balloonBody(lat, lon, accuracyM, extra) },
+            { preset: "islands#blueCircleIcon", draggable: false }
+          );
+          map.geoObjects.add(placemark);
+          map.setCenter([lat, lon], 15, { duration: 200 });
+          placemark.balloon.open();
+
+          saveToLocalStorage({
+            lat: lat,
+            lng: lon,
+            accuracy: typeof accuracyM === "number" ? accuracyM : null,
+            source: source,
+            savedAt: Date.now(),
+          });
+        }
+
+        function stopManualMode() {
+          manualMode = false;
+          if (mapClickHandler && map) {
+            map.events.remove("click", mapClickHandler);
+            mapClickHandler = null;
+          }
+          document.getElementById("btnManual").textContent = "Выбрать на карте вручную";
+        }
+
+        function startManualMode() {
+          if (!map) return;
+          stopManualMode();
+          manualMode = true;
+          hideNotice();
+          setNotice(
+            "Режим выбора точки: <strong>нажмите на карту</strong>, чтобы поставить метку.",
+            "info"
+          );
+          document.getElementById("btnManual").textContent = "Отменить выбор на карте";
+
+          mapClickHandler = function (e) {
+            if (!manualMode) return;
+            var c = e.get("coords");
+            var lat = c[0];
+            var lon = c[1];
+            stopManualMode();
+            hideNotice();
+            placeMarker(lat, lon, null, "manual");
+            setStatus("Установлена точка вручную.");
+          };
+          map.events.add("click", mapClickHandler);
+        }
+
+        function toggleManual() {
+          if (manualMode) {
+            stopManualMode();
+            hideNotice();
+            setStatus("");
+          } else {
+            startManualMode();
+          }
+        }
+
+        function applyGeoSuccess(position) {
+          var lat = position.coords.latitude;
+          var lon = position.coords.longitude;
+          var acc = position.coords.accuracy;
+
+          document.getElementById("btnApprox").disabled = true;
+          pendingApproximate = null;
+
+          if (acc > ACCURACY_WARN_M) {
+            pendingApproximate = { lat: lat, lon: lon, accuracy: acc };
+            document.getElementById("btnApprox").disabled = false;
+            setNotice(MSG_LOW_ACCURACY.replace(/\n/g, "<br>"), "");
+            setStatus(
+              "Получены координаты с точностью " +
+                Math.round(acc) +
+                " м. Выберите действие ниже или примерное местоположение."
+            );
+            return;
+          }
+
+          hideNotice();
+          placeMarker(lat, lon, acc, "gps");
+          setStatus("Местоположение по GPS (точность приемлемая).");
+        }
+
+        function applyGeoError(err) {
+          var code = err && typeof err.code === "number" ? err.code : -1;
+          document.getElementById("btnApprox").disabled = true;
+          pendingApproximate = null;
+
+          if (code === 2) {
+            setNotice(MSG_POS_UNAVAILABLE, "error");
+          } else if (code === 3) {
+            setNotice(MSG_TIMEOUT, "error");
+          } else if (code === 1) {
+            setNotice(
+              "Доступ к геолокации запрещён. Разрешите доступ в настройках Safari / сайта.",
+              "error"
+            );
+          } else {
+            setNotice("Ошибка геолокации (код " + code + ").", "error");
+          }
+          setStatus("");
+        }
+
+        function requestGeolocation() {
+          if (!navigator.geolocation) {
+            setNotice("Геолокация не поддерживается браузером.", "error");
+            return;
+          }
+          hideNotice();
+          setStatus("Запрос координат… (до 30 с)");
+          document.getElementById("btnLocate").disabled = true;
+
+          navigator.geolocation.getCurrentPosition(
+            function (pos) {
+              document.getElementById("btnLocate").disabled = false;
+              applyGeoSuccess(pos);
+            },
+            function (error) {
+              document.getElementById("btnLocate").disabled = false;
+              applyGeoError(error);
+            },
+            GEO_OPTIONS
+          );
+        }
+
+        function useApproximate() {
+          if (!pendingApproximate) return;
+          hideNotice();
+          var p = pendingApproximate;
+          pendingApproximate = null;
+          document.getElementById("btnApprox").disabled = true;
+          placeMarker(p.lat, p.lon, p.accuracy, "approximate");
+          setStatus("Использовано примерное местоположение (точность ±" + Math.round(p.accuracy) + " м).");
+        }
+
+        function restoreFromStorage() {
+          var data = loadFromLocalStorage();
+          if (!data || typeof data.lat !== "number" || typeof data.lng !== "number") {
+            return;
+          }
+          var src = data.source || "unknown";
+          placeMarker(data.lat, data.lng, data.accuracy, src === "gps" ? "gps" : src);
+          setStatus("Восстановлена последняя сохранённая точка из localStorage.");
+        }
+
+        ymaps.ready(function () {
+          map = new ymaps.Map(
+            "map",
+            {
+              center: [55.76, 37.62],
+              zoom: 10,
+              controls: ["zoomControl", "fullscreenControl"],
+            },
+            { searchControlProvider: "yandex#search" }
+          );
+
+          document.getElementById("btnLocate").disabled = false;
+          document.getElementById("btnManual").disabled = false;
+
+          document.getElementById("btnLocate").onclick = requestGeolocation;
+          document.getElementById("btnManual").onclick = toggleManual;
+          document.getElementById("btnApprox").onclick = useApproximate;
+
+          if (loadFromLocalStorage()) {
+            restoreFromStorage();
+          } else {
+            requestGeolocation();
+          }
+        });
+      })();
+    </script>
+  </body>
+</html>
