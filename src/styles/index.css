@@ -4892,8 +4892,8 @@ html[data-theme="light"] .instructor-week-schedule-hint-em {
   padding: 1.08rem 1rem;
   border-radius: 8px;
   border: 1px solid var(--theme-line);
-  background: linear-gradient(165deg, #22c55e 0%, #15803d 55%, #14532d 100%);
-  color: #f0fdf4;
+  background: linear-gradient(165deg, #0ea5e9 0%, #0284c7 55%, #075985 100%);
+  color: #e0f2fe;
   font-weight: 700;
   font-size: 1.02rem;
   min-height: 4.4rem;
@@ -4916,7 +4916,7 @@ html[data-theme="light"] .instructor-week-schedule-hint-em {
   width: 1.35rem;
   height: 1.35rem;
   flex-shrink: 0;
-  color: #a78bfa;
+  color: rgba(224, 242, 254, 0.95);
 }
 
 .instructor-booking-form {

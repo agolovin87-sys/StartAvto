@@ -471,7 +471,10 @@ export function InstructorBookingTab({ freeWindows }: { freeWindows: FreeDriveWi
           <button
             type="button"
             className="instructor-booking-primary-btn glossy-panel"
-            onClick={() => setFormOpen((o) => !o)}
+            onClick={() => {
+              setWindowFormOpen(false);
+              setFormOpen(true);
+            }}
             aria-expanded={formOpen}
           >
             <IconBookStudent />
@@ -480,7 +483,10 @@ export function InstructorBookingTab({ freeWindows }: { freeWindows: FreeDriveWi
           <button
             type="button"
             className="instructor-booking-primary-btn instructor-booking-primary-btn--purple glossy-panel"
-            onClick={() => setWindowFormOpen((o) => !o)}
+            onClick={() => {
+              setFormOpen(false);
+              setWindowFormOpen(true);
+            }}
             aria-expanded={windowFormOpen}
           >
             <IconBookStudent />
@@ -489,85 +495,116 @@ export function InstructorBookingTab({ freeWindows }: { freeWindows: FreeDriveWi
         </div>
 
         {formOpen ? (
-          <form className="instructor-booking-form glossy-panel" onSubmit={onSubmit}>
-            <label className="field">
-              <span className="field-label">Курсант</span>
-              <select
-                className="input"
-                value={studentId}
-                onChange={(e) => setStudentId(e.target.value)}
-                required
-              >
-                <option value="">Выберите курсанта</option>
-                {attachedStudents.map((s) => (
-                  <option key={s.uid} value={s.uid}>
-                    {formatShortFio(s.displayName) || s.uid}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label className="field">
-              <span className="field-label">Дата</span>
-              <input
-                type="date"
-                className="input"
-                value={dateKey}
-                min={todayKey}
-                onChange={(e) => setDateKey(e.target.value)}
-                required
-              />
-            </label>
-            <label className="field">
-              <span className="field-label">Время начала</span>
-              <input
-                type="time"
-                className="input"
-                value={startTime}
-                min={dateKey === todayKey ? minTime : undefined}
-                onChange={(e) => setStartTime(e.target.value)}
-                required
-              />
-            </label>
-            <button
-              type="submit"
-              className="btn btn-primary"
-              disabled={submitBusy || attachedStudents.length === 0}
+          <div className="modal-backdrop" role="presentation" onClick={() => setFormOpen(false)}>
+            <form
+              className="modal-panel instructor-booking-form glossy-panel"
+              onSubmit={onSubmit}
+              onClick={(e) => e.stopPropagation()}
             >
-              {submitBusy ? "Запись…" : "Записать"}
-            </button>
-          </form>
+              <h3 className="modal-title">Записать курсанта</h3>
+              <label className="field">
+                <span className="field-label">Курсант</span>
+                <select
+                  className="input"
+                  value={studentId}
+                  onChange={(e) => setStudentId(e.target.value)}
+                  required
+                >
+                  <option value="">Выберите курсанта</option>
+                  {attachedStudents.map((s) => (
+                    <option key={s.uid} value={s.uid}>
+                      {formatShortFio(s.displayName) || s.uid}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label className="field">
+                <span className="field-label">Дата</span>
+                <input
+                  type="date"
+                  className="input"
+                  value={dateKey}
+                  min={todayKey}
+                  onChange={(e) => setDateKey(e.target.value)}
+                  required
+                />
+              </label>
+              <label className="field">
+                <span className="field-label">Время начала</span>
+                <input
+                  type="time"
+                  className="input"
+                  value={startTime}
+                  min={dateKey === todayKey ? minTime : undefined}
+                  onChange={(e) => setStartTime(e.target.value)}
+                  required
+                />
+              </label>
+              <div className="modal-actions">
+                <button
+                  type="submit"
+                  className="btn btn-primary"
+                  disabled={submitBusy || attachedStudents.length === 0}
+                >
+                  {submitBusy ? "Запись…" : "Записать"}
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-ghost"
+                  onClick={() => setFormOpen(false)}
+                  disabled={submitBusy}
+                >
+                  Отмена
+                </button>
+              </div>
+            </form>
+          </div>
         ) : null}
         {windowFormOpen ? (
-          <form
-            className="instructor-booking-form instructor-booking-form--purple glossy-panel"
-            onSubmit={onCreateFreeWindow}
-          >
-            <label className="field">
-              <span className="field-label">Дата</span>
-              <input
-                type="date"
-                className="input"
-                value={windowDateKey}
-                min={todayKey}
-                onChange={(e) => setWindowDateKey(e.target.value)}
-                required
-              />
-            </label>
-            <label className="field">
-              <span className="field-label">Время начала</span>
-              <input
-                type="time"
-                className="input"
-                value={windowStartTime}
-                min={windowDateKey === todayKey ? minWindowTime : undefined}
-                onChange={(e) => setWindowStartTime(e.target.value)}
-                required
-              />
-            </label>
-            <button type="submit" className="btn btn-primary" disabled={windowSubmitBusy}>
-              {windowSubmitBusy ? "Добавление…" : "Добавить"}
-            </button>
-          </form>
+          <div className="modal-backdrop" role="presentation" onClick={() => setWindowFormOpen(false)}>
+            <form
+              className="modal-panel instructor-booking-form instructor-booking-form--purple glossy-panel"
+              onSubmit={onCreateFreeWindow}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <h3 className="modal-title">Добавить окно</h3>
+              <label className="field">
+                <span className="field-label">Дата</span>
+                <input
+                  type="date"
+                  className="input"
+                  value={windowDateKey}
+                  min={todayKey}
+                  onChange={(e) => setWindowDateKey(e.target.value)}
+                  required
+                />
+              </label>
+              <label className="field">
+                <span className="field-label">Время начала</span>
+                <input
+                  type="time"
+                  className="input"
+                  value={windowStartTime}
+                  min={windowDateKey === todayKey ? minWindowTime : undefined}
+                  onChange={(e) => setWindowStartTime(e.target.value)}
+                  required
+                />
+              </label>
+              <div className="modal-actions">
+                <button type="submit" className="btn btn-primary" disabled={windowSubmitBusy}>
+                  {windowSubmitBusy ? "Добавление…" : "Добавить"}
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-ghost"
+                  onClick={() => setWindowFormOpen(false)}
+                  disabled={windowSubmitBusy}
+                >
+                  Отмена
+                </button>
+              </div>
+            </form>
+          </div>
         ) : null}
       </section>
 
