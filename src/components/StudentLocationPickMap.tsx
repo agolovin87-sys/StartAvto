@@ -40,6 +40,7 @@ export function StudentLocationPickMap({ selected, onSelect }: Props) {
 
   const [mapErr, setMapErr] = useState<string | null>(null);
   const [mapReady, setMapReady] = useState(false);
+  const lastCenteredRef = useRef<[number, number] | null>(null);
 
   useEffect(() => {
     const el = hostRef.current;
@@ -83,6 +84,9 @@ export function StudentLocationPickMap({ selected, onSelect }: Props) {
     };
   }, []);
 
+  const selectedLat = selected?.lat ?? null;
+  const selectedLng = selected?.lng ?? null;
+
   useEffect(() => {
     if (!mapReady || !mapRef.current || !window.ymaps) return;
     const ymaps = window.ymaps;
@@ -120,12 +124,19 @@ export function StudentLocationPickMap({ selected, onSelect }: Props) {
 
       map.geoObjects.add(pm);
       placemarkRef.current = pm;
+      map.setCenter(coords, 16);
+      lastCenteredRef.current = coords;
     } else {
       placemarkRef.current.geometry.setCoordinates(coords);
+      const prev = lastCenteredRef.current;
+      const changed =
+        !prev || Math.abs(prev[0] - coords[0]) > 0.000001 || Math.abs(prev[1] - coords[1]) > 0.000001;
+      if (changed) {
+        map.setCenter(coords, 16);
+        lastCenteredRef.current = coords;
+      }
     }
-
-    map.setCenter(coords, 16);
-  }, [mapReady, selected]);
+  }, [mapReady, selectedLat, selectedLng]);
 
   if (!hasYandexMapsApiKey()) {
     return null;

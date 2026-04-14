@@ -6816,6 +6816,11 @@ html[data-theme="light"] .drive-live-session-panel__toolbar {
   margin-bottom: 0.75rem;
 }
 
+.student-loc-pick-modal .admin-gps-modal-hint {
+  font-size: 0.74rem;
+  line-height: 1.35;
+}
+
 .admin-gps-meta {
   margin: 0 0 0.65rem;
   font-size: 0.82rem;
@@ -6872,10 +6877,17 @@ html[data-theme="light"] .drive-live-session-panel__toolbar {
   display: inline-flex;
   align-items: center;
   gap: 0.4rem;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  color: #fff;
+  background: linear-gradient(165deg, #0ea5e9 0%, #0284c7 55%, #075985 100%);
 }
 
 .student-loc-clear-point-btn {
   flex-shrink: 0;
+  border-color: rgba(239, 68, 68, 0.22);
+  color: #fee2e2;
+  background: linear-gradient(165deg, #ef4444 0%, #dc2626 55%, #991b1b 100%);
 }
 
 .student-loc-address-row {
@@ -6912,6 +6924,10 @@ html[data-theme="light"] .drive-live-session-panel__toolbar {
 
 .student-loc-address-find-btn {
   flex-shrink: 0;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  color: #fff;
+  background: linear-gradient(165deg, #22c55e 0%, #15803d 55%, #14532d 100%);
 }
 
 .student-loc-suggest-list {

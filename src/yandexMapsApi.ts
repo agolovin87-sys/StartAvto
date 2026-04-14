@@ -152,7 +152,7 @@ export async function suggestAddressTuymazyRegion(
     fallbackRaw.push({
       value,
       title: { text: value },
-      subtitle: { text: "результат геокодера" },
+      subtitle: { text: "" },
     });
   }
   return normalizeSuggestItems(fallbackRaw);

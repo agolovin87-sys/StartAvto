@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { mapFirebaseError } from "@/firebase/errors";
 import {
   formatDriveShareAddressLine,
+  shortenDriveShareAddressLabelForAdmin,
   subscribeStudentDriveLocationShare,
   writeStudentDriveLocationShare,
   MAX_DRIVE_SHARE_COMMENT_LEN,
@@ -257,6 +258,8 @@ function StudentShareLocationModal({
       }
       if (!addressLabel.trim()) {
         addressLabel = `Координаты ${picked.lat.toFixed(5)}, ${picked.lng.toFixed(5)}`;
+      } else {
+        addressLabel = shortenDriveShareAddressLabelForAdmin(addressLabel);
       }
       const comment = locationComment.trim().slice(0, MAX_DRIVE_SHARE_COMMENT_LEN);
       await writeStudentDriveLocationShare(slot.id, {
