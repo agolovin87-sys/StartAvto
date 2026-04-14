@@ -142,6 +142,7 @@ export function PageLoading({ label = "Загрузка…", progress: progressP
             </g>
           </svg>
         </div>
+        <span className="page-loading-brand">StartAvto</span>
         <span className="page-loading-label">{label}</span>
       </div>
     </div>
