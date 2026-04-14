@@ -32,7 +32,7 @@ import {
   INSTRUCTOR_TALON_MSG_ZERO,
   type TalonBookingBlockReason,
 } from "@/lib/talonBooking";
-import { AlertDialog } from "@/components/ConfirmDialog";
+import { AlertDialog, ConfirmDialog } from "@/components/ConfirmDialog";
 import type { DriveSlot, FreeDriveWindow, UserProfile } from "@/types";
 
 function IconBookStudent() {
@@ -86,6 +86,8 @@ export function InstructorBookingTab({ freeWindows }: { freeWindows: FreeDriveWi
   const [startTime, setStartTime] = useState("09:00");
   const [submitBusy, setSubmitBusy] = useState(false);
   const [deleteBusyId, setDeleteBusyId] = useState<string | null>(null);
+  const [deleteConfirmSlotId, setDeleteConfirmSlotId] = useState<string | null>(null);
+  const [deleteConfirmWindowId, setDeleteConfirmWindowId] = useState<string | null>(null);
   const [windowFormOpen, setWindowFormOpen] = useState(false);
   const [windowDateKey, setWindowDateKey] = useState(() => localDateKey());
   const [windowStartTime, setWindowStartTime] = useState("09:00");
@@ -352,7 +354,7 @@ export function InstructorBookingTab({ freeWindows }: { freeWindows: FreeDriveWi
                         <button
                           type="button"
                           className="instr-side-btn glossy-btn instructor-booking-delete-side-btn"
-                          onClick={() => onDelete(sl.id)}
+                          onClick={() => setDeleteConfirmSlotId(sl.id)}
                           disabled={busy}
                           aria-label="Удалить вождение"
                           title="Удалить вождение"
@@ -445,7 +447,7 @@ export function InstructorBookingTab({ freeWindows }: { freeWindows: FreeDriveWi
                           <button
                             type="button"
                             className="instr-side-btn glossy-btn instructor-booking-delete-side-btn"
-                            onClick={() => void onDeleteFreeWindow(w.id)}
+                            onClick={() => setDeleteConfirmWindowId(w.id)}
                             disabled={busy}
                             aria-label="Удалить окно"
                             title="Удалить окно"
@@ -621,6 +623,32 @@ export function InstructorBookingTab({ freeWindows }: { freeWindows: FreeDriveWi
         open={driveTimeOccupiedOpen}
         message={DRIVE_TIME_OCCUPIED_MSG}
         onClose={() => setDriveTimeOccupiedOpen(false)}
+      />
+      <ConfirmDialog
+        open={deleteConfirmSlotId != null}
+        title="Вы уверены?"
+        confirmLabel="Да"
+        cancelLabel="Нет"
+        onCancel={() => setDeleteConfirmSlotId(null)}
+        onConfirm={() => {
+          const id = deleteConfirmSlotId;
+          if (!id) return;
+          setDeleteConfirmSlotId(null);
+          void onDelete(id);
+        }}
+      />
+      <ConfirmDialog
+        open={deleteConfirmWindowId != null}
+        title="Вы уверены?"
+        confirmLabel="Да"
+        cancelLabel="Нет"
+        onCancel={() => setDeleteConfirmWindowId(null)}
+        onConfirm={() => {
+          const id = deleteConfirmWindowId;
+          if (!id) return;
+          setDeleteConfirmWindowId(null);
+          void onDeleteFreeWindow(id);
+        }}
       />
     </div>
   );
