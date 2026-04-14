@@ -850,7 +850,11 @@ export function StudentDashboard() {
     weekScheduledSlots: weekScheduledSlotsForImminent,
     nowMs,
     viewerUid: studentUid || undefined,
-    enabled: weekOpen && tab === "home",
+    enabled: true,
+    onImminentSlot: () => {
+      setWeekOpen(true);
+      setTab("home");
+    },
   });
 
   async function confirmPendingDrive(slotId: string) {

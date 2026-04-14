@@ -13,8 +13,10 @@ export function useDriveImminentWeekAlert(params: {
   viewerUid: string | undefined;
   /** Например секция «Мой график» открыта и список в DOM. */
   enabled: boolean;
+  /** Вызывается один раз при входе слота в окно «осталась 1 минута». */
+  onImminentSlot?: (slot: DriveSlot) => void;
 }) {
-  const { weekScheduledSlots, nowMs, viewerUid, enabled } = params;
+  const { weekScheduledSlots, nowMs, viewerUid, enabled, onImminentSlot } = params;
 
   const elementsRef = useRef(new Map<string, HTMLLIElement | null>());
   const refCallbacksRef = useRef(
@@ -48,6 +50,7 @@ export function useDriveImminentWeekAlert(params: {
       if (!soundPlayed.current.has(sl.id)) {
         soundPlayed.current.add(sl.id);
         playDriveAlertSound(viewerUid);
+        onImminentSlot?.(sl);
       }
       const node = elementsRef.current.get(sl.id);
       if (node && !scrolled.current.has(sl.id)) {
@@ -57,7 +60,7 @@ export function useDriveImminentWeekAlert(params: {
         });
       }
     }
-  }, [weekScheduledSlots, nowMs, viewerUid, enabled]);
+  }, [weekScheduledSlots, nowMs, viewerUid, enabled, onImminentSlot]);
 
   const isImminent = useCallback(
     (sl: DriveSlot) => isDriveSlotImminentAttention(sl, nowMs),

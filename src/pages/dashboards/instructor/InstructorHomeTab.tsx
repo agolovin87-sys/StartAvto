@@ -624,7 +624,8 @@ export function InstructorHomeTab() {
     weekScheduledSlots: weekScheduledSlotsForImminent,
     nowMs,
     viewerUid: instructorUid || undefined,
-    enabled: weekScheduleOpen,
+    enabled: true,
+    onImminentSlot: () => setWeekScheduleOpen(true),
   });
 
   async function cancelWeekDriveSlot(slotId: string) {

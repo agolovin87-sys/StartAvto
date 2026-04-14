@@ -21,6 +21,7 @@ import { useMeetingGeolocationEnabled } from "@/hooks/useMeetingGeolocationEnabl
 import { HapticButton } from "@/components/HapticButton";
 import { hapticSelection } from "@/utils/haptics";
 import { playDriveAlertSound } from "@/audio/playDriveAlertSound";
+import { isDriveSlotImminentAttention } from "@/lib/driveSession";
 import {
   loadInstructorSeenDriveKeys,
   relevantInstructorHomeNotificationKeys,
@@ -128,6 +129,8 @@ export function InstructorDashboard() {
   const { reportDashboardTab, totalUnread } = useChatUnread();
   const [instructorFreeWindows, setInstructorFreeWindows] = useState<FreeDriveWindow[]>([]);
   const [instructorSlots, setInstructorSlots] = useState<DriveSlot[]>([]);
+  const [nowMs, setNowMs] = useState(() => Date.now());
+  const autoHomeOnImminentRef = useRef(new Set<string>());
   const [seenInstructorDriveKeys, setSeenInstructorDriveKeys] = useState<Set<string>>(
     () => new Set()
   );
@@ -195,6 +198,28 @@ export function InstructorDashboard() {
       setInstructorSlots([])
     );
   }, [instructorUid]);
+
+  useEffect(() => {
+    const id = window.setInterval(() => setNowMs(Date.now()), 1000);
+    return () => window.clearInterval(id);
+  }, []);
+
+  useEffect(() => {
+    const seen = autoHomeOnImminentRef.current;
+    let shouldOpenHome = false;
+    for (const sl of instructorSlots) {
+      const imminent = isDriveSlotImminentAttention(sl, nowMs);
+      if (!imminent) {
+        seen.delete(sl.id);
+        continue;
+      }
+      if (!seen.has(sl.id)) {
+        seen.add(sl.id);
+        shouldOpenHome = true;
+      }
+    }
+    if (shouldOpenHome) setTab("home");
+  }, [instructorSlots, nowMs]);
 
   useLayoutEffect(() => {
     if (tab !== "home" || !instructorUid) return;
