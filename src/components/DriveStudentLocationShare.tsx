@@ -169,6 +169,7 @@ function StudentShareLocationModal({
   const [addressSuggestBusy, setAddressSuggestBusy] = useState(false);
   const [addressSuggestOpen, setAddressSuggestOpen] = useState(false);
   const [addressSuggest, setAddressSuggest] = useState<YandexSuggestItem[]>([]);
+  const [addressSuggestResolved, setAddressSuggestResolved] = useState(false);
   const [locationComment, setLocationComment] = useState("");
   const [geoErr, setGeoErr] = useState<string | null>(null);
   const [sendErr, setSendErr] = useState<string | null>(null);
@@ -186,6 +187,7 @@ function StudentShareLocationModal({
       setAddressLine("");
       setAddressSuggest([]);
       setAddressSuggestOpen(false);
+      setAddressSuggestResolved(false);
       setLocationComment("");
       setGeoErr(null);
       setSendErr(null);
@@ -280,19 +282,25 @@ function StudentShareLocationModal({
     if (q.length < 2) {
       setAddressSuggest([]);
       setAddressSuggestBusy(false);
+      setAddressSuggestResolved(false);
       return;
     }
     let cancelled = false;
     const id = window.setTimeout(() => {
+      setAddressSuggestResolved(false);
       setAddressSuggestBusy(true);
       void suggestAddressTuymazyRegion(q)
         .then((list) => {
           if (!cancelled) {
             setAddressSuggest(list);
+            setAddressSuggestResolved(true);
           }
         })
         .catch(() => {
-          if (!cancelled) setAddressSuggest([]);
+          if (!cancelled) {
+            setAddressSuggest([]);
+            setAddressSuggestResolved(true);
+          }
         })
         .finally(() => {
           if (!cancelled) setAddressSuggestBusy(false);
@@ -398,13 +406,15 @@ function StudentShareLocationModal({
                     }
                   }}
                 />
-                {addressSuggestOpen && (addressSuggestBusy || addressSuggest.length > 0) ? (
+                {addressSuggestOpen &&
+                addressLine.trim().length >= 2 &&
+                (addressSuggestBusy || addressSuggest.length > 0 || addressSuggestResolved) ? (
                   <div className="student-loc-suggest-list" role="listbox" aria-label="Подсказки адреса">
                     {addressSuggestBusy ? (
                       <button type="button" className="student-loc-suggest-item" disabled>
                         Поиск адресов...
                       </button>
-                    ) : (
+                    ) : addressSuggest.length > 0 ? (
                       addressSuggest.map((s, idx) => (
                         <button
                           key={`${s.value}-${idx}`}
@@ -423,6 +433,10 @@ function StudentShareLocationModal({
                           ) : null}
                         </button>
                       ))
+                    ) : (
+                      <button type="button" className="student-loc-suggest-item" disabled>
+                        Ничего не найдено
+                      </button>
                     )}
                   </div>
                 ) : null}

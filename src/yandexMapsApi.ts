@@ -116,10 +116,21 @@ export async function suggestAddressTuymazyRegion(
       query: string,
       opts?: Record<string, unknown>
     ) => Promise<Array<Record<string, unknown>>>;
+    modules?: {
+      require?: (mods: string[], ok: () => void, fail?: (e: unknown) => void) => void;
+    };
   };
-  if (!ymaps || typeof ymaps.suggest !== "function") return [];
+  if (!ymaps) return [];
 
-  const query = buildTuymazyBiasedAddressQuery(t);
+  if (typeof ymaps.modules?.require === "function") {
+    await new Promise<void>((resolve) => {
+      ymaps.modules!.require!(["suggest"], () => resolve(), () => resolve());
+    });
+  }
+  if (typeof ymaps.suggest !== "function") return [];
+
+  // Для suggest лучше работает исходная строка пользователя без жёсткой дописки региона.
+  const query = t;
   const list = await ymaps.suggest(query, {
     boundedBy: TUYMAZY_SEARCH_BOUNDS,
     strictBounds: false,
