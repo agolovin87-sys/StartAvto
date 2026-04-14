@@ -736,8 +736,17 @@ code {
   color: var(--theme-soft);
 }
 
-.auth-footer.install-app-back-top {
+.install-app-top-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem 1rem;
   margin: 0 0 1rem;
+}
+
+.install-app-back-btn {
+  font-size: 0.9rem;
 }
 
 .install-app-invite-link {

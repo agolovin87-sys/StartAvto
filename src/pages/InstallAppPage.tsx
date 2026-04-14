@@ -73,9 +73,13 @@ export function InstallAppPage() {
   return (
     <div className="auth-page">
       <div className="auth-card auth-card-wide install-app-card">
-        <p className="auth-footer install-app-back-top">
-          <Link to={`/login?install=1&refresh=${APP_ASSET_VERSION}`}>← Ко входу с подсказкой по установке</Link>
-          {" · "}
+        <div className="install-app-top-bar">
+          <Link
+            to={`/login?install=1&refresh=${APP_ASSET_VERSION}`}
+            className="btn btn-ghost install-app-back-btn"
+          >
+            ← Назад
+          </Link>
           <Link
             to={`/register?install=1&refresh=${APP_ASSET_VERSION}`}
             className="install-app-invite-link"
@@ -83,7 +87,7 @@ export function InstallAppPage() {
             <IconInstallApp className="install-app-invite-ico" />
             <span>Регистрация</span>
           </Link>
-        </p>
+        </div>
         <div className="install-app-icon-wrap">
           <AppBrandIcon className="install-app-icon" size={112} alt="StartAvto" />
         </div>
