@@ -224,20 +224,6 @@ export function DriveLiveSessionPanel({
 
   return (
     <div className="drive-live-session-panel">
-      {tripRecordingEnabled ? (
-        <p className="field-hint drive-live-trip-rec-hint" aria-live="polite">
-          История поездки:{" "}
-          {tripRec.pointsCount > 0
-            ? `${tripRec.pointsCount} точек GPS`
-            : "ожидание сигнала…"}
-          {tripRec.geoState === "denied"
-            ? " (нет доступа к геолокации — разрешите в браузере)"
-            : null}
-          {tripRec.lastSyncStatus === "error"
-            ? " (сервер: ошибка синхронизации, повтор при сети)"
-            : null}
-        </p>
-      ) : null}
       <div className="drive-live-session-panel__hud">
         <div className="drive-live-session-panel__dial">
           <div className="drive-live-session-panel__dial-student-timer">

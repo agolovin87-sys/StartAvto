@@ -9,12 +9,29 @@ function num(v: unknown, fallback = 0): number {
   return fallback;
 }
 
+/** Число или Firestore Timestamp / { seconds } — иначе NaN. */
+function numberOrFirestoreTimeMs(v: unknown): number {
+  if (typeof v === "number" && Number.isFinite(v)) return v;
+  if (v && typeof v === "object") {
+    const any = v as { toMillis?: () => number; seconds?: unknown; nanoseconds?: unknown };
+    if (typeof any.toMillis === "function") {
+      const t = any.toMillis();
+      if (typeof t === "number" && Number.isFinite(t)) return t;
+    }
+    if (typeof any.seconds === "number" && Number.isFinite(any.seconds)) {
+      const ns = typeof any.nanoseconds === "number" ? any.nanoseconds : 0;
+      return any.seconds * 1000 + Math.floor(ns / 1e6);
+    }
+  }
+  return NaN;
+}
+
 function pointFromRaw(p: unknown): TripPoint | null {
   if (!p || typeof p !== "object") return null;
   const o = p as Record<string, unknown>;
   const lat = num(o.lat, NaN);
   const lng = num(o.lng, NaN);
-  const ts = num(o.timestamp, NaN);
+  const ts = numberOrFirestoreTimeMs(o.timestamp);
   if (!Number.isFinite(lat) || !Number.isFinite(lng) || !Number.isFinite(ts)) return null;
   const pt: TripPoint = { lat, lng, timestamp: ts };
   if (o.speed != null) pt.speed = num(o.speed);
@@ -75,8 +92,17 @@ export function tripFromFirestore(data: Record<string, unknown>, id: string): Tr
     instructorId,
     carId: typeof data.carId === "string" ? data.carId : "",
     driveSlotId,
-    startTime: num(data.startTime),
-    endTime: data.endTime == null ? null : num(data.endTime),
+    startTime: (() => {
+      const st = numberOrFirestoreTimeMs(data.startTime);
+      return Number.isFinite(st) ? st : num(data.startTime, 0);
+    })(),
+    endTime:
+      data.endTime == null
+        ? null
+        : (() => {
+            const e = numberOrFirestoreTimeMs(data.endTime);
+            return Number.isFinite(e) ? e : null;
+          })(),
     duration: num(data.duration),
     distance: num(data.distance),
     avgSpeed: num(data.avgSpeed),

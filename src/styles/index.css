@@ -3137,9 +3137,21 @@ html[data-theme="light"] .instructor-onboarding-actions .btn-primary.btn-sm {
 }
 
 .admin-schedule-trip-history-cell {
-  text-align: center;
+  text-align: left;
   vertical-align: middle;
+}
+
+.admin-trip-history-cell-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
   white-space: nowrap;
+}
+
+.admin-trip-history-inline-text {
+  font-size: 0.8rem;
+  line-height: 1.2;
+  color: var(--theme-soft);
 }
 
 .admin-schedule-trip-empty {
@@ -6915,6 +6927,21 @@ html[data-theme="light"] .drive-live-session-panel__toolbar {
   line-height: 1.35;
   color: var(--theme-soft);
   word-break: break-word;
+}
+
+.drive-slot-share-address-row--hint .drive-slot-share-hint-geo-wrap {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  vertical-align: middle;
+  margin: 0 0.12em;
+  color: #38bdf8;
+}
+
+.drive-slot-share-address-row--hint .drive-slot-share-hint-geo-ico {
+  width: 1.15em;
+  height: 1.15em;
+  display: block;
 }
 
 .drive-instructor-share-address-line {

@@ -110,7 +110,7 @@ function ScheduleDayBlock({
                   </td>
                   <td>{formatDriveSlotStatus(slot)}</td>
                   <ScheduleSlotAddressCell slotId={slot.id} />
-                  <AdminScheduleTripHistoryCell slotId={slot.id} />
+                  <AdminScheduleTripHistoryCell slotId={slot.id} slotStatus={slot.status} />
                 </tr>
               ))
             )}

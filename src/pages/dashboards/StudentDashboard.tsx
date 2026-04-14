@@ -1214,7 +1214,12 @@ export function StudentDashboard() {
                                                 : "Идет вождение"}
                                           </span>
                                         }
-                                        belowStatusRow={<DriveSlotShareAddressRow slotId={sl.id} />}
+                                        belowStatusRow={
+                                          <DriveSlotShareAddressRow
+                                            slotId={sl.id}
+                                            showStudentPendingHint={!liveAcked}
+                                          />
+                                        }
                                         customSideActions={
                                           <>
                                             {!liveAcked ? (
@@ -1261,7 +1266,10 @@ export function StudentDashboard() {
                                       }
                                       belowStatusRow={
                                         hideWeekGeo ? null : (
-                                          <DriveSlotShareAddressRow slotId={sl.id} />
+                                          <DriveSlotShareAddressRow
+                                            slotId={sl.id}
+                                            showStudentPendingHint
+                                          />
                                         )
                                       }
                                       cancelBusy={scheduleCancelBusyId === sl.id}
