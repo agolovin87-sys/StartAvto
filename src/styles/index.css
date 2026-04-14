@@ -4875,21 +4875,29 @@ html[data-theme="light"] .instructor-week-schedule-hint-em {
   gap: 1.1rem;
 }
 
+.instructor-booking-actions-row {
+  width: 100%;
+  max-width: 26rem;
+  margin-inline: auto;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.6rem;
+}
+
 .instructor-booking-primary-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 0.55rem;
   width: 100%;
-  max-width: 22rem;
-  margin-inline: auto;
   padding: 0.75rem 1rem;
-  border-radius: 12px;
+  border-radius: 10px;
   border: 1px solid var(--theme-line);
   background: rgba(139, 92, 246, 0.08);
   color: var(--theme-heading);
   font-weight: 600;
-  font-size: 0.95rem;
+  font-size: 0.88rem;
+  min-height: 3.1rem;
   cursor: pointer;
   text-align: center;
 }

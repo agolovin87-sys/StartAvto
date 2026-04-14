@@ -467,15 +467,26 @@ export function InstructorBookingTab({ freeWindows }: { freeWindows: FreeDriveWi
         className="instructor-booking-section instructor-booking-section--create"
         aria-label="Запись курсанта"
       >
-        <button
-          type="button"
-          className="instructor-booking-primary-btn glossy-panel"
-          onClick={() => setFormOpen((o) => !o)}
-          aria-expanded={formOpen}
-        >
-          <IconBookStudent />
-          <span>Записать курсанта</span>
-        </button>
+        <div className="instructor-booking-actions-row">
+          <button
+            type="button"
+            className="instructor-booking-primary-btn glossy-panel"
+            onClick={() => setFormOpen((o) => !o)}
+            aria-expanded={formOpen}
+          >
+            <IconBookStudent />
+            <span>Записать курсанта</span>
+          </button>
+          <button
+            type="button"
+            className="instructor-booking-primary-btn instructor-booking-primary-btn--purple glossy-panel"
+            onClick={() => setWindowFormOpen((o) => !o)}
+            aria-expanded={windowFormOpen}
+          >
+            <IconBookStudent />
+            <span>Добавить окно</span>
+          </button>
+        </div>
 
         {formOpen ? (
           <form className="instructor-booking-form glossy-panel" onSubmit={onSubmit}>
@@ -526,15 +537,6 @@ export function InstructorBookingTab({ freeWindows }: { freeWindows: FreeDriveWi
             </button>
           </form>
         ) : null}
-        <button
-          type="button"
-          className="instructor-booking-primary-btn instructor-booking-primary-btn--purple glossy-panel"
-          onClick={() => setWindowFormOpen((o) => !o)}
-          aria-expanded={windowFormOpen}
-        >
-          <IconBookStudent />
-          <span>Добавить окно</span>
-        </button>
         {windowFormOpen ? (
           <form
             className="instructor-booking-form instructor-booking-form--purple glossy-panel"
