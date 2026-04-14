@@ -95,6 +95,48 @@ export async function geocodeAddressTuymazyRegion(
   return { lat, lng };
 }
 
+export type YandexSuggestItem = {
+  title: string;
+  subtitle: string;
+  value: string;
+};
+
+/**
+ * Геосаджест по адресу через JS API 2.1 (`ymaps.suggest`) с приоритетом Туймаз и района.
+ */
+export async function suggestAddressTuymazyRegion(
+  userAddressLine: string
+): Promise<YandexSuggestItem[]> {
+  const apiKey = getYandexMapsApiKey();
+  const t = userAddressLine.trim();
+  if (!apiKey || t.length < 2) return [];
+  await ensureYandexMapsLoaded(apiKey);
+  const ymaps = window.ymaps as unknown as {
+    suggest: (
+      query: string,
+      opts?: Record<string, unknown>
+    ) => Promise<Array<Record<string, unknown>>>;
+  };
+  if (!ymaps || typeof ymaps.suggest !== "function") return [];
+
+  const query = buildTuymazyBiasedAddressQuery(t);
+  const list = await ymaps.suggest(query, {
+    boundedBy: TUYMAZY_SEARCH_BOUNDS,
+    strictBounds: false,
+    results: 6,
+  });
+  return list
+    .map((x) => {
+      const value = typeof x.value === "string" ? x.value.trim() : "";
+      const titleObj = x.title as Record<string, unknown> | undefined;
+      const subtitleObj = x.subtitle as Record<string, unknown> | undefined;
+      const title = typeof titleObj?.text === "string" ? titleObj.text.trim() : value;
+      const subtitle = typeof subtitleObj?.text === "string" ? subtitleObj.text.trim() : "";
+      return { value, title, subtitle };
+    })
+    .filter((x) => x.value.length > 0);
+}
+
 /**
  * Обратное геокодирование: строка адреса по координатам (WGS84).
  */

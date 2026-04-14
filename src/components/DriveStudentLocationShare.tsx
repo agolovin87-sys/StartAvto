@@ -15,6 +15,8 @@ import {
   geocodeAddressTuymazyRegion,
   hasYandexMapsApiKey,
   reverseGeocodeCoordsYandex,
+  suggestAddressTuymazyRegion,
+  type YandexSuggestItem,
 } from "@/yandexMapsApi";
 
 const STALE_MS = 12 * 60 * 1000;
@@ -164,6 +166,9 @@ function StudentShareLocationModal({
   const [whereAmIBusy, setWhereAmIBusy] = useState(false);
   const [geocodeBusy, setGeocodeBusy] = useState(false);
   const [addressLine, setAddressLine] = useState("");
+  const [addressSuggestBusy, setAddressSuggestBusy] = useState(false);
+  const [addressSuggestOpen, setAddressSuggestOpen] = useState(false);
+  const [addressSuggest, setAddressSuggest] = useState<YandexSuggestItem[]>([]);
   const [locationComment, setLocationComment] = useState("");
   const [geoErr, setGeoErr] = useState<string | null>(null);
   const [sendErr, setSendErr] = useState<string | null>(null);
@@ -179,25 +184,29 @@ function StudentShareLocationModal({
     if (open) {
       setPicked(null);
       setAddressLine("");
+      setAddressSuggest([]);
+      setAddressSuggestOpen(false);
       setLocationComment("");
       setGeoErr(null);
       setSendErr(null);
     }
   }, [open]);
 
-  async function handleAddressFind() {
+  async function handleAddressFind(lineOverride?: string) {
     setGeoErr(null);
-    if (!addressLine.trim()) {
+    const line = (lineOverride ?? addressLine).trim();
+    if (!line) {
       setGeoErr("Введите адрес (улицу, дом)");
       return;
     }
     setGeocodeBusy(true);
     try {
-      const coords = await geocodeAddressTuymazyRegion(addressLine);
+      const coords = await geocodeAddressTuymazyRegion(line);
       if (!coords) {
         setGeoErr("Адрес не найден. Уточните улицу и дом или укажите точку на карте.");
         return;
       }
+      setAddressLine(line);
       setPicked({ lat: coords.lat, lng: coords.lng, accuracyM: 1, source: "geocode" });
     } catch {
       setGeoErr("Не удалось найти адрес. Проверьте сеть и попробуйте снова.");
@@ -264,6 +273,36 @@ function StudentShareLocationModal({
       setSendBusy(false);
     }
   }
+
+  useEffect(() => {
+    if (!open || !mapKey) return;
+    const q = addressLine.trim();
+    if (q.length < 2) {
+      setAddressSuggest([]);
+      setAddressSuggestBusy(false);
+      return;
+    }
+    let cancelled = false;
+    const id = window.setTimeout(() => {
+      setAddressSuggestBusy(true);
+      void suggestAddressTuymazyRegion(q)
+        .then((list) => {
+          if (!cancelled) {
+            setAddressSuggest(list);
+          }
+        })
+        .catch(() => {
+          if (!cancelled) setAddressSuggest([]);
+        })
+        .finally(() => {
+          if (!cancelled) setAddressSuggestBusy(false);
+        });
+    }, 240);
+    return () => {
+      cancelled = true;
+      window.clearTimeout(id);
+    };
+  }, [addressLine, mapKey, open]);
 
   if (!open) return null;
 
@@ -341,10 +380,17 @@ function StudentShareLocationModal({
                   type="text"
                   className="student-loc-address-input"
                   value={addressLine}
-                  onChange={(e) => setAddressLine(e.target.value)}
+                  onChange={(e) => {
+                    setAddressLine(e.target.value);
+                    setAddressSuggestOpen(true);
+                  }}
                   placeholder="Улица, дом (поиск по Туймазам и району)"
                   autoComplete="street-address"
                   disabled={sendBusy || geocodeBusy}
+                  onFocus={() => setAddressSuggestOpen(true)}
+                  onBlur={() => {
+                    window.setTimeout(() => setAddressSuggestOpen(false), 120);
+                  }}
                   onKeyDown={(e) => {
                     if (e.key === "Enter") {
                       e.preventDefault();
@@ -352,6 +398,34 @@ function StudentShareLocationModal({
                     }
                   }}
                 />
+                {addressSuggestOpen && (addressSuggestBusy || addressSuggest.length > 0) ? (
+                  <div className="student-loc-suggest-list" role="listbox" aria-label="Подсказки адреса">
+                    {addressSuggestBusy ? (
+                      <button type="button" className="student-loc-suggest-item" disabled>
+                        Поиск адресов...
+                      </button>
+                    ) : (
+                      addressSuggest.map((s, idx) => (
+                        <button
+                          key={`${s.value}-${idx}`}
+                          type="button"
+                          className="student-loc-suggest-item"
+                          onMouseDown={(e) => e.preventDefault()}
+                          onClick={() => {
+                            setAddressLine(s.value);
+                            setAddressSuggestOpen(false);
+                            void handleAddressFind(s.value);
+                          }}
+                        >
+                          <span className="student-loc-suggest-title">{s.title}</span>
+                          {s.subtitle ? (
+                            <span className="student-loc-suggest-subtitle">{s.subtitle}</span>
+                          ) : null}
+                        </button>
+                      ))
+                    )}
+                  </div>
+                ) : null}
               </label>
               <button
                 type="button"
