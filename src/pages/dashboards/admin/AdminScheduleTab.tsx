@@ -9,6 +9,7 @@ import {
 } from "@/admin/scheduleFormat";
 import { subscribeDriveSlotsForInstructor } from "@/firebase/drives";
 import { subscribeInstructors, subscribeStudents } from "@/firebase/admin";
+import { useDriveLocationSharingUi } from "@/context/DriveLocationSharingUiContext";
 import {
   formatDriveShareAdminScheduleCell,
   subscribeStudentDriveLocationShare,
@@ -61,12 +62,14 @@ function ScheduleDayBlock({
   dateKey,
   slots,
   studentMap,
+  gpsTrackerEnabled,
   idSuffix,
   TitleTag = "h2",
 }: {
   dateKey: string;
   slots: DriveSlot[];
   studentMap: Map<string, UserProfile>;
+  gpsTrackerEnabled: boolean;
   /** Уникальный суффикс для id (например uid инструктора). */
   idSuffix: string;
   TitleTag?: ElementType;
@@ -110,7 +113,11 @@ function ScheduleDayBlock({
                   </td>
                   <td>{formatDriveSlotStatus(slot)}</td>
                   <ScheduleSlotAddressCell slotId={slot.id} />
-                  <AdminScheduleTripHistoryCell slotId={slot.id} slotStatus={slot.status} />
+                  <AdminScheduleTripHistoryCell
+                    slotId={slot.id}
+                    slotStatus={slot.status}
+                    gpsTrackerEnabled={gpsTrackerEnabled}
+                  />
                 </tr>
               ))
             )}
@@ -133,6 +140,7 @@ function IconChevronDown({ className }: { className?: string }) {
 }
 
 export function AdminScheduleTab() {
+  const { gpsTrackerEnabled } = useDriveLocationSharingUi();
   const [instructors, setInstructors] = useState<UserProfile[]>([]);
   const [students, setStudents] = useState<UserProfile[]>([]);
   const [allSlots, setAllSlots] = useState<DriveSlot[]>([]);
@@ -244,6 +252,7 @@ export function AdminScheduleTab() {
                     dateKey={todayKey}
                     slots={byDay.get(todayKey) ?? []}
                     studentMap={studentMap}
+                    gpsTrackerEnabled={gpsTrackerEnabled}
                     idSuffix={ins.uid}
                     TitleTag="h3"
                   />
@@ -289,6 +298,7 @@ export function AdminScheduleTab() {
                             dateKey={dk}
                             slots={byDay.get(dk) ?? []}
                             studentMap={studentMap}
+                            gpsTrackerEnabled={gpsTrackerEnabled}
                             idSuffix={ins.uid}
                             TitleTag="h4"
                           />

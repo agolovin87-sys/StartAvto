@@ -10,6 +10,7 @@ import { mapFirebaseError } from "@/firebase/errors";
 import { driveLiveEffectiveElapsedMs } from "@/lib/driveLiveElapsed";
 import { DRIVE_LIVE_DURATION_MS } from "@/lib/driveSession";
 import { useDriveTripRecorder } from "@/hooks/useDriveTripRecorder";
+import { useDriveLocationSharingUi } from "@/context/DriveLocationSharingUiContext";
 
 function IconPause() {
   return (
@@ -82,9 +83,13 @@ export function DriveLiveSessionPanel({
    * (иначе таймер снова идёт доли секунды). Сбрасываем только по «Продолжить» или ошибке паузы.
    */
   const [pauseSticky, setPauseSticky] = useState(false);
+  const driveLocUi = useDriveLocationSharingUi();
 
   const tripRecordingEnabled =
-    slot.liveStudentAckAt != null && slot.status === "scheduled";
+    driveLocUi.ready &&
+    driveLocUi.gpsTrackerEnabled &&
+    slot.liveStudentAckAt != null &&
+    slot.status === "scheduled";
   const tripRec = useDriveTripRecorder(slot, tripRecordingEnabled);
 
   const serverPauseActive =

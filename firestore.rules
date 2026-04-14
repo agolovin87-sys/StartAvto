@@ -312,14 +312,15 @@ service cloud.firestore {
     }
 
     /**
-     * Глобальные флаги UI: показывать ли кнопки геолокации в графике у инструкторов / курсантов.
+     * Глобальные флаги UI: кнопки геолокации и запись GPS-трека «История поездки».
      */
     match /appSettings/driveLocationSharing {
       allow read: if isSignedIn();
       allow create, update: if isAdmin()
-        && request.resource.data.keys().hasOnly(['instructorsEnabled', 'studentsEnabled', 'updatedAt'])
+        && request.resource.data.keys().hasOnly(['instructorsEnabled', 'studentsEnabled', 'gpsTrackerEnabled', 'updatedAt'])
         && request.resource.data.instructorsEnabled is bool
         && request.resource.data.studentsEnabled is bool
+        && request.resource.data.gpsTrackerEnabled is bool
         && request.resource.data.updatedAt is timestamp;
       allow delete: if false;
     }

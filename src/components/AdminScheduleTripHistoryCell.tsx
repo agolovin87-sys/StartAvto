@@ -17,13 +17,27 @@ function IconRoute() {
   );
 }
 
+function IconRouteOff() {
+  return (
+    <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden className="admin-trip-history-ico">
+      <path
+        fill="currentColor"
+        d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5A2.5 2.5 0 1 1 12 6.5a2.5 2.5 0 0 1 0 5.5z"
+      />
+      <path fill="currentColor" d="M4.7 3.3L3.3 4.7l16 16 1.4-1.4-16-16z" opacity="0.95" />
+    </svg>
+  );
+}
+
 export function AdminScheduleTripHistoryCell({
   slotId,
   slotStatus,
+  gpsTrackerEnabled = true,
 }: {
   slotId: string;
   /** Для текста, если трека нет, а занятие уже завершено. */
   slotStatus?: DriveSlotStatus;
+  gpsTrackerEnabled?: boolean;
 }) {
   const [trip, setTrip] = useState<Trip | null>(null);
   const [open, setOpen] = useState(false);
@@ -144,23 +158,31 @@ export function AdminScheduleTripHistoryCell({
   return (
     <td className="admin-schedule-trip-history-cell">
       <div className="admin-trip-history-cell-row">
-        <button
-          type="button"
-          className={`admin-trip-history-open-btn glossy-panel${
-            hasTrack ? "" : " admin-trip-history-open-btn--muted"
-          }`}
-          onClick={() => setOpen(true)}
-          title={
-            hasTrack
-              ? "Открыть трек на карте"
-              : "История поездки: трек ещё не сохранён — нажмите для пояснения"
-          }
-          aria-label="История поездки"
-        >
-          <IconRoute />
-        </button>
+        {gpsTrackerEnabled ? (
+          <button
+            type="button"
+            className={`admin-trip-history-open-btn glossy-panel${
+              hasTrack ? "" : " admin-trip-history-open-btn--muted"
+            }`}
+            onClick={() => setOpen(true)}
+            title={
+              hasTrack
+                ? "Открыть трек на карте"
+                : "История поездки: трек ещё не сохранён — нажмите для пояснения"
+            }
+            aria-label="История поездки"
+          >
+            <IconRoute />
+          </button>
+        ) : (
+          <span className="admin-trip-history-open-btn admin-trip-history-open-btn--off" title="Трекер GPS выключен">
+            <IconRouteOff />
+          </span>
+        )}
         <span className="admin-trip-history-inline-text">
-          История поездки: {trip?.points.length ?? 0} точек GPS
+          {gpsTrackerEnabled
+            ? `История поездки: ${trip?.points.length ?? 0} точек GPS`
+            : "Трекер GPS выключен"}
         </span>
       </div>
       {typeof document !== "undefined" && modal != null

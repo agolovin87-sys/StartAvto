@@ -237,17 +237,18 @@ function AdminGpsMapModal({
 }
 
 function AdminGpsDriveLocationSharingSettings() {
-  const { instructorsEnabled, studentsEnabled, ready } = useDriveLocationSharingUi();
+  const { instructorsEnabled, studentsEnabled, gpsTrackerEnabled, ready } = useDriveLocationSharingUi();
   const [settingsErr, setSettingsErr] = useState<string | null>(null);
   const [settingsBusy, setSettingsBusy] = useState(false);
 
-  async function save(nextInstructors: boolean, nextStudents: boolean) {
+  async function save(nextInstructors: boolean, nextStudents: boolean, nextTracker: boolean) {
     setSettingsErr(null);
     setSettingsBusy(true);
     try {
       await setDriveLocationSharingSettings({
         instructorsEnabled: nextInstructors,
         studentsEnabled: nextStudents,
+        gpsTrackerEnabled: nextTracker,
       });
     } catch (e: unknown) {
       setSettingsErr(mapFirebaseError(e));
@@ -260,8 +261,8 @@ function AdminGpsDriveLocationSharingSettings() {
     <div className="admin-gps-settings-panel glossy-panel">
       <h2 className="admin-gps-settings-title">Настройки</h2>
       <p className="admin-gps-settings-lead">
-        Показывать геолокацию у пользователей: инструкторы и курсанты (кнопки в графике вождения). При
-        выключении соответствующая кнопка скрывается.
+        Показывать геолокацию у пользователей: инструкторы и курсанты (кнопки в графике вождения), а также
+        управлять записью GPS-трека для «Истории поездки».
       </p>
       {settingsErr ? (
         <div className="form-error admin-gps-settings-err" role="alert">
@@ -279,7 +280,7 @@ function AdminGpsDriveLocationSharingSettings() {
             role="switch"
             checked={instructorsEnabled}
             disabled={!ready || settingsBusy}
-            onChange={(e) => void save(e.target.checked, studentsEnabled)}
+            onChange={(e) => void save(e.target.checked, studentsEnabled, gpsTrackerEnabled)}
             aria-labelledby="admin-gps-loc-instructors-label"
             aria-checked={instructorsEnabled}
           />
@@ -297,9 +298,29 @@ function AdminGpsDriveLocationSharingSettings() {
             role="switch"
             checked={studentsEnabled}
             disabled={!ready || settingsBusy}
-            onChange={(e) => void save(instructorsEnabled, e.target.checked)}
+            onChange={(e) => void save(instructorsEnabled, e.target.checked, gpsTrackerEnabled)}
             aria-labelledby="admin-gps-loc-students-label"
             aria-checked={studentsEnabled}
+          />
+          <span className="switch-stay-slider" aria-hidden />
+        </label>
+      </div>
+      <div className="admin-settings-toggle-row admin-gps-settings-toggle-row">
+        <div className="admin-settings-toggle-label" id="admin-gps-tracker-label">
+          Трекер GPS
+          <span className="admin-settings-toggle-hint">
+            Запись GPS-трека в «Историю поездки» при завершении вождения
+          </span>
+        </div>
+        <label className="switch-stay">
+          <input
+            type="checkbox"
+            role="switch"
+            checked={gpsTrackerEnabled}
+            disabled={!ready || settingsBusy}
+            onChange={(e) => void save(instructorsEnabled, studentsEnabled, e.target.checked)}
+            aria-labelledby="admin-gps-tracker-label"
+            aria-checked={gpsTrackerEnabled}
           />
           <span className="switch-stay-slider" aria-hidden />
         </label>

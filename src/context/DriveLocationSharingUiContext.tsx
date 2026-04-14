@@ -43,7 +43,7 @@ export function DriveLocationSharingUiProvider({ children }: { children: ReactNo
       ...settings,
       ready,
     }),
-    [settings.instructorsEnabled, settings.studentsEnabled, ready]
+    [settings.instructorsEnabled, settings.studentsEnabled, settings.gpsTrackerEnabled, ready]
   );
 
   return (

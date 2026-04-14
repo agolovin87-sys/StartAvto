@@ -3185,6 +3185,18 @@ html[data-theme="light"] .instructor-onboarding-actions .btn-primary.btn-sm {
   filter: brightness(1.04);
 }
 
+.admin-trip-history-open-btn--off {
+  cursor: default;
+  pointer-events: none;
+  color: #7f1d1d;
+  border-color: rgba(127, 29, 29, 0.24);
+  background: linear-gradient(165deg, #fecaca 0%, #fca5a5 50%, #f87171 100%);
+}
+
+html[data-theme="light"] .admin-trip-history-open-btn--off {
+  color: #b91c1c;
+}
+
 .admin-trip-history-modal--empty .admin-trip-history-empty-text {
   margin: 0 0 0.75rem;
   font-size: 0.9rem;

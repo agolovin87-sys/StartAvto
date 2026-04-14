@@ -7,11 +7,13 @@ const DOC_ID = "driveLocationSharing";
 export type DriveLocationSharingSettings = {
   instructorsEnabled: boolean;
   studentsEnabled: boolean;
+  gpsTrackerEnabled: boolean;
 };
 
 export const DEFAULT_DRIVE_LOCATION_SHARING_SETTINGS: DriveLocationSharingSettings = {
   instructorsEnabled: true,
   studentsEnabled: true,
+  gpsTrackerEnabled: true,
 };
 
 function normalize(data: Record<string, unknown> | undefined): DriveLocationSharingSettings {
@@ -19,6 +21,7 @@ function normalize(data: Record<string, unknown> | undefined): DriveLocationShar
   return {
     instructorsEnabled: data.instructorsEnabled !== false,
     studentsEnabled: data.studentsEnabled !== false,
+    gpsTrackerEnabled: data.gpsTrackerEnabled !== false,
   };
 }
 
@@ -50,6 +53,7 @@ export async function setDriveLocationSharingSettings(
     {
       instructorsEnabled: next.instructorsEnabled,
       studentsEnabled: next.studentsEnabled,
+      gpsTrackerEnabled: next.gpsTrackerEnabled,
       updatedAt: serverTimestamp(),
     },
     { merge: true }
