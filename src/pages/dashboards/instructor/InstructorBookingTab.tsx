@@ -33,6 +33,8 @@ import {
   type TalonBookingBlockReason,
 } from "@/lib/talonBooking";
 import { AlertDialog, ConfirmDialog } from "@/components/ConfirmDialog";
+import { StudentLocationPickMap } from "@/components/StudentLocationPickMap";
+import { geocodeAddressTuymazyRegion, hasYandexMapsApiKey } from "@/yandexMapsApi";
 import type { DriveSlot, FreeDriveWindow, UserProfile } from "@/types";
 
 function IconBookStudent() {
@@ -73,6 +75,32 @@ function IconClose() {
   );
 }
 
+function IconNavigator() {
+  return (
+    <svg className="instructor-booking-ico" viewBox="0 0 24 24" aria-hidden>
+      <path
+        fill="currentColor"
+        d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.6A2.6 2.6 0 1 1 12 6.4a2.6 2.6 0 0 1 0 5.2z"
+      />
+    </svg>
+  );
+}
+
+function IconRoute() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden>
+      <path
+        fill="currentColor"
+        d="M3 17h9v-2H3v2zm0 4h14v-2H3v2zM3 5v2h18V5H3zm13.59 6L21 15.41 19.59 16.83 16 13.24l-3.59 3.59L11 15.41 16.59 10z"
+      />
+    </svg>
+  );
+}
+
+function yandexRouteToUrl(lat: number, lng: number): string {
+  return `https://yandex.ru/maps/?rtext=~${lat},${lng}&rtt=auto`;
+}
+
 export function InstructorBookingTab({ freeWindows }: { freeWindows: FreeDriveWindow[] }) {
   const { profile, user, refreshProfile } = useAuth();
   const instructorUid = user?.uid ?? profile?.uid ?? "";
@@ -93,6 +121,11 @@ export function InstructorBookingTab({ freeWindows }: { freeWindows: FreeDriveWi
   const [windowStartTime, setWindowStartTime] = useState("09:00");
   const [windowSubmitBusy, setWindowSubmitBusy] = useState(false);
   const [windowActionBusyId, setWindowActionBusyId] = useState<string | null>(null);
+  const [navigatorOpen, setNavigatorOpen] = useState(false);
+  const [navigatorAddress, setNavigatorAddress] = useState("");
+  const [navigatorPoint, setNavigatorPoint] = useState<{ lat: number; lng: number } | null>(null);
+  const [navigatorFindBusy, setNavigatorFindBusy] = useState(false);
+  const [navigatorErr, setNavigatorErr] = useState<string | null>(null);
   const [talonBookingAlert, setTalonBookingAlert] = useState<TalonBookingBlockReason | null>(null);
   const [driveTimeOccupiedOpen, setDriveTimeOccupiedOpen] = useState(false);
 
@@ -290,6 +323,28 @@ export function InstructorBookingTab({ freeWindows }: { freeWindows: FreeDriveWi
       setErr(mapFirebaseError(e));
     } finally {
       setWindowActionBusyId(null);
+    }
+  }
+
+  async function onNavigatorFind() {
+    const addr = navigatorAddress.trim();
+    setNavigatorErr(null);
+    if (!addr) {
+      setNavigatorErr("Введите адрес (улицу, дом)");
+      return;
+    }
+    setNavigatorFindBusy(true);
+    try {
+      const coords = await geocodeAddressTuymazyRegion(addr);
+      if (!coords) {
+        setNavigatorErr("Адрес не найден. Уточните улицу и дом.");
+        return;
+      }
+      setNavigatorPoint(coords);
+    } catch {
+      setNavigatorErr("Не удалось найти адрес. Проверьте сеть и попробуйте снова.");
+    } finally {
+      setNavigatorFindBusy(false);
     }
   }
 
@@ -495,6 +550,14 @@ export function InstructorBookingTab({ freeWindows }: { freeWindows: FreeDriveWi
             <span>Добавить окно</span>
           </button>
         </div>
+        <button
+          type="button"
+          className="instructor-booking-primary-btn instructor-booking-primary-btn--navigator glossy-panel"
+          onClick={() => setNavigatorOpen(true)}
+        >
+          <IconNavigator />
+          <span>НАВИГАТОР</span>
+        </button>
 
         {formOpen ? (
           <div className="modal-backdrop" role="presentation" onClick={() => setFormOpen(false)}>
@@ -606,6 +669,88 @@ export function InstructorBookingTab({ freeWindows }: { freeWindows: FreeDriveWi
                 </button>
               </div>
             </form>
+          </div>
+        ) : null}
+        {navigatorOpen ? (
+          <div
+            className="modal-backdrop"
+            role="presentation"
+            onClick={() => setNavigatorOpen(false)}
+          >
+            <div
+              className="modal-panel instructor-booking-navigator-modal glossy-panel"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <h3 className="modal-title">Навигатор</h3>
+              {hasYandexMapsApiKey() ? (
+                <div className="admin-gps-map-wrap student-loc-pick-map-wrap">
+                  <StudentLocationPickMap
+                    selected={navigatorPoint}
+                    onSelect={(lat, lng) => {
+                      setNavigatorErr(null);
+                      setNavigatorPoint({ lat, lng });
+                    }}
+                  />
+                </div>
+              ) : (
+                <p className="admin-gps-modal-hint">
+                  Ключ карты не задан. Заполните <code>VITE_YANDEX_MAPS_API_KEY</code> в `.env`.
+                </p>
+              )}
+              <div className="student-loc-address-row">
+                <label className="student-loc-address-field">
+                  <span className="student-loc-address-label-text">Адрес</span>
+                  <input
+                    type="text"
+                    className="student-loc-address-input"
+                    value={navigatorAddress}
+                    onChange={(e) => setNavigatorAddress(e.target.value)}
+                    placeholder="Улица, дом"
+                    autoComplete="street-address"
+                    disabled={navigatorFindBusy}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        e.preventDefault();
+                        void onNavigatorFind();
+                      }
+                    }}
+                  />
+                </label>
+                <button
+                  type="button"
+                  className="btn btn-secondary btn-sm student-loc-address-find-btn"
+                  onClick={() => void onNavigatorFind()}
+                  disabled={navigatorFindBusy}
+                >
+                  {navigatorFindBusy ? "Поиск…" : "Найти"}
+                </button>
+              </div>
+              {navigatorErr ? (
+                <p className="form-error" role="alert">
+                  {navigatorErr}
+                </p>
+              ) : null}
+              <div className="modal-actions">
+                <button
+                  type="button"
+                  className="btn btn-primary"
+                  disabled={!navigatorPoint}
+                  onClick={() => {
+                    if (!navigatorPoint) return;
+                    window.open(
+                      yandexRouteToUrl(navigatorPoint.lat, navigatorPoint.lng),
+                      "_blank",
+                      "noopener,noreferrer"
+                    );
+                  }}
+                >
+                  <IconRoute /> Проложить маршрут
+                </button>
+                <button type="button" className="btn btn-ghost" onClick={() => setNavigatorOpen(false)}>
+                  Отмена
+                </button>
+              </div>
+            </div>
           </div>
         ) : null}
       </section>
