@@ -9,10 +9,6 @@ export function getYandexMapsApiKey(): string {
   return (import.meta.env.VITE_YANDEX_MAPS_API_KEY ?? "").trim();
 }
 
-export function getYandexSuggestApiKey(): string {
-  return (import.meta.env.VITE_YANDEX_SUGGEST_API_KEY ?? "").trim();
-}
-
 export function ensureYandexMapsLoaded(apiKey: string): Promise<void> {
   const key = apiKey.trim();
   if (!key) return Promise.reject(new Error("Пустой ключ Яндекс.Карт"));
@@ -27,11 +23,7 @@ export function ensureYandexMapsLoaded(apiKey: string): Promise<void> {
   if (!ymapsReadyPromise) {
     ymapsReadyPromise = new Promise((resolve, reject) => {
       const script = document.createElement("script");
-      const suggestKey = getYandexSuggestApiKey();
-      const suggestPart = suggestKey
-        ? `&suggest_apikey=${encodeURIComponent(suggestKey)}`
-        : "";
-      script.src = `https://api-maps.yandex.ru/2.1/?apikey=${encodeURIComponent(key)}${suggestPart}&lang=ru_RU`;
+      script.src = `https://api-maps.yandex.ru/2.1/?apikey=${encodeURIComponent(key)}&lang=ru_RU`;
       script.async = true;
       script.onload = () => {
         if (!window.ymaps) {
@@ -109,41 +101,7 @@ export type YandexSuggestItem = {
   value: string;
 };
 
-/**
- * Геосаджест по адресу через JS API 2.1 (`ymaps.suggest`) с приоритетом Туймаз и района.
- */
-export async function suggestAddressTuymazyRegion(
-  userAddressLine: string
-): Promise<YandexSuggestItem[]> {
-  const apiKey = getYandexMapsApiKey();
-  const t = userAddressLine.trim();
-  if (!apiKey || t.length < 2) return [];
-  await ensureYandexMapsLoaded(apiKey);
-  const ymaps = window.ymaps as unknown as {
-    suggest: (
-      query: string,
-      opts?: Record<string, unknown>
-    ) => Promise<Array<Record<string, unknown>>>;
-    modules?: {
-      require?: (mods: string[], ok: () => void, fail?: (e: unknown) => void) => void;
-    };
-  };
-  if (!ymaps) return [];
-
-  if (typeof ymaps.modules?.require === "function") {
-    await new Promise<void>((resolve) => {
-      ymaps.modules!.require!(["suggest"], () => resolve(), () => resolve());
-    });
-  }
-  if (typeof ymaps.suggest !== "function") return [];
-
-  // Для suggest лучше работает исходная строка пользователя без жёсткой дописки региона.
-  const query = t;
-  const list = await ymaps.suggest(query, {
-    boundedBy: TUYMAZY_SEARCH_BOUNDS,
-    strictBounds: false,
-    results: 6,
-  });
+function normalizeSuggestItems(list: Array<Record<string, unknown>>): YandexSuggestItem[] {
   return list
     .map((x) => {
       const value = typeof x.value === "string" ? x.value.trim() : "";
@@ -154,6 +112,50 @@ export async function suggestAddressTuymazyRegion(
       return { value, title, subtitle };
     })
     .filter((x) => x.value.length > 0);
+}
+
+/** Подсказки адреса через геокодер (один стабильный канал). */
+export async function suggestAddressTuymazyRegion(
+  userAddressLine: string
+): Promise<YandexSuggestItem[]> {
+  const apiKey = getYandexMapsApiKey();
+  const t = userAddressLine.trim();
+  if (!apiKey || t.length < 2) return [];
+  await ensureYandexMapsLoaded(apiKey);
+  const ymaps = window.ymaps as unknown as {
+    geocode?: (
+      query: string,
+      opts?: Record<string, unknown>
+    ) => Promise<{ geoObjects: { get: (index: number) => unknown } }>;
+  };
+  if (!ymaps) return [];
+  if (typeof ymaps.geocode !== "function") return [];
+  const geo = await ymaps.geocode(buildTuymazyBiasedAddressQuery(t), {
+    results: 5,
+    boundedBy: TUYMAZY_SEARCH_BOUNDS,
+    strictBounds: false,
+  });
+  const fallbackRaw: Array<Record<string, unknown>> = [];
+  for (let i = 0; i < 5; i++) {
+    const obj = geo.geoObjects.get(i) as
+      | { getAddressLine?: () => string; properties?: { get?: (k: string) => unknown } }
+      | undefined;
+    if (!obj) break;
+    const lineByMethod =
+      typeof obj.getAddressLine === "function" ? String(obj.getAddressLine() ?? "").trim() : "";
+    const lineByProp =
+      typeof obj.properties?.get === "function"
+        ? String(obj.properties.get("text") ?? "").trim()
+        : "";
+    const value = (lineByMethod || lineByProp).trim();
+    if (!value) continue;
+    fallbackRaw.push({
+      value,
+      title: { text: value },
+      subtitle: { text: "результат геокодера" },
+    });
+  }
+  return normalizeSuggestItems(fallbackRaw);
 }
 
 /**
