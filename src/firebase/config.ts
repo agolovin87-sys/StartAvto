@@ -72,6 +72,8 @@ export function getFirebase(): {
       _db = initializeFirestore(_app, {
         localCache: memoryLocalCache(),
         experimentalForceLongPolling: true,
+        /** Иначе вложенные `undefined` (например в точках GPS) ломают setDoc. */
+        ignoreUndefinedProperties: true,
       });
       _storage = getStorage(_app);
     } else {

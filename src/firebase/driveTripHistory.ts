@@ -102,6 +102,33 @@ export function tripFromFirestore(data: Record<string, unknown>, id: string): Tr
   };
 }
 
+/**
+ * Firestore не принимает значения `undefined` даже во вложенных объектах массива точек
+ * (иначе «Invalid use of undefined as a Firestore argument» — трек не сохраняется).
+ */
+function tripPointForFirestore(p: TripPoint): Record<string, unknown> {
+  const o: Record<string, unknown> = {
+    lat: p.lat,
+    lng: p.lng,
+    timestamp: p.timestamp,
+  };
+  if (p.speed !== undefined) o.speed = p.speed;
+  if (p.accuracy !== undefined) o.accuracy = p.accuracy;
+  if (p.heading !== undefined) o.heading = p.heading;
+  if (p.altitude !== undefined) o.altitude = p.altitude;
+  return o;
+}
+
+function tripErrorForFirestore(e: TripError): Record<string, unknown> {
+  return {
+    id: e.id,
+    type: e.type,
+    severity: e.severity,
+    description: e.description,
+    point: tripPointForFirestore(e.point),
+  };
+}
+
 function stripForFirestore(t: Trip): Record<string, unknown> {
   const o: Record<string, unknown> = {
     id: t.id,
@@ -115,13 +142,15 @@ function stripForFirestore(t: Trip): Record<string, unknown> {
     distance: t.distance,
     avgSpeed: t.avgSpeed,
     maxSpeed: t.maxSpeed,
-    points: t.points,
+    points: t.points.map(tripPointForFirestore),
     status: t.status,
     syncStatus: t.syncStatus,
   };
   if (t.notes !== undefined) o.notes = t.notes;
   if (t.rating !== undefined) o.rating = t.rating;
-  if (t.errors !== undefined) o.errors = t.errors;
+  if (t.errors !== undefined && t.errors.length > 0) {
+    o.errors = t.errors.map(tripErrorForFirestore);
+  }
   return o;
 }
 
