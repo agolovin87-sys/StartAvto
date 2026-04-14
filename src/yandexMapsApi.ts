@@ -9,6 +9,10 @@ export function getYandexMapsApiKey(): string {
   return (import.meta.env.VITE_YANDEX_MAPS_API_KEY ?? "").trim();
 }
 
+export function getYandexSuggestApiKey(): string {
+  return (import.meta.env.VITE_YANDEX_SUGGEST_API_KEY ?? "").trim();
+}
+
 export function ensureYandexMapsLoaded(apiKey: string): Promise<void> {
   const key = apiKey.trim();
   if (!key) return Promise.reject(new Error("Пустой ключ Яндекс.Карт"));
@@ -23,7 +27,11 @@ export function ensureYandexMapsLoaded(apiKey: string): Promise<void> {
   if (!ymapsReadyPromise) {
     ymapsReadyPromise = new Promise((resolve, reject) => {
       const script = document.createElement("script");
-      script.src = `https://api-maps.yandex.ru/2.1/?apikey=${encodeURIComponent(key)}&lang=ru_RU`;
+      const suggestKey = getYandexSuggestApiKey();
+      const suggestPart = suggestKey
+        ? `&suggest_apikey=${encodeURIComponent(suggestKey)}`
+        : "";
+      script.src = `https://api-maps.yandex.ru/2.1/?apikey=${encodeURIComponent(key)}${suggestPart}&lang=ru_RU`;
       script.async = true;
       script.onload = () => {
         if (!window.ymaps) {

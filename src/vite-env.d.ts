@@ -9,6 +9,8 @@ interface ImportMetaEnv {
   readonly VITE_FIREBASE_APP_ID: string;
   /** JavaScript API Яндекс.Карт (вкладка GPS у админа). https://developer.tech.yandex.ru/services/ */
   readonly VITE_YANDEX_MAPS_API_KEY?: string;
+  /** Отдельный ключ Suggest API для адресных подсказок (`ymaps.suggest`). */
+  readonly VITE_YANDEX_SUGGEST_API_KEY?: string;
   /** Через запятую: email администраторов (роль admin при входе) */
   readonly VITE_ADMIN_EMAILS?: string;
   /** Опционально: uid пользователя-админа в Firestore (если контакт не находится по role/email) */
