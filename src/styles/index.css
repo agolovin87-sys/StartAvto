@@ -4877,11 +4877,10 @@ html[data-theme="light"] .instructor-week-schedule-hint-em {
 
 .instructor-booking-actions-row {
   width: 100%;
-  max-width: 26rem;
-  margin-inline: auto;
+  max-width: none;
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0.6rem;
+  gap: 0.7rem;
 }
 
 .instructor-booking-primary-btn {
@@ -4890,14 +4889,14 @@ html[data-theme="light"] .instructor-week-schedule-hint-em {
   justify-content: center;
   gap: 0.55rem;
   width: 100%;
-  padding: 0.75rem 1rem;
-  border-radius: 10px;
+  padding: 0.95rem 1rem;
+  border-radius: 8px;
   border: 1px solid var(--theme-line);
   background: rgba(139, 92, 246, 0.08);
   color: var(--theme-heading);
   font-weight: 600;
-  font-size: 0.88rem;
-  min-height: 3.1rem;
+  font-size: 0.96rem;
+  min-height: 4rem;
   cursor: pointer;
   text-align: center;
 }
