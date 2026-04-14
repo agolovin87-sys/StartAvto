@@ -34,7 +34,12 @@ import {
 } from "@/lib/talonBooking";
 import { AlertDialog, ConfirmDialog } from "@/components/ConfirmDialog";
 import { StudentLocationPickMap } from "@/components/StudentLocationPickMap";
-import { geocodeAddressTuymazyRegion, hasYandexMapsApiKey } from "@/yandexMapsApi";
+import {
+  geocodeAddressTuymazyRegion,
+  hasYandexMapsApiKey,
+  suggestAddressTuymazyRegion,
+  type YandexSuggestItem,
+} from "@/yandexMapsApi";
 import type { DriveSlot, FreeDriveWindow, UserProfile } from "@/types";
 
 function IconBookStudent() {
@@ -91,7 +96,7 @@ function IconRoute() {
     <svg viewBox="0 0 24 24" aria-hidden>
       <path
         fill="currentColor"
-        d="M3 17h9v-2H3v2zm0 4h14v-2H3v2zM3 5v2h18V5H3zm13.59 6L21 15.41 19.59 16.83 16 13.24l-3.59 3.59L11 15.41 16.59 10z"
+        d="M2 19l20-7L2 5v5l14 2-14 2v5z"
       />
     </svg>
   );
@@ -125,6 +130,10 @@ export function InstructorBookingTab({ freeWindows }: { freeWindows: FreeDriveWi
   const [navigatorAddress, setNavigatorAddress] = useState("");
   const [navigatorPoint, setNavigatorPoint] = useState<{ lat: number; lng: number } | null>(null);
   const [navigatorFindBusy, setNavigatorFindBusy] = useState(false);
+  const [navigatorSuggestBusy, setNavigatorSuggestBusy] = useState(false);
+  const [navigatorSuggestOpen, setNavigatorSuggestOpen] = useState(false);
+  const [navigatorSuggestResolved, setNavigatorSuggestResolved] = useState(false);
+  const [navigatorSuggest, setNavigatorSuggest] = useState<YandexSuggestItem[]>([]);
   const [navigatorErr, setNavigatorErr] = useState<string | null>(null);
   const [talonBookingAlert, setTalonBookingAlert] = useState<TalonBookingBlockReason | null>(null);
   const [driveTimeOccupiedOpen, setDriveTimeOccupiedOpen] = useState(false);
@@ -326,8 +335,8 @@ export function InstructorBookingTab({ freeWindows }: { freeWindows: FreeDriveWi
     }
   }
 
-  async function onNavigatorFind() {
-    const addr = navigatorAddress.trim();
+  async function onNavigatorFind(overrideAddress?: string) {
+    const addr = (overrideAddress ?? navigatorAddress).trim();
     setNavigatorErr(null);
     if (!addr) {
       setNavigatorErr("Введите адрес (улицу, дом)");
@@ -347,6 +356,42 @@ export function InstructorBookingTab({ freeWindows }: { freeWindows: FreeDriveWi
       setNavigatorFindBusy(false);
     }
   }
+
+  useEffect(() => {
+    if (!navigatorOpen || !hasYandexMapsApiKey()) return;
+    const q = navigatorAddress.trim();
+    if (q.length < 2) {
+      setNavigatorSuggest([]);
+      setNavigatorSuggestBusy(false);
+      setNavigatorSuggestResolved(false);
+      return;
+    }
+    let cancelled = false;
+    const id = window.setTimeout(() => {
+      setNavigatorSuggestResolved(false);
+      setNavigatorSuggestBusy(true);
+      void suggestAddressTuymazyRegion(q)
+        .then((list) => {
+          if (!cancelled) {
+            setNavigatorSuggest(list);
+            setNavigatorSuggestResolved(true);
+          }
+        })
+        .catch(() => {
+          if (!cancelled) {
+            setNavigatorSuggest([]);
+            setNavigatorSuggestResolved(true);
+          }
+        })
+        .finally(() => {
+          if (!cancelled) setNavigatorSuggestBusy(false);
+        });
+    }, 240);
+    return () => {
+      cancelled = true;
+      window.clearTimeout(id);
+    };
+  }, [navigatorAddress, navigatorOpen]);
 
   if (!profile) return null;
 
@@ -553,7 +598,15 @@ export function InstructorBookingTab({ freeWindows }: { freeWindows: FreeDriveWi
         <button
           type="button"
           className="instructor-booking-primary-btn instructor-booking-primary-btn--navigator glossy-panel"
-          onClick={() => setNavigatorOpen(true)}
+            onClick={() => {
+              setNavigatorAddress("");
+              setNavigatorPoint(null);
+              setNavigatorErr(null);
+              setNavigatorSuggest([]);
+              setNavigatorSuggestOpen(false);
+              setNavigatorSuggestResolved(false);
+              setNavigatorOpen(true);
+            }}
         >
           <IconNavigator />
           <span>НАВИГАТОР</span>
@@ -704,10 +757,17 @@ export function InstructorBookingTab({ freeWindows }: { freeWindows: FreeDriveWi
                     type="text"
                     className="student-loc-address-input"
                     value={navigatorAddress}
-                    onChange={(e) => setNavigatorAddress(e.target.value)}
+                    onChange={(e) => {
+                      setNavigatorAddress(e.target.value);
+                      setNavigatorSuggestOpen(true);
+                    }}
                     placeholder="Улица, дом"
                     autoComplete="street-address"
                     disabled={navigatorFindBusy}
+                    onFocus={() => setNavigatorSuggestOpen(true)}
+                    onBlur={() => {
+                      window.setTimeout(() => setNavigatorSuggestOpen(false), 120);
+                    }}
                     onKeyDown={(e) => {
                       if (e.key === "Enter") {
                         e.preventDefault();
@@ -715,6 +775,40 @@ export function InstructorBookingTab({ freeWindows }: { freeWindows: FreeDriveWi
                       }
                     }}
                   />
+                  {navigatorSuggestOpen &&
+                  navigatorAddress.trim().length >= 2 &&
+                  (navigatorSuggestBusy || navigatorSuggest.length > 0 || navigatorSuggestResolved) ? (
+                    <div className="student-loc-suggest-list" role="listbox" aria-label="Подсказки адреса">
+                      {navigatorSuggestBusy ? (
+                        <button type="button" className="student-loc-suggest-item" disabled>
+                          Поиск адресов...
+                        </button>
+                      ) : navigatorSuggest.length > 0 ? (
+                        navigatorSuggest.map((s, idx) => (
+                          <button
+                            key={`${s.value}-${idx}`}
+                            type="button"
+                            className="student-loc-suggest-item"
+                            onMouseDown={(e) => e.preventDefault()}
+                            onClick={() => {
+                              setNavigatorAddress(s.value);
+                              setNavigatorSuggestOpen(false);
+                              void onNavigatorFind(s.value);
+                            }}
+                          >
+                            <span className="student-loc-suggest-title">{s.title}</span>
+                            {s.subtitle ? (
+                              <span className="student-loc-suggest-subtitle">{s.subtitle}</span>
+                            ) : null}
+                          </button>
+                        ))
+                      ) : (
+                        <button type="button" className="student-loc-suggest-item" disabled>
+                          Ничего не найдено
+                        </button>
+                      )}
+                    </div>
+                  ) : null}
                 </label>
                 <button
                   type="button"
