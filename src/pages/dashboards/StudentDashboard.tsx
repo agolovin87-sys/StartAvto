@@ -61,6 +61,7 @@ import {
 import { DriveWeekScheduleNoticeCard } from "@/components/DriveWeekScheduleNoticeCard";
 import { StudentDriveLocationShareButton } from "@/components/DriveStudentLocationShare";
 import { DriveSlotShareAddressRow } from "@/components/DriveSlotShareAddressRow";
+import { StudentLocationBroadcaster } from "@/components/StudentLocationBroadcaster";
 import { useDriveImminentWeekAlert } from "@/hooks/useDriveImminentWeekAlert";
 import { useDashboardTabHistory } from "@/hooks/useDashboardTabHistory";
 import { useMeetingGeolocationEnabled } from "@/hooks/useMeetingGeolocationEnabled";
@@ -677,6 +678,10 @@ export function StudentDashboard() {
   }, [tab, reportDashboardTab]);
 
   const studentUid = (user?.uid ?? profile?.uid ?? "").trim();
+  const broadcastStudentLocation =
+    profile?.role === "student" &&
+    profile?.accountStatus === "active" &&
+    meetingGeoEnabled;
 
   useLayoutEffect(() => {
     if (!studentUid) {
@@ -935,6 +940,7 @@ export function StudentDashboard() {
 
   return (
     <ChatNavContext.Provider value={chatNavValue}>
+      <StudentLocationBroadcaster uid={studentUid} active={broadcastStudentLocation} />
       <div
         className={
           chatThreadOpen && tab === "chat"

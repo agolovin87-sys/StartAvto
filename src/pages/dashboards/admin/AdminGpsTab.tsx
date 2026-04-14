@@ -13,10 +13,10 @@ import {
   type InstructorLiveLocation,
 } from "@/firebase/instructorLiveLocation";
 import {
-  formatDriveShareAddressLine,
-  subscribeLatestStudentDriveLocationShareForStudent,
-  type StudentDriveLocationShare,
-} from "@/firebase/studentDriveLocationShare";
+  fetchStudentLiveLocationFromServer,
+  requestStudentLiveLocationRefresh,
+  subscribeStudentLiveLocation,
+} from "@/firebase/studentLiveLocation";
 import type { TrainingGroup, UserProfile } from "@/types";
 import { hasYandexMapsApiKey } from "@/yandexMapsApi";
 
@@ -36,13 +36,15 @@ function formatAgo(ms: number | null): string {
 
 function AdminGpsMapModal({
   open,
-  instructorUid,
+  mode,
+  subjectUid,
   subscriptionLocation,
   title,
   onClose,
 }: {
   open: boolean;
-  instructorUid: string;
+  mode: "instructor" | "student";
+  subjectUid: string;
   subscriptionLocation: InstructorLiveLocation | null;
   title: string;
   onClose: () => void;
@@ -76,19 +78,26 @@ function AdminGpsMapModal({
   }, [open, subscriptionLocation]);
 
   const handleRefresh = useCallback(async () => {
-    const uid = instructorUid.trim();
+    const uid = subjectUid.trim();
     if (!uid) return;
     setRefreshBusy(true);
     setRefreshHint(null);
     const beforeMs =
       displayRef.current?.updatedAtMs ?? subscriptionRef.current?.updatedAtMs ?? null;
     try {
-      await requestInstructorLiveLocationRefresh(uid);
+      if (mode === "instructor") {
+        await requestInstructorLiveLocationRefresh(uid);
+      } else {
+        await requestStudentLiveLocationRefresh(uid);
+      }
       const deadline = Date.now() + 22_000;
       let next: InstructorLiveLocation | null = null;
       while (Date.now() < deadline) {
         await new Promise((r) => setTimeout(r, 700));
-        const cand = await fetchInstructorLiveLocationFromServer(uid);
+        const cand =
+          mode === "instructor"
+            ? await fetchInstructorLiveLocationFromServer(uid)
+            : await fetchStudentLiveLocationFromServer(uid);
         if (
           cand != null &&
           cand.updatedAtMs != null &&
@@ -98,7 +107,11 @@ function AdminGpsMapModal({
           break;
         }
       }
-      const latest = next ?? (await fetchInstructorLiveLocationFromServer(uid));
+      const latest =
+        next ??
+        (mode === "instructor"
+          ? await fetchInstructorLiveLocationFromServer(uid)
+          : await fetchStudentLiveLocationFromServer(uid));
       setDisplay(latest);
       setMapNonce((n) => n + 1);
       if (
@@ -107,7 +120,9 @@ function AdminGpsMapModal({
         latest.updatedAtMs <= beforeMs
       ) {
         setRefreshHint(
-          "Запрос ушёл на устройство инструктора, но время координат в базе не изменилось. Нужен открытый кабинет инструктора, разрешённая геолокация и сеть."
+          mode === "instructor"
+            ? "Запрос ушёл на устройство инструктора, но время координат в базе не изменилось. Нужен открытый кабинет инструктора, разрешённая геолокация и сеть."
+            : "Запрос ушёл на устройство курсанта, но время координат в базе не изменилось. Нужен открытый кабинет курсанта, разрешённая геолокация и сеть."
         );
       }
     } catch (e) {
@@ -115,7 +130,7 @@ function AdminGpsMapModal({
     } finally {
       setRefreshBusy(false);
     }
-  }, [instructorUid]);
+  }, [subjectUid, mode]);
 
   if (!open) return null;
 
@@ -154,7 +169,11 @@ function AdminGpsMapModal({
             disabled={refreshBusy}
             onClick={() => void handleRefresh()}
             aria-busy={refreshBusy}
-            title="Запросить новое местоположение с телефона/браузера инструктора (нужен открытый кабинет)"
+            title={
+              mode === "instructor"
+                ? "Запросить новое местоположение с телефона/браузера инструктора (нужен открытый кабинет)"
+                : "Запросить новое местоположение с телефона/браузера курсанта (нужен открытый кабинет)"
+            }
           >
             {refreshBusy ? "…" : "Обновить"}
           </button>
@@ -166,8 +185,9 @@ function AdminGpsMapModal({
         ) : null}
         {!hasPoint ? (
           <p className="confirm-dialog-message admin-gps-modal-hint">
-            Нет данных о местоположении. Инструктору нужно открыть кабинет и разрешить доступ к геолокации в
-            браузере. Точность зависит от GPS телефона; метр и меньше в вебе недостижимы без спец. оборудования.
+            {mode === "instructor"
+              ? "Нет данных о местоположении. Инструктору нужно открыть кабинет и разрешить доступ к геолокации в браузере. Точность зависит от GPS телефона; метр и меньше в вебе недостижимы без спец. оборудования."
+              : "Нет данных о местоположении. Курсанту нужно открыть кабинет и разрешить доступ к геолокации в браузере. Точность зависит от GPS телефона."}
           </p>
         ) : (
           <>
@@ -185,8 +205,9 @@ function AdminGpsMapModal({
               WGS84: {lat.toFixed(6)}, {lng.toFixed(6)}
             </p>
             <p className="admin-gps-reality-hint">
-              Координаты с устройства инструктора; карта — те же WGS84. Погрешность в километры обычно значит
-              сеть/Wi‑Fi вместо GPS — на улице с включённой точной геолокацией обычно лучше.
+              {mode === "instructor"
+                ? "Координаты с устройства инструктора; карта — те же WGS84. Погрешность в километры обычно значит сеть/Wi‑Fi вместо GPS — на улице с включённой точной геолокацией обычно лучше."
+                : "Координаты с устройства курсанта в кабинете; карта в тех же WGS84. Погрешность в километры обычно значит сеть/Wi‑Fi вместо GPS."}
               {!hasYandexMapsApiKey() ? (
                 <>
                   {" "}
@@ -198,115 +219,6 @@ function AdminGpsMapModal({
             <div className="admin-gps-map-wrap">
               <AdminGpsYandexMap
                 key={`${lat}-${lng}-${accuracyM ?? "x"}-${mapNonce}`}
-                lat={lat}
-                lng={lng}
-                accuracyM={accuracyM}
-              />
-            </div>
-          </>
-        )}
-        <div className="confirm-dialog-actions">
-          <button type="button" className="btn btn-primary btn-sm" onClick={onClose}>
-            Закрыть
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function AdminGpsStudentMapModal({
-  open,
-  student,
-  share,
-  onClose,
-}: {
-  open: boolean;
-  student: UserProfile | null;
-  share: StudentDriveLocationShare | null;
-  onClose: () => void;
-}) {
-  useEffect(() => {
-    if (!open) return;
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [open, onClose]);
-
-  if (!open || !student) return null;
-
-  const lat = share?.lat ?? NaN;
-  const lng = share?.lng ?? NaN;
-  const hasPoint =
-    share != null && Number.isFinite(lat) && Number.isFinite(lng);
-  const updatedAtMs = share?.updatedAtMs ?? null;
-  const accuracyM = share?.accuracy ?? null;
-  const stale = updatedAtMs != null && Date.now() - updatedAtMs > STALE_MS;
-  const addressLine = share ? formatDriveShareAddressLine(share) : null;
-
-  const title = `Геолокация: ${formatShortFio(student.displayName)}`;
-
-  return (
-    <div
-      className="confirm-dialog-backdrop"
-      role="presentation"
-      onClick={onClose}
-      onKeyDown={(e) => {
-        if (e.key === "Escape") onClose();
-      }}
-    >
-      <div
-        className="confirm-dialog admin-gps-modal"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="admin-gps-student-modal-title"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="admin-gps-modal-head">
-          <h2 id="admin-gps-student-modal-title" className="confirm-dialog-title">
-            {title}
-          </h2>
-        </div>
-        <p className="confirm-dialog-message admin-gps-modal-hint">
-          Показана последняя отправка геолокации курсантом из раздела «График вождения» (точка на карте или по
-          адресу).
-        </p>
-        {!hasPoint ? (
-          <p className="confirm-dialog-message admin-gps-modal-hint">
-            Пока нет данных: курсант ещё не отправлял место инструктору или запись устарела.
-          </p>
-        ) : (
-          <>
-            <p className={`admin-gps-meta${stale ? " admin-gps-meta--stale" : ""}`}>
-              Обновлено: {formatAgo(updatedAtMs)}
-              {stale ? " — данные могли устареть" : ""}
-              {accuracyM != null ? (
-                <>
-                  {" "}
-                  · погрешность: ±{Math.round(accuracyM)} м
-                </>
-              ) : null}
-            </p>
-            <p className="admin-gps-coords" title="WGS84">
-              WGS84: {lat.toFixed(6)}, {lng.toFixed(6)}
-            </p>
-            {addressLine ? (
-              <p className="admin-gps-coords drive-instructor-share-address-line">{addressLine}</p>
-            ) : null}
-            <p className="admin-gps-reality-hint">
-              Координаты из отправки курсанта; карта в тех же WGS84.
-              {!hasYandexMapsApiKey() ? (
-                <>
-                  {" "}
-                  Без ключа <code>VITE_YANDEX_MAPS_API_KEY</code> карта не подгрузится.
-                </>
-              ) : null}
-            </p>
-            <div className="admin-gps-map-wrap">
-              <AdminGpsYandexMap
-                key={`${lat}-${lng}-${accuracyM ?? "x"}`}
                 lat={lat}
                 lng={lng}
                 accuracyM={accuracyM}
@@ -407,9 +319,7 @@ export function AdminGpsTab() {
   const [selectedInstructor, setSelectedInstructor] = useState<UserProfile | null>(null);
   const [selectedStudent, setSelectedStudent] = useState<UserProfile | null>(null);
   const [live, setLive] = useState<InstructorLiveLocation | null>(null);
-  const [latestStudentShare, setLatestStudentShare] = useState<StudentDriveLocationShare | null>(
-    null
-  );
+  const [studentLive, setStudentLive] = useState<InstructorLiveLocation | null>(null);
 
   useEffect(() => {
     return subscribeInstructors(
@@ -457,10 +367,10 @@ export function AdminGpsTab() {
   useEffect(() => {
     const uid = selectedStudent?.uid?.trim() ?? "";
     if (!uid) {
-      setLatestStudentShare(null);
+      setStudentLive(null);
       return () => {};
     }
-    return subscribeLatestStudentDriveLocationShareForStudent(uid, setLatestStudentShare);
+    return subscribeStudentLiveLocation(uid, setStudentLive);
   }, [selectedStudent?.uid]);
 
   useEffect(() => {
@@ -505,6 +415,10 @@ export function AdminGpsTab() {
     ? `Геолокация: ${formatShortFio(selectedInstructor.displayName)}`
     : "";
 
+  const studentModalTitle = selectedStudent
+    ? `Геолокация: ${formatShortFio(selectedStudent.displayName)}`
+    : "";
+
   return (
     <div className="admin-tab admin-gps-tab">
       <h1 className="admin-tab-title admin-tab-title--with-badge">
@@ -519,8 +433,8 @@ export function AdminGpsTab() {
         ) : null}
       </h1>
       <p className="admin-tab-lead">
-        Координаты в режиме высокой точности (GPS). У инструкторов — с открытого кабинета; у курсантов —
-        последняя отправка из графика вождения.
+        Координаты в режиме высокой точности (GPS). У инструкторов и курсантов — с открытого кабинета
+        (живые координаты).
       </p>
       {listErr ? (
         <div className="form-error" role="alert">
@@ -572,10 +486,6 @@ export function AdminGpsTab() {
         <h2 id="admin-gps-cadets-heading" className="admin-gps-section-title">
           Курсанты
         </h2>
-        <p className="admin-gps-section-lead">
-          Список по учебным группам с вкладки «Главная». Нажмите на ФИО — карта с последней отправленной
-          геолокацией из «График вождения».
-        </p>
         {cadetsErr ? (
           <div className="form-error" role="alert">
             {cadetsErr}
@@ -639,15 +549,18 @@ export function AdminGpsTab() {
       <AdminGpsDriveLocationSharingSettings />
       <AdminGpsMapModal
         open={selectedInstructor != null}
-        instructorUid={selectedInstructor?.uid ?? ""}
+        mode="instructor"
+        subjectUid={selectedInstructor?.uid ?? ""}
         subscriptionLocation={live}
         title={instructorModalTitle}
         onClose={() => setSelectedInstructor(null)}
       />
-      <AdminGpsStudentMapModal
+      <AdminGpsMapModal
         open={selectedStudent != null}
-        student={selectedStudent}
-        share={latestStudentShare}
+        mode="student"
+        subjectUid={selectedStudent?.uid ?? ""}
+        subscriptionLocation={studentLive}
+        title={studentModalTitle}
         onClose={() => setSelectedStudent(null)}
       />
     </div>

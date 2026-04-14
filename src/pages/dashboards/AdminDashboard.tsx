@@ -1,4 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import type { UserProfile } from "@/types";
+import { subscribePendingNewUsers } from "@/firebase/admin";
 import { useBadgeExtra } from "@/context/BadgeExtraContext";
 import { AdminGpsPingProvider, useAdminGpsPing } from "@/context/AdminGpsPingContext";
 import { useChatUnread } from "@/context/ChatUnreadContext";
@@ -130,6 +132,18 @@ function AdminDashboardInner() {
   const [pendingOpenChatUserId, setPendingOpenChatUserId] = useState<string | null>(
     null
   );
+  const [pendingNewUsers, setPendingNewUsers] = useState<UserProfile[]>([]);
+  const [pendingUsersErr, setPendingUsersErr] = useState<string | null>(null);
+
+  useEffect(() => {
+    return subscribePendingNewUsers(
+      (users) => {
+        setPendingUsersErr(null);
+        setPendingNewUsers(users);
+      },
+      (e) => setPendingUsersErr(e.message)
+    );
+  }, []);
 
   const openChatWithUser = useCallback((uid: string) => {
     const t = uid?.trim();
@@ -174,7 +188,7 @@ function AdminDashboardInner() {
       <div className="admin-dashboard-content">
         {tab === "home" ? (
           <>
-            <AdminHomeTab />
+            <AdminHomeTab users={pendingNewUsers} fetchError={pendingUsersErr} />
             <div className="admin-section-sep" aria-hidden />
             <AdminInstructorsTab />
             <div className="admin-section-sep" aria-hidden />
@@ -201,17 +215,21 @@ function AdminDashboardInner() {
       <nav className="admin-bottom-nav" aria-label="Разделы админки">
         {navItems.map(({ id, label, Icon }) => {
           const navBadgeCount =
-            id === "chat" && tab !== "chat" && totalUnread > 0
-              ? totalUnread
-              : id === "gps" && tab !== "gps" && totalGpsPingUnread > 0
-                ? totalGpsPingUnread
-                : 0;
+            id === "home" && tab !== "home" && pendingNewUsers.length > 0
+              ? pendingNewUsers.length
+              : id === "chat" && tab !== "chat" && totalUnread > 0
+                ? totalUnread
+                : id === "gps" && tab !== "gps" && totalGpsPingUnread > 0
+                  ? totalGpsPingUnread
+                  : 0;
           const navBadgeAria =
-            id === "chat" && navBadgeCount > 0
-              ? `Непрочитанных сообщений: ${navBadgeCount}`
-              : id === "gps" && navBadgeCount > 0
-                ? `Новых уведомлений по геолокации: ${navBadgeCount}`
-                : "";
+            id === "home" && navBadgeCount > 0
+              ? `Новых заявок на регистрацию: ${navBadgeCount}`
+              : id === "chat" && navBadgeCount > 0
+                ? `Непрочитанных сообщений: ${navBadgeCount}`
+                : id === "gps" && navBadgeCount > 0
+                  ? `Новых уведомлений по геолокации: ${navBadgeCount}`
+                  : "";
           return (
             <HapticButton
               key={id}

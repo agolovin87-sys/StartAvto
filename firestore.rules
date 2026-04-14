@@ -220,6 +220,40 @@ service cloud.firestore {
     }
 
     /**
+     * Админ «Обновить» во вкладке GPS — клиент курсанта читает запрос и пишет studentLiveLocations.
+     */
+    match /studentLiveLocationRefreshRequests/{studentId} {
+      allow read: if isAdmin()
+        || (isStudentAccount() && request.auth.uid == studentId);
+      allow create, update: if isAdmin()
+        && request.resource.data.keys().hasOnly(['requestedAt'])
+        && request.resource.data.requestedAt is timestamp;
+      allow delete: if isAdmin();
+    }
+
+    /**
+     * Текущие координаты курсанта в кабинете (как instructorLiveLocations у инструктора).
+     */
+    match /studentLiveLocations/{studentId} {
+      allow read: if isAdmin();
+      allow create, update: if isStudentAccount()
+        && request.auth.uid == studentId
+        && request.resource.data.keys().hasOnly(['lat', 'lng', 'updatedAt', 'accuracy'])
+        && request.resource.data.lat is number
+        && request.resource.data.lng is number
+        && request.resource.data.lat >= -90
+        && request.resource.data.lat <= 90
+        && request.resource.data.lng >= -180
+        && request.resource.data.lng <= 180
+        && request.resource.data.updatedAt is timestamp
+        && request.resource.data.accuracy is number
+        && request.resource.data.accuracy >= 0.5
+        && request.resource.data.accuracy <= 100000;
+      allow delete: if isAdmin()
+        || (isStudentAccount() && request.auth.uid == studentId);
+    }
+
+    /**
      * Курсант отправляет координаты инструктору по конкретному слоту вождения.
      */
     match /studentDriveLocationShares/{slotId} {

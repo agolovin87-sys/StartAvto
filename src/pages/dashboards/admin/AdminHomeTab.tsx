@@ -1,9 +1,5 @@
-import { useEffect, useState } from "react";
-import {
-  setUserAccountStatus,
-  setUserRole,
-  subscribePendingNewUsers,
-} from "@/firebase/admin";
+import { useState } from "react";
+import { setUserAccountStatus, setUserRole } from "@/firebase/admin";
 import type { UserProfile, UserRole } from "@/types";
 
 const roleOptions: { value: UserRole; label: string }[] = [
@@ -11,18 +7,15 @@ const roleOptions: { value: UserRole; label: string }[] = [
   { value: "instructor", label: "Инструктор" },
 ];
 
-export function AdminHomeTab() {
-  const [users, setUsers] = useState<UserProfile[]>([]);
-  const [err, setErr] = useState<string | null>(null);
+export function AdminHomeTab({
+  users,
+  fetchError,
+}: {
+  users: UserProfile[];
+  fetchError: string | null;
+}) {
+  const err = fetchError;
   const [busy, setBusy] = useState<string | null>(null);
-
-  useEffect(() => {
-    const unsub = subscribePendingNewUsers(
-      setUsers,
-      (e) => setErr(e.message)
-    );
-    return () => unsub();
-  }, []);
 
   async function approve(uid: string) {
     setBusy(uid + "a");
