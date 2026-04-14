@@ -4889,14 +4889,14 @@ html[data-theme="light"] .instructor-week-schedule-hint-em {
   justify-content: center;
   gap: 0.55rem;
   width: 100%;
-  padding: 0.95rem 1rem;
+  padding: 1.08rem 1rem;
   border-radius: 8px;
   border: 1px solid var(--theme-line);
-  background: rgba(139, 92, 246, 0.08);
-  color: var(--theme-heading);
-  font-weight: 600;
-  font-size: 0.96rem;
-  min-height: 4rem;
+  background: linear-gradient(165deg, #22c55e 0%, #15803d 55%, #14532d 100%);
+  color: #f0fdf4;
+  font-weight: 700;
+  font-size: 1.02rem;
+  min-height: 4.4rem;
   cursor: pointer;
   text-align: center;
 }
