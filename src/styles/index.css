@@ -2463,6 +2463,51 @@ html[data-theme="light"] .page-loading-brand {
   margin-top: 0.35rem;
 }
 
+.admin-history-talon-op {
+  display: inline-flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 0.35rem 0.5rem;
+}
+
+.admin-history-talon-op__label--credit,
+.admin-history-talon-op__value--credit {
+  color: #22c55e;
+}
+
+.admin-history-talon-op__label--credit {
+  font-weight: 600;
+}
+
+.admin-history-talon-op__value--credit {
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.admin-history-talon-op__label--debit,
+.admin-history-talon-op__value--debit {
+  color: #f87171;
+}
+
+.admin-history-talon-op__label--debit {
+  font-weight: 600;
+}
+
+.admin-history-talon-op__value--debit {
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+html[data-theme="light"] .admin-history-talon-op__label--credit,
+html[data-theme="light"] .admin-history-talon-op__value--credit {
+  color: #15803d;
+}
+
+html[data-theme="light"] .admin-history-talon-op__label--debit,
+html[data-theme="light"] .admin-history-talon-op__value--debit {
+  color: #dc2626;
+}
+
 .instr-talon-hist--credit {
   color: #86efac;
   font-weight: 600;

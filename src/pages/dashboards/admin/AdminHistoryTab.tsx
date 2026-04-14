@@ -181,12 +181,6 @@ export function AdminHistoryTab() {
                 </tr>
               ) : (
                 adminTalonEntries.map((e) => {
-                  const op =
-                    e.delta > 0
-                      ? `Зачисление +${e.delta}`
-                      : e.delta < 0
-                        ? `Списание ${Math.abs(e.delta)}`
-                        : "—";
                   const fromParty =
                     e.fromUid && e.fromRole
                       ? `${e.fromRole === "admin" ? "Админ" : roleLabel[e.fromRole]} / ${formatShortFio(e.fromDisplayName ?? "")}`
@@ -195,7 +189,29 @@ export function AdminHistoryTab() {
                     <tr key={e.id}>
                       <td>{formatRuDate(e.at)}</td>
                       <td>{formatRuTime(e.at)}</td>
-                      <td>{op}</td>
+                      <td>
+                        {e.delta > 0 ? (
+                          <span className="admin-history-talon-op">
+                            <span className="admin-history-talon-op__label admin-history-talon-op__label--credit">
+                              Зачисление
+                            </span>
+                            <span className="admin-history-talon-op__value admin-history-talon-op__value--credit">
+                              +{e.delta}
+                            </span>
+                          </span>
+                        ) : e.delta < 0 ? (
+                          <span className="admin-history-talon-op">
+                            <span className="admin-history-talon-op__label admin-history-talon-op__label--debit">
+                              Списание
+                            </span>
+                            <span className="admin-history-talon-op__value admin-history-talon-op__value--debit">
+                              -{Math.abs(e.delta)}
+                            </span>
+                          </span>
+                        ) : (
+                          "—"
+                        )}
+                      </td>
                       <td>{roleLabel[e.targetRole]}</td>
                       <td>{formatShortFio(e.targetDisplayName)}</td>
                       <td>{fromParty}</td>
