@@ -320,6 +320,7 @@ export function AdminGpsTab() {
   const [selectedStudent, setSelectedStudent] = useState<UserProfile | null>(null);
   const [live, setLive] = useState<InstructorLiveLocation | null>(null);
   const [studentLive, setStudentLive] = useState<InstructorLiveLocation | null>(null);
+  const [studentLiveErr, setStudentLiveErr] = useState<string | null>(null);
 
   useEffect(() => {
     return subscribeInstructors(
@@ -368,9 +369,13 @@ export function AdminGpsTab() {
     const uid = selectedStudent?.uid?.trim() ?? "";
     if (!uid) {
       setStudentLive(null);
+      setStudentLiveErr(null);
       return () => {};
     }
-    return subscribeStudentLiveLocation(uid, setStudentLive);
+    setStudentLiveErr(null);
+    return subscribeStudentLiveLocation(uid, setStudentLive, (e) =>
+      setStudentLiveErr(mapFirebaseError(e))
+    );
   }, [selectedStudent?.uid]);
 
   useEffect(() => {
@@ -491,6 +496,11 @@ export function AdminGpsTab() {
             {cadetsErr}
           </div>
         ) : null}
+        {studentLiveErr ? (
+          <div className="form-error" role="alert">
+            {studentLiveErr}
+          </div>
+        ) : null}
         {groupsSorted.length === 0 && ungroupedStudents.length === 0 ? (
           <p className="admin-empty">Нет курсантов с активным доступом.</p>
         ) : (
@@ -561,7 +571,10 @@ export function AdminGpsTab() {
         subjectUid={selectedStudent?.uid ?? ""}
         subscriptionLocation={studentLive}
         title={studentModalTitle}
-        onClose={() => setSelectedStudent(null)}
+        onClose={() => {
+          setSelectedStudent(null);
+          setStudentLiveErr(null);
+        }}
       />
     </div>
   );

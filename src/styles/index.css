@@ -3092,10 +3092,11 @@ html[data-theme="light"] .instructor-onboarding-actions .btn-primary.btn-sm {
   align-items: center;
   justify-content: center;
   padding: 0.35rem 0.45rem;
-  border: none;
   border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
   cursor: pointer;
-  color: #15803d;
+  color: #fff;
+  background: linear-gradient(165deg, #22c55e 0%, #15803d 55%, #14532d 100%);
 }
 
 .admin-trip-history-open-btn:hover {
@@ -3103,12 +3104,14 @@ html[data-theme="light"] .instructor-onboarding-actions .btn-primary.btn-sm {
 }
 
 .admin-trip-history-open-btn--muted {
-  color: var(--theme-muted);
-  opacity: 0.85;
+  color: #14532d;
+  opacity: 1;
+  border-color: rgba(20, 83, 45, 0.2);
+  background: linear-gradient(165deg, #bbf7d0 0%, #86efac 48%, #4ade80 100%);
 }
 
 .admin-trip-history-open-btn--muted:hover {
-  opacity: 1;
+  filter: brightness(1.04);
 }
 
 .admin-trip-history-modal--empty .admin-trip-history-empty-text {
