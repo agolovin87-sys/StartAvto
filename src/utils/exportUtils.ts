@@ -258,20 +258,20 @@ export async function exportToPDF(html: string, filename: string): Promise<void>
   const parsed = parser.parseFromString(html, "text/html");
   const wrapper = document.createElement("div");
   wrapper.setAttribute("data-export-schedule-pdf", "1");
+  // Нельзя opacity:0 — html2canvas даёт пустой снимок. Уводим за экран, оставляем непрозрачным.
   Object.assign(wrapper.style, {
     position: "fixed",
-    left: "0",
+    left: "-16000px",
     top: "0",
     width: "1120px",
-    maxWidth: "100vw",
+    maxWidth: "1120px",
     padding: "16px",
     boxSizing: "border-box",
-    background: "#fff",
-    color: "#000",
-    opacity: "0",
+    background: "#ffffff",
+    color: "#000000",
     pointerEvents: "none",
     zIndex: "2147483645",
-    overflow: "hidden",
+    overflow: "visible",
   });
 
   for (const node of parsed.head.querySelectorAll("style")) {
@@ -282,12 +282,21 @@ export async function exportToPDF(html: string, filename: string): Promise<void>
   }
   document.body.appendChild(wrapper);
 
+  await new Promise<void>((resolve) => {
+    window.requestAnimationFrame(() => window.requestAnimationFrame(() => resolve()));
+  });
+
   try {
     const pdfBlob = (await html2pdf()
       .set({
         margin: [8, 8, 8, 8],
         image: { type: "jpeg", quality: 0.92 },
-        html2canvas: { scale: 2, useCORS: true, logging: false },
+        html2canvas: {
+          scale: 2,
+          useCORS: true,
+          logging: false,
+          backgroundColor: "#ffffff",
+        },
         jsPDF: { unit: "mm", format: "a4", orientation: "landscape" },
       })
       .from(wrapper)
