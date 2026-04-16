@@ -99,18 +99,16 @@ function GuestOnly({ children }: { children: ReactNode }) {
 export default function App() {
   if (!isFirebaseConfigured) {
     return (
-      <>
-        <OfflineLayer />
+      <OfflineLayer>
         <Routes>
           <Route path="*" element={<SetupFirebase />} />
         </Routes>
-      </>
+      </OfflineLayer>
     );
   }
 
   return (
-    <>
-      <OfflineLayer />
+    <OfflineLayer>
       <FcmRegistrar />
       <Routes>
         <Route
@@ -158,6 +156,6 @@ export default function App() {
         />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
-    </>
+    </OfflineLayer>
   );
 }

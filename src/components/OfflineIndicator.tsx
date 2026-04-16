@@ -1,2 +1,2 @@
-/** Совместимость с именем из ТЗ: фактически рендерит полный слой (индикатор + тосты). */
-export { OfflineLayer as OfflineIndicator } from "@/components/OfflineLayer";
+/** Совместимость: провайдер офлайн-UI (тосты + контекст для шапки). */
+export { OfflineUiProvider as OfflineIndicator } from "@/context/OfflineUiContext";

@@ -18,7 +18,7 @@ import { doc, updateDoc } from "firebase/firestore";
 import { getFirebase } from "@/firebase/config";
 import { appIconUrl } from "@/lib/appAssetVersion";
 import { detectCabinetClientKind } from "@/lib/clientPlatform";
-import { probeInternetReachable } from "@/utils/internetReachable";
+import { useOfflineUi } from "@/context/OfflineUiContext";
 import {
   CHAT_PRIVACY_SETTINGS_EVENT,
   getChatPrivacySettings,
@@ -70,6 +70,26 @@ function IconWifi() {
   );
 }
 
+/** Компактная кнопка «повторить проверку / синхронизацию» (иконка, без нижней панели). */
+function ShellNetRetryBtn({ onRetry }: { onRetry: () => void }) {
+  return (
+    <button
+      type="button"
+      className="shell-header-net-retry"
+      onClick={onRetry}
+      title="Повторить проверку и синхронизацию"
+      aria-label="Повторить проверку и синхронизацию"
+    >
+      <svg className="shell-header-net-retry-ico" viewBox="0 0 24 24" aria-hidden>
+        <path
+          fill="currentColor"
+          d="M17.65 6.35A7.958 7.958 0 0012 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.56 7.73-6h-2.08A5.99 5.99 0 0112 18c-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"
+        />
+      </svg>
+    </button>
+  );
+}
+
 /** Material-style wifi_off — перечёркнутый Wi‑Fi */
 function IconNoSignal() {
   return (
@@ -93,47 +113,8 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
   const studentOnboarding = useStudentOnboarding();
   const [exitConfirmOpen, setExitConfirmOpen] = useState(false);
   const { shellHeaderHidden } = useChatThreadShell();
-  const [networkOnline, setNetworkOnline] = useState(
-    () => (typeof navigator !== "undefined" ? navigator.onLine : true),
-  );
-
-  useEffect(() => {
-    let cancelled = false;
-
-    const apply = (ok: boolean) => {
-      if (!cancelled) setNetworkOnline(ok);
-    };
-
-    const runProbe = () => {
-      void probeInternetReachable().then(apply);
-    };
-
-    const onOffline = () => apply(false);
-    const onOnline = () => {
-      void probeInternetReachable().then(apply);
-    };
-
-    const onVisibility = () => {
-      if (document.visibilityState === "visible") runProbe();
-    };
-
-    window.addEventListener("online", onOnline);
-    window.addEventListener("offline", onOffline);
-    document.addEventListener("visibilitychange", onVisibility);
-
-    runProbe();
-    const intervalId = window.setInterval(() => {
-      if (document.visibilityState === "visible") runProbe();
-    }, 25_000);
-
-    return () => {
-      cancelled = true;
-      window.clearInterval(intervalId);
-      window.removeEventListener("online", onOnline);
-      window.removeEventListener("offline", onOffline);
-      document.removeEventListener("visibilitychange", onVisibility);
-    };
-  }, []);
+  const net = useOfflineUi();
+  const netKind = !net.isOnline ? "offline" : net.checking ? "checking" : "online";
 
   // presence: heartbeat, иначе в Firestore «залипает» state: online (мобильные без beforeunload).
   const [privacyTick, setPrivacyTick] = useState(0);
@@ -247,7 +228,7 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
 
   const offlineCabinetHeader =
     profile &&
-    !networkOnline &&
+    netKind === "offline" &&
     (profile.role === "instructor" || profile.role === "student");
 
   return (
@@ -296,10 +277,18 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
                       role="status"
                       aria-label="Нет подключения к интернету"
                     >
-                      <span className="shell-header-meta-sep-offline" aria-hidden>
-                        <IconNoSignal />
+                      <span className="shell-header-net-cluster">
+                        <span className="shell-header-meta-sep-offline" aria-hidden>
+                          <IconNoSignal />
+                        </span>
+                        <span className="shell-header-meta-offline-hint">(нет интернета)</span>
+                        {net.pendingSync > 0 ? (
+                          <span className="shell-header-net-queue" title="В очереди синхронизации">
+                            {net.pendingSync}
+                          </span>
+                        ) : null}
+                        <ShellNetRetryBtn onRetry={net.retrySync} />
                       </span>
-                      <span className="shell-header-meta-offline-hint">(нет интернета)</span>
                     </span>
                   </div>
                   <div className="shell-header-meta-row2">
@@ -313,32 +302,50 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
                   </span>
                   <span
                     className={
-                      networkOnline
+                      netKind === "online"
                         ? "shell-header-meta-sep-wrap"
                         : "shell-header-meta-sep-wrap shell-header-meta-sep-wrap--offline"
                     }
-                    aria-hidden={networkOnline}
-                    {...(!networkOnline
+                    aria-hidden={netKind === "online"}
+                    {...(netKind !== "online"
                       ? ({
                           role: "status",
-                          "aria-label": "Нет подключения к интернету",
+                          "aria-label":
+                            netKind === "checking"
+                              ? "Проверка соединения"
+                              : "Нет подключения к интернету",
                         } as const)
                       : {})}
                   >
-                    {networkOnline ? (
-                      <span className="shell-header-meta-wifi">
-                        <IconWifi />
-                      </span>
-                    ) : (
-                      <>
-                        <span className="shell-header-meta-sep-offline">
-                          <IconNoSignal />
+                    <span className="shell-header-net-cluster">
+                      {netKind === "online" ? (
+                        <span className="shell-header-meta-wifi">
+                          <IconWifi />
                         </span>
-                        <span className="shell-header-meta-offline-hint">
-                          (нет интернета)
+                      ) : null}
+                      {netKind === "checking" ? (
+                        <>
+                          <span className="shell-header-net-dot shell-header-net-dot--check" aria-hidden />
+                          <span className="shell-header-meta-wifi shell-header-meta-wifi--checking">
+                            <IconWifi />
+                          </span>
+                        </>
+                      ) : null}
+                      {netKind === "offline" ? (
+                        <>
+                          <span className="shell-header-meta-sep-offline">
+                            <IconNoSignal />
+                          </span>
+                          <span className="shell-header-meta-offline-hint">(нет интернета)</span>
+                        </>
+                      ) : null}
+                      {net.pendingSync > 0 ? (
+                        <span className="shell-header-net-queue" title="В очереди синхронизации">
+                          {net.pendingSync}
                         </span>
-                      </>
-                    )}
+                      ) : null}
+                      <ShellNetRetryBtn onRetry={net.retrySync} />
+                    </span>
                   </span>
                   <span className="shell-header-role">
                     {roleLabel[profile.role]}
