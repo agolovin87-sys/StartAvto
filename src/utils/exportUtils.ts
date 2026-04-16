@@ -149,6 +149,16 @@ export function generateScheduleHTML(
   <title>${escapeHtml(fileTitle)}</title>
   <style>
     @page { size: A4 landscape; margin: 10mm; }
+    @media print {
+      @page { size: A4 landscape; margin: 10mm; }
+      body {
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+      }
+    }
+    html {
+      width: 100%;
+    }
     body {
       font-family: "Times New Roman", Times, serif;
       font-size: 10pt;
@@ -217,7 +227,7 @@ export function generateScheduleHTML(
     td:first-child, td:nth-child(2), th:first-child, th:nth-child(2) { white-space: nowrap; }
   </style>
 </head>
-<body>
+<body class="schedule-export-body" style="mso-page-orientation: landscape;">
   <div class="header-right">Утверждаю
 Директор ООО "Старт-Авто"
 _________________ А.М. Головин</div>
@@ -318,28 +328,39 @@ function tallCanvasToLandscapePdfBlob(
 }
 
 /**
- * PDF: html2canvas + jsPDF напрямую. Пакет html2pdf.js ставит overlay с opacity:0 — из-за этого снимок
- * получался пустым; обходим его. При ошибке — печать из iframe.
+ * PDF: html2canvas + jsPDF. Контент должен быть в видимой области окна — иначе многие движки дают пустой canvas.
+ * Кратко показываем полноэкранный белый слой на время снимка.
  */
 export async function exportToPDF(html: string, filename: string): Promise<void> {
   const parser = new DOMParser();
   const parsed = parser.parseFromString(html, "text/html");
+
+  const shell = document.createElement("div");
+  shell.setAttribute("data-export-schedule-pdf-shell", "1");
+  shell.setAttribute("aria-hidden", "true");
+  Object.assign(shell.style, {
+    position: "fixed",
+    left: "0",
+    top: "0",
+    right: "0",
+    bottom: "0",
+    zIndex: "2147483647",
+    backgroundColor: "#ffffff",
+    overflow: "auto",
+    boxSizing: "border-box",
+  });
+
   const wrapper = document.createElement("div");
   wrapper.setAttribute("data-export-schedule-pdf", "1");
   Object.assign(wrapper.style, {
-    position: "fixed",
-    left: "-16000px",
-    top: "0",
-    /* ~ширина печатной области A4 альбом (297 мм при 96dpi) — шире колонка таблицы */
     width: "1200px",
-    maxWidth: "1200px",
+    maxWidth: "100%",
+    margin: "0 auto",
     padding: "16px",
     boxSizing: "border-box",
     background: "#ffffff",
     color: "#000000",
-    pointerEvents: "none",
-    zIndex: "2147483645",
-    overflow: "visible",
+    position: "relative",
   });
 
   for (const node of parsed.head.querySelectorAll("style")) {
@@ -348,21 +369,39 @@ export async function exportToPDF(html: string, filename: string): Promise<void>
   while (parsed.body.firstChild) {
     wrapper.appendChild(parsed.body.firstChild);
   }
-  document.body.appendChild(wrapper);
 
+  shell.appendChild(wrapper);
+  const prevBodyOverflow = document.body.style.overflow;
+  document.body.style.overflow = "hidden";
+  document.body.appendChild(shell);
+
+  await new Promise<void>((r) => {
+    window.setTimeout(() => r(), 100);
+  });
   await new Promise<void>((resolve) => {
     window.requestAnimationFrame(() => window.requestAnimationFrame(() => resolve()));
   });
 
   try {
-    const canvas = await html2canvas(wrapper, {
+    let canvas = await html2canvas(wrapper, {
       scale: 2,
       useCORS: true,
       logging: false,
       backgroundColor: "#ffffff",
+      scrollX: 0,
+      scrollY: 0,
     });
 
-    if (canvas.width < 2 || canvas.height < 2) {
+    if (canvas.width < 4 || canvas.height < 4) {
+      canvas = await html2canvas(shell, {
+        scale: 2,
+        useCORS: true,
+        logging: false,
+        backgroundColor: "#ffffff",
+      });
+    }
+
+    if (canvas.width < 4 || canvas.height < 4) {
       throw new Error("Пустой снимок");
     }
 
@@ -375,7 +414,8 @@ export async function exportToPDF(html: string, filename: string): Promise<void>
   } catch {
     printScheduleHtmlInHiddenIframe(html);
   } finally {
-    wrapper.remove();
+    shell.remove();
+    document.body.style.overflow = prevBodyOverflow;
   }
 }
 
@@ -388,13 +428,14 @@ export function printScheduleHtmlInHiddenIframe(html: string): void {
   iframe.title = "Печать расписания";
   Object.assign(iframe.style, {
     position: "fixed",
-    left: "-10000px",
+    left: "-12000px",
     top: "0",
     width: "1200px",
     height: "900px",
     border: "0",
-    opacity: "0",
+    opacity: "1",
     pointerEvents: "none",
+    zIndex: "2147483646",
   });
   document.body.appendChild(iframe);
 
