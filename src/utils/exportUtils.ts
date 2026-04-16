@@ -1,5 +1,7 @@
 import { dateKeyToRuDisplay, weekdayRuFromDateKey } from "@/admin/scheduleFormat";
 import { addCalendarDaysToDateKey, scheduleMondayDateKeyForWeekContaining } from "@/lib/scheduleTimezone";
+import html2canvas from "html2canvas";
+import { jsPDF } from "jspdf";
 import type {
   ScheduleExportInstructor,
   ScheduleGrid,
@@ -247,24 +249,90 @@ function downloadBlob(blob: Blob, filename: string): void {
   window.setTimeout(() => URL.revokeObjectURL(url), 60_000);
 }
 
+/** A4 альбомная: в некоторых сборках jsPDF нужны разные варианты orientation. */
+function createLandscapeA4Pdf(): jsPDF {
+  const attempts: Array<() => jsPDF> = [
+    () => new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" }),
+    () => new jsPDF({ unit: "mm", format: "a4", orientation: "l" }),
+    () => new jsPDF({ unit: "mm", format: "a4", orientation: "landscape" }),
+  ];
+  for (const make of attempts) {
+    const pdf = make();
+    const w = pdf.internal.pageSize.getWidth();
+    const h = pdf.internal.pageSize.getHeight();
+    if (w > h) return pdf;
+  }
+  throw new Error("jsPDF: не удалось создать альбомную страницу");
+}
+
 /**
- * PDF: html2pdf → Blob → скачивание как у Word (не jspdf.save(): в Chromium часто блокируют после async).
- * Если не вышло — печать из iframe (без popup), в диалоге выберите «Сохранить как PDF».
+ * Разбивает высокий canvas на страницы A4 альбомной ориентации (как в html2pdf, но без их overlay).
+ * Поля marginMm: [верх, лево, низ, право] в мм.
+ */
+function tallCanvasToLandscapePdfBlob(
+  canvas: HTMLCanvasElement,
+  marginMm: [number, number, number, number]
+): Blob {
+  const pdf = createLandscapeA4Pdf();
+  const pageFullW = pdf.internal.pageSize.getWidth();
+  const pageFullH = pdf.internal.pageSize.getHeight();
+  const m = marginMm;
+  const innerW = pageFullW - m[1] - m[3];
+  const innerH = pageFullH - m[0] - m[2];
+  const innerRatio = innerH / innerW;
+
+  const pxFullHeight = canvas.height;
+  const pxPageHeight = Math.max(1, Math.floor(canvas.width * innerRatio));
+  const nPages = Math.max(1, Math.ceil(pxFullHeight / pxPageHeight));
+
+  const pageCanvas = document.createElement("canvas");
+  const pageCtx = pageCanvas.getContext("2d");
+  if (!pageCtx) throw new Error("Canvas 2D недоступен");
+
+  pageCanvas.width = canvas.width;
+  pageCanvas.height = pxPageHeight;
+
+  let pageHeightMm = innerH;
+
+  for (let page = 0; page < nPages; page++) {
+    pageHeightMm = innerH;
+    if (page === nPages - 1 && pxFullHeight % pxPageHeight !== 0) {
+      pageCanvas.height = pxFullHeight % pxPageHeight;
+      pageHeightMm = (pageCanvas.height * innerW) / canvas.width;
+    } else {
+      pageCanvas.height = pxPageHeight;
+    }
+
+    const w = pageCanvas.width;
+    const h = pageCanvas.height;
+    pageCtx.fillStyle = "#ffffff";
+    pageCtx.fillRect(0, 0, w, h);
+    pageCtx.drawImage(canvas, 0, page * pxPageHeight, w, h, 0, 0, w, h);
+
+    const imgData = pageCanvas.toDataURL("image/jpeg", 0.92);
+    if (page > 0) pdf.addPage("a4", "landscape");
+    pdf.addImage(imgData, "JPEG", m[1], m[0], innerW, pageHeightMm);
+  }
+
+  return pdf.output("blob") as Blob;
+}
+
+/**
+ * PDF: html2canvas + jsPDF напрямую. Пакет html2pdf.js ставит overlay с opacity:0 — из-за этого снимок
+ * получался пустым; обходим его. При ошибке — печать из iframe.
  */
 export async function exportToPDF(html: string, filename: string): Promise<void> {
-  const { default: html2pdf } = await import("html2pdf.js");
-
   const parser = new DOMParser();
   const parsed = parser.parseFromString(html, "text/html");
   const wrapper = document.createElement("div");
   wrapper.setAttribute("data-export-schedule-pdf", "1");
-  // Нельзя opacity:0 — html2canvas даёт пустой снимок. Уводим за экран, оставляем непрозрачным.
   Object.assign(wrapper.style, {
     position: "fixed",
     left: "-16000px",
     top: "0",
-    width: "1120px",
-    maxWidth: "1120px",
+    /* ~ширина печатной области A4 альбом (297 мм при 96dpi) — шире колонка таблицы */
+    width: "1200px",
+    maxWidth: "1200px",
     padding: "16px",
     boxSizing: "border-box",
     background: "#ffffff",
@@ -287,20 +355,18 @@ export async function exportToPDF(html: string, filename: string): Promise<void>
   });
 
   try {
-    const pdfBlob = (await html2pdf()
-      .set({
-        margin: [8, 8, 8, 8],
-        image: { type: "jpeg", quality: 0.92 },
-        html2canvas: {
-          scale: 2,
-          useCORS: true,
-          logging: false,
-          backgroundColor: "#ffffff",
-        },
-        jsPDF: { unit: "mm", format: "a4", orientation: "landscape" },
-      })
-      .from(wrapper)
-      .outputPdf("blob")) as Blob;
+    const canvas = await html2canvas(wrapper, {
+      scale: 2,
+      useCORS: true,
+      logging: false,
+      backgroundColor: "#ffffff",
+    });
+
+    if (canvas.width < 2 || canvas.height < 2) {
+      throw new Error("Пустой снимок");
+    }
+
+    const pdfBlob = tallCanvasToLandscapePdfBlob(canvas, [8, 8, 8, 8]);
 
     if (!pdfBlob || pdfBlob.size < 64) {
       throw new Error("Пустой PDF");

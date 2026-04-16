@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { useScheduleExport } from "@/hooks/useScheduleExport";
 import {
   combineExportPeriodTitle,
@@ -17,10 +17,6 @@ function safeFilePart(raw: string): string {
 
 export function ExportSchedule() {
   const { instructors, instructorById, loading, error, fetchLessonsForWeeks } = useScheduleExport();
-
-  useEffect(() => {
-    void import("html2pdf.js");
-  }, []);
 
   const [selectedInstructorId, setSelectedInstructorId] = useState("");
   const [weekFromDate, setWeekFromDate] = useState(() => new Date());
