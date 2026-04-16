@@ -11,6 +11,13 @@ import type {
 
 const EM_DASH = "—";
 
+/**
+ * Единая типографика Word/PDF: как «Обычный» в Word — Times New Roman 12 pt.
+ * PDF строится из того же HTML (растр), поэтому стили совпадают.
+ */
+const SCHEDULE_EXPORT_FONT_FAMILY =
+  '"Times New Roman", "Times New Roman PS MT", Times, "Liberation Serif", "Noto Serif", serif';
+
 function escapeHtml(s: string): string {
   return s
     .replaceAll("&", "&amp;")
@@ -148,6 +155,7 @@ export function generateScheduleHTML(
   <meta charset="UTF-8" />
   <title>${escapeHtml(fileTitle)}</title>
   <style>
+    /* Альбомная A4 — экран, печать и Word */
     @page { size: A4 landscape; margin: 10mm; }
     @media print {
       @page { size: A4 landscape; margin: 10mm; }
@@ -159,9 +167,22 @@ export function generateScheduleHTML(
     html {
       width: 100%;
     }
-    body {
-      font-family: "Times New Roman", Times, serif;
-      font-size: 10pt;
+    .schedule-export-body,
+    .schedule-export-body table,
+    .schedule-export-body th,
+    .schedule-export-body td,
+    .schedule-export-body div {
+      font-family: ${SCHEDULE_EXPORT_FONT_FAMILY};
+    }
+    .schedule-export-body {
+      font-size: 12pt;
+      line-height: 1.15;
+      mso-ansi-font-size: 12.0pt;
+      mso-line-height-rule: exactly;
+      mso-ascii-font-family: "Times New Roman";
+      mso-fareast-font-family: "Times New Roman";
+      mso-hansi-font-family: "Times New Roman";
+      mso-bidi-font-family: "Times New Roman";
       margin: 0.4cm 0.6cm 0.5cm;
       color: #000;
       box-sizing: border-box;
@@ -171,23 +192,23 @@ export function generateScheduleHTML(
       margin-bottom: 6px;
       line-height: 1.25;
       white-space: pre-line;
-      font-size: 10pt;
+      font-size: 12pt;
     }
     .title {
       text-align: center;
       font-weight: bold;
-      font-size: 12pt;
+      font-size: 14pt;
       margin: 0 0 4px;
     }
     .subtitle {
       text-align: center;
       margin-bottom: 6px;
-      font-size: 10pt;
+      font-size: 12pt;
     }
     .info {
       margin-bottom: 8px;
-      line-height: 1.3;
-      font-size: 10pt;
+      line-height: 1.15;
+      font-size: 12pt;
     }
     .info div { margin: 2px 0; }
     .week-block {
@@ -199,7 +220,7 @@ export function generateScheduleHTML(
       text-align: center;
       font-weight: bold;
       margin: 4px 0 4px;
-      font-size: 10pt;
+      font-size: 12pt;
     }
     .table-wrap {
       width: 100%;
@@ -213,13 +234,17 @@ export function generateScheduleHTML(
       max-width: 100%;
       width: 100%;
       table-layout: fixed;
+      font-family: ${SCHEDULE_EXPORT_FONT_FAMILY};
+      font-size: 12pt;
+      mso-ansi-font-size: 12.0pt;
     }
     th, td {
       border: 1px solid #000;
       padding: 3px 4px;
       text-align: center;
       vertical-align: middle;
-      font-size: 9pt;
+      font-size: 12pt;
+      font-family: ${SCHEDULE_EXPORT_FONT_FAMILY};
       word-wrap: break-word;
       overflow-wrap: anywhere;
     }
@@ -361,6 +386,9 @@ export async function exportToPDF(html: string, filename: string): Promise<void>
     background: "#ffffff",
     color: "#000000",
     position: "relative",
+    fontFamily: SCHEDULE_EXPORT_FONT_FAMILY,
+    fontSize: "12pt",
+    lineHeight: "1.15",
   });
 
   for (const node of parsed.head.querySelectorAll("style")) {
