@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useState } from "react";
 import { useScheduleExport } from "@/hooks/useScheduleExport";
 import {
+  combineExportPeriodTitle,
+  enumerateWeekRangesInclusive,
   exportToPDF,
   exportToWord,
   formatWeekInputValue,
   generateScheduleHTML,
-  getWeekRange,
   parseWeekInputValue,
 } from "@/utils/exportUtils";
 
@@ -15,18 +16,23 @@ function safeFilePart(raw: string): string {
 }
 
 export function ExportSchedule() {
-  const { instructors, instructorById, loading, error, fetchLessonsForWeek } = useScheduleExport();
+  const { instructors, instructorById, loading, error, fetchLessonsForWeeks } = useScheduleExport();
 
   useEffect(() => {
     void import("html2pdf.js");
   }, []);
 
   const [selectedInstructorId, setSelectedInstructorId] = useState("");
-  const [selectedWeekDate, setSelectedWeekDate] = useState(() => new Date());
+  const [weekFromDate, setWeekFromDate] = useState(() => new Date());
+  const [weekToDate, setWeekToDate] = useState(() => new Date());
   const [busy, setBusy] = useState<"word" | "pdf" | null>(null);
   const [localErr, setLocalErr] = useState<string | null>(null);
 
-  const week = useMemo(() => getWeekRange(selectedWeekDate), [selectedWeekDate]);
+  const weeks = useMemo(
+    () => enumerateWeekRangesInclusive(weekFromDate, weekToDate),
+    [weekFromDate, weekToDate]
+  );
+  const periodLabel = useMemo(() => combineExportPeriodTitle(weeks), [weeks]);
   const selectedInstructor = selectedInstructorId
     ? instructorById.get(selectedInstructorId) ?? null
     : null;
@@ -35,7 +41,10 @@ export function ExportSchedule() {
 
   const buildFilename = () => {
     const who = safeFilePart(selectedInstructor?.name ?? "instructor");
-    return `График_${who}_${week.mondayDateKey}_${week.sundayDateKey}`;
+    const w0 = weeks[0];
+    const w1 = weeks[weeks.length - 1];
+    if (!w0 || !w1) return `График_${who}`;
+    return `График_${who}_${w0.mondayDateKey}_${w1.sundayDateKey}`;
   };
 
   const doExport = async (kind: "word" | "pdf") => {
@@ -43,8 +52,8 @@ export function ExportSchedule() {
     setBusy(kind);
     setLocalErr(null);
     try {
-      const lessons = await fetchLessonsForWeek(selectedInstructor.id, week);
-      const html = generateScheduleHTML(lessons, selectedInstructor, week);
+      const lessons = await fetchLessonsForWeeks(selectedInstructor.id, weeks);
+      const html = generateScheduleHTML(lessons, selectedInstructor, weeks);
       const filename = buildFilename();
       if (kind === "word") exportToWord(html, filename);
       else await exportToPDF(html, filename);
@@ -59,9 +68,9 @@ export function ExportSchedule() {
     <section className="admin-schedule-export-card" aria-label="Экспорт графика">
       <h2 className="admin-schedule-export-title">Экспорт графика занятий</h2>
       <p className="admin-schedule-export-desc">
-        Выберите инструктора и неделю. В документе выводятся только Фамилия И.О. курсантов по
-        времени и дням недели.         PDF обычно скачивается в «Загрузки». Если браузер не даст сохранить
-        файлом, откроется печать — выберите «Сохранить как PDF».
+        Выберите инструктора и период (неделя «с» и «по» включительно). В документе — Фамилия И.О.
+        курсантов по времени и дням. PDF в альбомной ориентации; если файл не сохранится, откроется
+        печать — выберите «Сохранить как PDF».
       </p>
 
       <div className="admin-schedule-export-grid">
@@ -81,16 +90,28 @@ export function ExportSchedule() {
         </label>
 
         <label className="admin-schedule-export-field">
-          <span>Неделя (пн-вс)</span>
+          <span>Неделя с (пн-вс)</span>
           <input
             type="week"
-            value={formatWeekInputValue(selectedWeekDate)}
-            onChange={(e) => setSelectedWeekDate(parseWeekInputValue(e.target.value))}
+            value={formatWeekInputValue(weekFromDate)}
+            onChange={(e) => setWeekFromDate(parseWeekInputValue(e.target.value))}
+          />
+        </label>
+
+        <label className="admin-schedule-export-field">
+          <span>Неделя по (пн-вс)</span>
+          <input
+            type="week"
+            value={formatWeekInputValue(weekToDate)}
+            onChange={(e) => setWeekToDate(parseWeekInputValue(e.target.value))}
           />
         </label>
       </div>
 
-      <p className="admin-schedule-export-week-hint">Период: {week.titleRu}</p>
+      <p className="admin-schedule-export-week-hint">
+        Период: {periodLabel}
+        {weeks.length > 1 ? ` · ${weeks.length} нед.` : null}
+      </p>
 
       <div className="admin-schedule-export-actions">
         <button

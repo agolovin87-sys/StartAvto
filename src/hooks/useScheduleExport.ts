@@ -57,14 +57,15 @@ export function useScheduleExport() {
     return m;
   }, [state.instructors]);
 
-  async function fetchLessonsForWeek(
+  async function fetchLessonsForWeeks(
     instructorId: string,
-    week: ScheduleWeekRange
+    weeks: ScheduleWeekRange[]
   ): Promise<ScheduleLesson[]> {
     setState((prev) => ({ ...prev, loading: true, error: null }));
     try {
       const slots = await fetchDriveSlotsForInstructor(instructorId);
-      const weekSet = new Set(week.dateKeys);
+      const weekSet = new Set<string>();
+      for (const w of weeks) for (const dk of w.dateKeys) weekSet.add(dk);
       return slots
         .filter((s) => weekSet.has(s.dateKey))
         .map((s) => ({
@@ -94,6 +95,6 @@ export function useScheduleExport() {
     instructorById,
     loading: state.loading,
     error: state.error,
-    fetchLessonsForWeek,
+    fetchLessonsForWeeks,
   };
 }

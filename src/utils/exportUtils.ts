@@ -31,6 +31,36 @@ export function getWeekRange(date: Date): ScheduleWeekRange {
   };
 }
 
+/** Несколько полных недель подряд: от недели, содержащей `start`, до недели с `end` (включительно). */
+export function enumerateWeekRangesInclusive(start: Date, end: Date): ScheduleWeekRange[] {
+  const wA = getWeekRange(start);
+  const wB = getWeekRange(end);
+  let from = wA.mondayDateKey;
+  let to = wB.mondayDateKey;
+  if (from > to) {
+    const t = from;
+    from = to;
+    to = t;
+  }
+  const out: ScheduleWeekRange[] = [];
+  let dk = from;
+  for (;;) {
+    out.push(getWeekRange(new Date(`${dk}T12:00:00`)));
+    if (dk === to) break;
+    dk = addCalendarDaysToDateKey(dk, 7);
+  }
+  return out;
+}
+
+/** Заголовок периода для экспорта (одна или несколько недель). */
+export function combineExportPeriodTitle(weeks: ScheduleWeekRange[]): string {
+  if (weeks.length === 0) return "";
+  if (weeks.length === 1) return weeks[0]!.titleRu;
+  const first = weeks[0]!;
+  const last = weeks[weeks.length - 1]!;
+  return `с ${dateKeyToRuDisplay(first.mondayDateKey)} по ${dateKeyToRuDisplay(last.sundayDateKey)}`;
+}
+
 function buildGrid(lessons: ScheduleLesson[], week: ScheduleWeekRange): ScheduleGrid {
   const times = [...new Set(lessons.map((x) => x.time).filter(Boolean))].sort((a, b) =>
     a.localeCompare(b, undefined, { numeric: true })
@@ -49,11 +79,7 @@ function buildGrid(lessons: ScheduleLesson[], week: ScheduleWeekRange): Schedule
   return { times, byDateAndTime };
 }
 
-export function generateScheduleHTML(
-  lessons: ScheduleLesson[],
-  instructor: ScheduleExportInstructor,
-  weekRange: ScheduleWeekRange
-): string {
+function tableHtmlForWeek(lessons: ScheduleLesson[], weekRange: ScheduleWeekRange): string {
   const grid = buildGrid(lessons, weekRange);
 
   const dayHeaders = weekRange.dateKeys
@@ -62,7 +88,7 @@ export function generateScheduleHTML(
 
   const bodyRows =
     grid.times.length === 0
-      ? `<tr><td colspan="9">Нет занятий за выбранную неделю</td></tr>`
+      ? `<tr><td colspan="9">Нет занятий за эту неделю</td></tr>`
       : grid.times
           .map((time, idx) => {
             const cells = weekRange.dateKeys
@@ -76,7 +102,43 @@ export function generateScheduleHTML(
           })
           .join("");
 
-  const fileTitle = `График занятий - ${instructor.name} - ${weekRange.mondayDateKey}`;
+  return `
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>№ п/п</th>
+          <th>Время</th>
+          ${dayHeaders}
+        </tr>
+      </thead>
+      <tbody>
+        ${bodyRows}
+      </tbody>
+    </table>
+  </div>`;
+}
+
+export function generateScheduleHTML(
+  lessons: ScheduleLesson[],
+  instructor: ScheduleExportInstructor,
+  weekRanges: ScheduleWeekRange[]
+): string {
+  const weeks = weekRanges.length ? weekRanges : [getWeekRange(new Date())];
+  const periodTitle = combineExportPeriodTitle(weeks);
+  const first = weeks[0]!;
+  const last = weeks[weeks.length - 1]!;
+  const fileTitle = `График занятий - ${instructor.name} - ${first.mondayDateKey}_${last.sundayDateKey}`;
+
+  const weekSections = weeks
+    .map((wr) => {
+      const caption =
+        weeks.length > 1
+          ? `<div class="week-caption">${escapeHtml(wr.titleRu)}</div>`
+          : "";
+      return `<section class="week-block">${caption}${tableHtmlForWeek(lessons, wr)}</section>`;
+    })
+    .join("\n");
 
   return `<!DOCTYPE html>
 <html lang="ru">
@@ -84,13 +146,71 @@ export function generateScheduleHTML(
   <meta charset="UTF-8" />
   <title>${escapeHtml(fileTitle)}</title>
   <style>
-    body { font-family: "Times New Roman", Times, serif; font-size: 12pt; margin: 2cm; color: #000; }
-    .header-right { text-align: right; margin-bottom: 30px; line-height: 1.35; white-space: pre-line; }
-    .title { text-align: center; font-weight: bold; font-size: 14pt; margin-bottom: 8px; }
-    .subtitle { text-align: center; margin-bottom: 20px; }
-    .info { margin-bottom: 20px; line-height: 1.5; }
-    table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-    th, td { border: 1px solid #000; padding: 6px 8px; text-align: center; vertical-align: middle; }
+    @page { size: A4 landscape; margin: 10mm; }
+    body {
+      font-family: "Times New Roman", Times, serif;
+      font-size: 10pt;
+      margin: 0.4cm 0.6cm 0.5cm;
+      color: #000;
+      box-sizing: border-box;
+    }
+    .header-right {
+      text-align: right;
+      margin-bottom: 6px;
+      line-height: 1.25;
+      white-space: pre-line;
+      font-size: 10pt;
+    }
+    .title {
+      text-align: center;
+      font-weight: bold;
+      font-size: 12pt;
+      margin: 0 0 4px;
+    }
+    .subtitle {
+      text-align: center;
+      margin-bottom: 6px;
+      font-size: 10pt;
+    }
+    .info {
+      margin-bottom: 8px;
+      line-height: 1.3;
+      font-size: 10pt;
+    }
+    .info div { margin: 2px 0; }
+    .week-block {
+      margin-bottom: 8px;
+      page-break-inside: avoid;
+    }
+    .week-block:last-child { margin-bottom: 0; }
+    .week-caption {
+      text-align: center;
+      font-weight: bold;
+      margin: 4px 0 4px;
+      font-size: 10pt;
+    }
+    .table-wrap {
+      width: 100%;
+      display: flex;
+      justify-content: center;
+      max-width: 100%;
+    }
+    .table-wrap table {
+      border-collapse: collapse;
+      margin: 0 auto;
+      max-width: 100%;
+      width: 100%;
+      table-layout: fixed;
+    }
+    th, td {
+      border: 1px solid #000;
+      padding: 3px 4px;
+      text-align: center;
+      vertical-align: middle;
+      font-size: 9pt;
+      word-wrap: break-word;
+      overflow-wrap: anywhere;
+    }
     th { background-color: #f0f0f0; font-weight: bold; }
     td:first-child, td:nth-child(2), th:first-child, th:nth-child(2) { white-space: nowrap; }
   </style>
@@ -100,23 +220,12 @@ export function generateScheduleHTML(
 Директор ООО "Старт-Авто"
 _________________ А.М. Головин</div>
   <div class="title">График проведения занятий по вождению ТС</div>
-  <div class="subtitle">${escapeHtml(weekRange.titleRu)}</div>
+  <div class="subtitle">${escapeHtml(periodTitle)}</div>
   <div class="info">
     <div><strong>Учебное ТС:</strong> ${escapeHtml(instructor.carLabel || EM_DASH)}</div>
     <div><strong>Мастер ПОВ:</strong> ${escapeHtml(instructor.name || EM_DASH)}</div>
   </div>
-  <table>
-    <thead>
-      <tr>
-        <th>№ п/п</th>
-        <th>Время</th>
-        ${dayHeaders}
-      </tr>
-    </thead>
-    <tbody>
-      ${bodyRows}
-    </tbody>
-  </table>
+  ${weekSections}
 </body>
 </html>`;
 }
@@ -153,9 +262,9 @@ export async function exportToPDF(html: string, filename: string): Promise<void>
     position: "fixed",
     left: "0",
     top: "0",
-    width: "794px",
+    width: "1120px",
     maxWidth: "100vw",
-    padding: "24px",
+    padding: "16px",
     boxSizing: "border-box",
     background: "#fff",
     color: "#000",
@@ -176,10 +285,10 @@ export async function exportToPDF(html: string, filename: string): Promise<void>
   try {
     const pdfBlob = (await html2pdf()
       .set({
-        margin: [12, 12, 12, 12],
+        margin: [8, 8, 8, 8],
         image: { type: "jpeg", quality: 0.92 },
         html2canvas: { scale: 2, useCORS: true, logging: false },
-        jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
+        jsPDF: { unit: "mm", format: "a4", orientation: "landscape" },
       })
       .from(wrapper)
       .outputPdf("blob")) as Blob;
