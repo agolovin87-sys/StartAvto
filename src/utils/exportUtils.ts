@@ -134,22 +134,81 @@ export function exportToWord(html: string, filename: string): void {
 }
 
 /**
- * PDF-экспорт через диалог печати браузера (пункт «Сохранить как PDF»).
- * Это самый совместимый путь без серверной генерации документа.
+ * PDF: скачивание файла через html2pdf.js (без второго окна — Яндекс.Браузер и др. не блокируют).
+ * Результат — растровая вёрстка (как «снимок» страницы), для делопроизводства обычно достаточно.
  */
 export async function exportToPDF(html: string, filename: string): Promise<void> {
-  const w = window.open("", "_blank", "noopener,noreferrer,width=1100,height=800");
-  if (!w) throw new Error("Браузер заблокировал окно печати (разрешите popup).");
-  w.document.open();
-  w.document.write(html);
-  w.document.close();
-  w.document.title = filename;
+  const { default: html2pdf } = await import("html2pdf.js");
+
+  const parser = new DOMParser();
+  const parsed = parser.parseFromString(html, "text/html");
+  const wrapper = document.createElement("div");
+  wrapper.setAttribute("data-export-schedule-pdf", "1");
+  wrapper.style.position = "fixed";
+  wrapper.style.left = "-12000px";
+  wrapper.style.top = "0";
+  wrapper.style.width = "794px";
+  wrapper.style.padding = "24px";
+  wrapper.style.boxSizing = "border-box";
+  wrapper.style.background = "#fff";
+  wrapper.style.color = "#000";
+
+  for (const node of parsed.head.querySelectorAll("style")) {
+    wrapper.appendChild(node.cloneNode(true));
+  }
+  while (parsed.body.firstChild) {
+    wrapper.appendChild(parsed.body.firstChild);
+  }
+  document.body.appendChild(wrapper);
+
+  try {
+    await html2pdf()
+      .set({
+        margin: [12, 12, 12, 12],
+        filename: `${filename}.pdf`,
+        image: { type: "jpeg", quality: 0.92 },
+        html2canvas: { scale: 2, useCORS: true, logging: false, letterRendering: true },
+        jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
+      })
+      .from(wrapper)
+      .save();
+  } finally {
+    wrapper.remove();
+  }
+}
+
+/**
+ * Запасной вариант: печать через скрытый iframe (без popup). Можно вызвать вручную при необходимости.
+ */
+export async function printScheduleHtmlInHiddenIframe(html: string): Promise<void> {
+  const iframe = document.createElement("iframe");
+  iframe.setAttribute("aria-hidden", "true");
+  iframe.style.position = "fixed";
+  iframe.style.width = "0";
+  iframe.style.height = "0";
+  iframe.style.border = "0";
+  iframe.style.opacity = "0";
+  iframe.style.pointerEvents = "none";
+  document.body.appendChild(iframe);
+
+  const idoc = iframe.contentDocument;
+  const win = iframe.contentWindow;
+  if (!idoc || !win) {
+    iframe.remove();
+    throw new Error("Не удалось открыть документ для печати");
+  }
+
+  idoc.open();
+  idoc.write(html);
+  idoc.close();
+
   await new Promise<void>((resolve) => {
-    w.onload = () => resolve();
-    window.setTimeout(() => resolve(), 400);
+    window.setTimeout(resolve, 150);
   });
-  w.focus();
-  w.print();
+
+  win.focus();
+  win.print();
+  window.setTimeout(() => iframe.remove(), 2000);
 }
 
 export function formatWeekInputValue(date: Date): string {

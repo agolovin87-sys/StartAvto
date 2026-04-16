@@ -55,7 +55,8 @@ export function ExportSchedule() {
       <h2 className="admin-schedule-export-title">Экспорт графика занятий</h2>
       <p className="admin-schedule-export-desc">
         Выберите инструктора и неделю. В документе выводятся только Фамилия И.О. курсантов по
-        времени и дням недели.
+        времени и дням недели. PDF сохраняется в «Загрузки» как файл — отдельное окно браузера не
+        нужно.
       </p>
 
       <div className="admin-schedule-export-grid">
