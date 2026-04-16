@@ -10800,3 +10800,66 @@ html[data-theme="purple"] .instr-side-btn {
 html[data-theme="purple"] .instr-side-btn:hover {
   background: var(--theme-slate-hover);
 }
+
+.admin-schedule-export-card {
+  margin: 0 0 1rem;
+  padding: 0.85rem;
+  border: 1px solid var(--theme-line-soft);
+  border-radius: 12px;
+  background: var(--theme-bg-soft);
+}
+
+.admin-schedule-export-title {
+  margin: 0 0 0.3rem;
+  font-size: 1rem;
+  color: var(--theme-heading);
+}
+
+.admin-schedule-export-desc {
+  margin: 0 0 0.7rem;
+  font-size: 0.88rem;
+  color: var(--theme-muted);
+}
+
+.admin-schedule-export-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 0.55rem;
+}
+
+.admin-schedule-export-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  font-size: 0.86rem;
+  color: var(--theme-soft);
+}
+
+.admin-schedule-export-field select,
+.admin-schedule-export-field input {
+  width: 100%;
+  border-radius: 10px;
+  border: 1px solid var(--theme-line-input);
+  padding: 0.5rem 0.6rem;
+  background: var(--theme-bg-input);
+  color: var(--theme-text);
+}
+
+.admin-schedule-export-week-hint {
+  margin: 0.6rem 0 0;
+  font-size: 0.85rem;
+  color: var(--theme-muted);
+}
+
+.admin-schedule-export-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+  margin-top: 0.65rem;
+}
+
+.admin-schedule-export-note {
+  margin: 0.55rem 0 0;
+  font-size: 0.85rem;
+  color: var(--theme-muted);
+}
