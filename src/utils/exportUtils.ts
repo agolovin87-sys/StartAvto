@@ -186,15 +186,33 @@ export function generateScheduleHTML(
       margin: 0.4cm 0.6cm 0.5cm;
       color: #000;
       box-sizing: border-box;
+      max-width: 100%;
+      overflow-x: hidden;
     }
-    .header-right {
-      text-align: right;
-      margin-bottom: 6px;
-      line-height: 1.25;
-      white-space: pre-line;
+    /* Блок в правом верхнем углу; строки выровнены по левому краю внутри блока */
+    .header-approve {
+      width: 100%;
+      display: flex;
+      justify-content: flex-end;
+      margin: 0 0 10px 0;
       font-size: 12pt;
+      line-height: 1.35;
+    }
+    .header-approve-inner {
+      text-align: left;
+      max-width: min(380px, 42%);
+    }
+    .header-approve-inner > div {
+      margin: 0 0 4px 0;
+    }
+    .header-approve-inner > div:last-child {
+      margin-bottom: 0;
+    }
+    .header-approve-sign {
+      white-space: nowrap;
     }
     .title {
+      clear: both;
       text-align: center;
       font-weight: bold;
       font-size: 14pt;
@@ -224,15 +242,19 @@ export function generateScheduleHTML(
     }
     .table-wrap {
       width: 100%;
+      max-width: 100%;
       display: flex;
       justify-content: center;
-      max-width: 100%;
+      align-items: flex-start;
+      box-sizing: border-box;
+      padding: 0;
     }
     .table-wrap table {
       border-collapse: collapse;
       margin: 0 auto;
-      max-width: 100%;
       width: 100%;
+      max-width: 100%;
+      min-width: 0;
       table-layout: fixed;
       font-family: ${SCHEDULE_EXPORT_FONT_FAMILY};
       font-size: 12pt;
@@ -240,22 +262,30 @@ export function generateScheduleHTML(
     }
     th, td {
       border: 1px solid #000;
-      padding: 3px 4px;
+      padding: 2px 3px;
       text-align: center;
       vertical-align: middle;
       font-size: 12pt;
       font-family: ${SCHEDULE_EXPORT_FONT_FAMILY};
       word-wrap: break-word;
       overflow-wrap: anywhere;
+      word-break: break-word;
     }
     th { background-color: #f0f0f0; font-weight: bold; }
-    td:first-child, td:nth-child(2), th:first-child, th:nth-child(2) { white-space: nowrap; }
+    td:first-child, td:nth-child(2), th:first-child, th:nth-child(2) {
+      white-space: nowrap;
+      width: 1%;
+    }
   </style>
 </head>
 <body class="schedule-export-body" style="mso-page-orientation: landscape;">
-  <div class="header-right">Утверждаю
-Директор ООО "Старт-Авто"
-_________________ А.М. Головин</div>
+  <div class="header-approve">
+    <div class="header-approve-inner">
+      <div>Утверждаю</div>
+      <div>Директор ООО "Старт-Авто"</div>
+      <div class="header-approve-sign">_________________ А.М. Головин</div>
+    </div>
+  </div>
   <div class="title">График проведения занятий по вождению ТС</div>
   <div class="subtitle">${escapeHtml(periodTitle)}</div>
   <div class="info">
