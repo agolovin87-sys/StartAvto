@@ -123,19 +123,24 @@ _________________ А.М. Головин</div>
 
 export function exportToWord(html: string, filename: string): void {
   const blob = new Blob(["\ufeff", html], { type: "application/msword;charset=utf-8" });
+  downloadBlob(blob, `${filename}.doc`);
+}
+
+function downloadBlob(blob: Blob, filename: string): void {
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
-  a.download = `${filename}.doc`;
+  a.download = filename;
+  a.rel = "noopener";
   document.body.appendChild(a);
   a.click();
   a.remove();
-  URL.revokeObjectURL(url);
+  window.setTimeout(() => URL.revokeObjectURL(url), 60_000);
 }
 
 /**
- * PDF: скачивание файла через html2pdf.js (без второго окна — Яндекс.Браузер и др. не блокируют).
- * Результат — растровая вёрстка (как «снимок» страницы), для делопроизводства обычно достаточно.
+ * PDF: html2pdf → Blob → скачивание как у Word (не jspdf.save(): в Chromium часто блокируют после async).
+ * Если не вышло — печать из iframe (без popup), в диалоге выберите «Сохранить как PDF».
  */
 export async function exportToPDF(html: string, filename: string): Promise<void> {
   const { default: html2pdf } = await import("html2pdf.js");
@@ -144,14 +149,21 @@ export async function exportToPDF(html: string, filename: string): Promise<void>
   const parsed = parser.parseFromString(html, "text/html");
   const wrapper = document.createElement("div");
   wrapper.setAttribute("data-export-schedule-pdf", "1");
-  wrapper.style.position = "fixed";
-  wrapper.style.left = "-12000px";
-  wrapper.style.top = "0";
-  wrapper.style.width = "794px";
-  wrapper.style.padding = "24px";
-  wrapper.style.boxSizing = "border-box";
-  wrapper.style.background = "#fff";
-  wrapper.style.color = "#000";
+  Object.assign(wrapper.style, {
+    position: "fixed",
+    left: "0",
+    top: "0",
+    width: "794px",
+    maxWidth: "100vw",
+    padding: "24px",
+    boxSizing: "border-box",
+    background: "#fff",
+    color: "#000",
+    opacity: "0",
+    pointerEvents: "none",
+    zIndex: "2147483645",
+    overflow: "hidden",
+  });
 
   for (const node of parsed.head.querySelectorAll("style")) {
     wrapper.appendChild(node.cloneNode(true));
@@ -162,53 +174,69 @@ export async function exportToPDF(html: string, filename: string): Promise<void>
   document.body.appendChild(wrapper);
 
   try {
-    await html2pdf()
+    const pdfBlob = (await html2pdf()
       .set({
         margin: [12, 12, 12, 12],
-        filename: `${filename}.pdf`,
         image: { type: "jpeg", quality: 0.92 },
-        html2canvas: { scale: 2, useCORS: true, logging: false, letterRendering: true },
+        html2canvas: { scale: 2, useCORS: true, logging: false },
         jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
       })
       .from(wrapper)
-      .save();
+      .outputPdf("blob")) as Blob;
+
+    if (!pdfBlob || pdfBlob.size < 64) {
+      throw new Error("Пустой PDF");
+    }
+    downloadBlob(pdfBlob, `${filename}.pdf`);
+  } catch {
+    printScheduleHtmlInHiddenIframe(html);
   } finally {
     wrapper.remove();
   }
 }
 
 /**
- * Запасной вариант: печать через скрытый iframe (без popup). Можно вызвать вручную при необходимости.
+ * Запасной вариант: печать через скрытый iframe (без popup). Размер не 0×0 — иначе часть движков даёт пустую печать.
  */
-export async function printScheduleHtmlInHiddenIframe(html: string): Promise<void> {
+export function printScheduleHtmlInHiddenIframe(html: string): void {
   const iframe = document.createElement("iframe");
   iframe.setAttribute("aria-hidden", "true");
-  iframe.style.position = "fixed";
-  iframe.style.width = "0";
-  iframe.style.height = "0";
-  iframe.style.border = "0";
-  iframe.style.opacity = "0";
-  iframe.style.pointerEvents = "none";
+  iframe.title = "Печать расписания";
+  Object.assign(iframe.style, {
+    position: "fixed",
+    left: "-10000px",
+    top: "0",
+    width: "1200px",
+    height: "900px",
+    border: "0",
+    opacity: "0",
+    pointerEvents: "none",
+  });
   document.body.appendChild(iframe);
 
   const idoc = iframe.contentDocument;
   const win = iframe.contentWindow;
   if (!idoc || !win) {
     iframe.remove();
-    throw new Error("Не удалось открыть документ для печати");
+    return;
   }
 
   idoc.open();
   idoc.write(html);
   idoc.close();
 
-  await new Promise<void>((resolve) => {
-    window.setTimeout(resolve, 150);
-  });
+  const runPrint = (): void => {
+    try {
+      win.focus();
+      win.print();
+    } finally {
+      window.setTimeout(() => iframe.remove(), 4000);
+    }
+  };
 
-  win.focus();
-  win.print();
-  window.setTimeout(() => iframe.remove(), 2000);
+  window.requestAnimationFrame(() => {
+    window.requestAnimationFrame(runPrint);
+  });
 }
 
 export function formatWeekInputValue(date: Date): string {

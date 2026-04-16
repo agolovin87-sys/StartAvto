@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useScheduleExport } from "@/hooks/useScheduleExport";
 import {
   exportToPDF,
@@ -16,6 +16,11 @@ function safeFilePart(raw: string): string {
 
 export function ExportSchedule() {
   const { instructors, instructorById, loading, error, fetchLessonsForWeek } = useScheduleExport();
+
+  useEffect(() => {
+    void import("html2pdf.js");
+  }, []);
+
   const [selectedInstructorId, setSelectedInstructorId] = useState("");
   const [selectedWeekDate, setSelectedWeekDate] = useState(() => new Date());
   const [busy, setBusy] = useState<"word" | "pdf" | null>(null);
@@ -55,8 +60,8 @@ export function ExportSchedule() {
       <h2 className="admin-schedule-export-title">Экспорт графика занятий</h2>
       <p className="admin-schedule-export-desc">
         Выберите инструктора и неделю. В документе выводятся только Фамилия И.О. курсантов по
-        времени и дням недели. PDF сохраняется в «Загрузки» как файл — отдельное окно браузера не
-        нужно.
+        времени и дням недели.         PDF обычно скачивается в «Загрузки». Если браузер не даст сохранить
+        файлом, откроется печать — выберите «Сохранить как PDF».
       </p>
 
       <div className="admin-schedule-export-grid">
