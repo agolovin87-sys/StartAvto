@@ -3,7 +3,8 @@ import { getAuth, type Auth } from "firebase/auth";
 import {
   getFirestore,
   initializeFirestore,
-  memoryLocalCache,
+  persistentLocalCache,
+  persistentMultipleTabManager,
   type Firestore,
 } from "firebase/firestore";
 import { getStorage, type FirebaseStorage } from "firebase/storage";
@@ -70,7 +71,11 @@ export function getFirebase(): {
        * цена — чуть больше запросов. Не смешивать с experimentalAutoDetectLongPolling.
        */
       _db = initializeFirestore(_app, {
-        localCache: memoryLocalCache(),
+        /** IndexedDB: офлайн-чтение и очередь записей при потере сети. */
+        localCache: persistentLocalCache({
+          cacheSizeBytes: 100 * 1024 * 1024,
+          tabManager: persistentMultipleTabManager(),
+        }),
         experimentalForceLongPolling: true,
         /** Иначе вложенные `undefined` (например в точках GPS) ломают setDoc. */
         ignoreUndefinedProperties: true,

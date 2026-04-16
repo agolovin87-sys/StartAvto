@@ -1,0 +1,238 @@
+/* Индикатор сети (фиксирован снизу) */
+.offline-indicator {
+  position: fixed;
+  z-index: 9990;
+  left: 50%;
+  bottom: max(12px, env(safe-area-inset-bottom));
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  border-radius: 14px;
+  font-size: 13px;
+  font-weight: 600;
+  max-width: min(96vw, 420px);
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(15, 23, 42, 0.92);
+  color: #e2e8f0;
+}
+
+.offline-indicator--ok {
+  border-color: rgba(34, 197, 94, 0.35);
+}
+
+.offline-indicator--check {
+  border-color: rgba(234, 179, 8, 0.45);
+  animation: offline-pulse-soft 1.2s ease-in-out infinite;
+}
+
+.offline-indicator--off {
+  border-color: rgba(248, 113, 113, 0.45);
+  color: #fecaca;
+}
+
+@keyframes offline-pulse-soft {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.78;
+  }
+}
+
+.offline-indicator-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.offline-indicator--ok .offline-indicator-dot {
+  background: #22c55e;
+  box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.25);
+}
+
+.offline-indicator--check .offline-indicator-dot {
+  background: #eab308;
+  box-shadow: 0 0 0 3px rgba(234, 179, 8, 0.28);
+}
+
+.offline-indicator--off .offline-indicator-dot {
+  background: #ef4444;
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.25);
+}
+
+.offline-indicator-ico {
+  flex-shrink: 0;
+  opacity: 0.95;
+}
+
+.offline-indicator-label {
+  flex: 1;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.offline-indicator-queue {
+  font-size: 12px;
+  font-weight: 500;
+  color: #fde68a;
+}
+
+.offline-indicator-retry {
+  flex-shrink: 0;
+  border: none;
+  border-radius: 10px;
+  padding: 6px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  background: rgba(148, 163, 184, 0.25);
+  color: #f8fafc;
+}
+
+.offline-indicator-retry:hover {
+  background: rgba(148, 163, 184, 0.4);
+}
+
+/* Тосты */
+.offline-toast-stack {
+  position: fixed;
+  z-index: 9991;
+  top: max(12px, env(safe-area-inset-top));
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: min(96vw, 380px);
+  pointer-events: none;
+}
+
+.offline-toast {
+  pointer-events: auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  font-size: 13px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  animation: offline-toast-in 0.25s ease-out;
+}
+
+@keyframes offline-toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.offline-toast--warning {
+  background: rgba(127, 29, 29, 0.92);
+  color: #fee2e2;
+}
+
+.offline-toast--success {
+  background: rgba(20, 83, 45, 0.92);
+  color: #dcfce7;
+}
+
+.offline-toast--info {
+  background: rgba(30, 41, 59, 0.95);
+  color: #e2e8f0;
+}
+
+.offline-toast-close {
+  border: none;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  font-size: 18px;
+  line-height: 1;
+  padding: 0 4px;
+  opacity: 0.85;
+}
+
+/* OfflinePage */
+.offline-page {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.offline-page--fullscreen {
+  min-height: min(70vh, 560px);
+}
+
+.offline-page-card {
+  max-width: 400px;
+  text-align: center;
+  padding: 28px 22px;
+  border-radius: 18px;
+  background: rgba(15, 23, 42, 0.85);
+  border: 1px solid rgba(148, 163, 184, 0.2);
+}
+
+.offline-page-icon {
+  color: #f87171;
+  margin-bottom: 12px;
+}
+
+.offline-page-title {
+  margin: 0 0 8px;
+  font-size: 1.35rem;
+  color: var(--theme-heading, #f1f5f9);
+}
+
+.offline-page-text {
+  margin: 0 0 20px;
+  color: var(--theme-muted, #94a3b8);
+  font-size: 0.95rem;
+  line-height: 1.45;
+}
+
+.offline-page-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+@media (min-width: 480px) {
+  .offline-page-actions {
+    flex-direction: row;
+    justify-content: center;
+  }
+}
+
+/* Настройки офлайна (в админке настроек) */
+.offline-settings-size {
+  font-size: 13px;
+  color: var(--theme-muted, #94a3b8);
+  margin: 0 0 12px;
+}
+
+.offline-settings-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.offline-settings-progress {
+  margin-top: 10px;
+  font-size: 13px;
+  color: var(--theme-soft, #cbd5e1);
+}

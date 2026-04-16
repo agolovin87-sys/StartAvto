@@ -70,7 +70,7 @@ import {
   subscribeTheme,
   type ThemeMode,
 } from "@/theme/themeSettings";
-import { HapticFeedbackSettings } from "@/components/Profile";
+import { HapticFeedbackSettings, OfflineModeSettings } from "@/components/Profile";
 import { PasswordRecoverySection } from "@/components/PasswordRecoverySection";
 import { hapticError, hapticSuccess } from "@/utils/haptics";
 
@@ -188,6 +188,17 @@ function IconSectionHaptics({ className }: { className?: string }) {
       <path
         fill="currentColor"
         d="M0 15h2V9H0v6zm3 2h2V7H3v10zm19-7v6h2V9h-2zm-3 7h2V7h-2v10zm-4-7.66l-1.41 1.41L15 9.83V20h2v-4.17l1.59 1.59L20 15l-4-4-3.33 3.34zM4 15h2V7H4v8z"
+      />
+    </svg>
+  );
+}
+
+function IconSectionOffline({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" width="22" height="22" aria-hidden>
+      <path
+        fill="currentColor"
+        d="M12 3C7.03 3 3 7.03 3 12s4.03 9 9 9 9-4.03 9-9-4.03-9-9-9zm0 16c-3.86 0-7-3.14-7-7s3.14-7 7-7 7 3.14 7 7-3.14 7-7 7zm-1.5-4.5l6-6 1.41 1.41-6 6-2.5-2.5L8.91 12l1.59 1.5z"
       />
     </svg>
   );
@@ -1455,6 +1466,21 @@ export function AdminSettingsTab() {
             <p className="admin-settings-section-desc">Войдите, чтобы изменить параметры.</p>
           ) : (
             <HapticFeedbackSettings />
+          )}
+        </SettingsAccordionItem>
+
+        <SettingsAccordionItem
+          sectionId="settings-offline"
+          title="Офлайн-режим"
+          description="Кэш страницы, данных и карты; работа без сети."
+          open={openSettingsSection === "settings-offline"}
+          onToggle={() => toggleSettingsSection("settings-offline")}
+          icon={<IconSectionOffline className="admin-settings-section-trigger-icon-svg" />}
+        >
+          {!uid ? (
+            <p className="admin-settings-section-desc">Войдите, чтобы изменить параметры.</p>
+          ) : (
+            <OfflineModeSettings />
           )}
         </SettingsAccordionItem>
 

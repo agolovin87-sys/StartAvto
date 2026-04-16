@@ -23,6 +23,7 @@ import { InstructorOnboardingProvider } from "@/context/InstructorOnboardingCont
 import { StudentOnboardingProvider } from "@/context/StudentOnboardingContext";
 import { GlobalIncomingChatAlerts } from "@/chat/GlobalIncomingChatAlerts";
 import { FcmRegistrar } from "@/components/FcmRegistrar";
+import { OfflineLayer } from "@/components/OfflineLayer";
 import type { UserRole } from "@/types";
 
 function RoleHome() {
@@ -98,14 +99,18 @@ function GuestOnly({ children }: { children: ReactNode }) {
 export default function App() {
   if (!isFirebaseConfigured) {
     return (
-      <Routes>
-        <Route path="*" element={<SetupFirebase />} />
-      </Routes>
+      <>
+        <OfflineLayer />
+        <Routes>
+          <Route path="*" element={<SetupFirebase />} />
+        </Routes>
+      </>
     );
   }
 
   return (
     <>
+      <OfflineLayer />
       <FcmRegistrar />
       <Routes>
         <Route

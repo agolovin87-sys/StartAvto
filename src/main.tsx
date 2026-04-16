@@ -38,7 +38,12 @@ createRoot(document.getElementById("root")!).render(
   </BrowserRouter>
 );
 
-/** Регистрируем сразу: на Android иначе React успевает запросить токен до `load`, и FCM зависает на SW. */
+/**
+ * Service Worker: один файл `sw.js` (Workbox + importScripts firebase-messaging-sw.js).
+ * Регистрируем сразу в prod: FCM ждёт активный SW до getToken.
+ */
 if (import.meta.env.PROD && "serviceWorker" in navigator) {
-  navigator.serviceWorker.register("/firebase-messaging-sw.js").catch(() => {});
+  void import("virtual:pwa-register").then(({ registerSW }) => {
+    registerSW({ immediate: true });
+  });
 }

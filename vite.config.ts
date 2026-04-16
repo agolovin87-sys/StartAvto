@@ -4,6 +4,7 @@ import { fileURLToPath } from "node:url";
 import { defineConfig, loadEnv, type Plugin } from "vite";
 import react from "@vitejs/plugin-react";
 import basicSsl from "@vitejs/plugin-basic-ssl";
+import { VitePWA } from "vite-plugin-pwa";
 
 const __dirname = fileURLToPath(new URL(".", import.meta.url));
 
@@ -155,6 +156,126 @@ export default defineConfig(({ mode }) => {
     react(),
     basicSsl(),
     htmlOpenGraphPlugin(publicSiteOrigin),
+    VitePWA({
+      /** В dev не подменяем SW — проверка: `npm run build && npm run preview`. */
+      registerType: "autoUpdate",
+      manifest: false,
+      filename: "sw.js",
+      includeAssets: ["favicon.ico", "app-icon-v6.png", "favicon.svg", "robots.txt", "offline.html"],
+      /**
+       * Не кладите `public/sw.js`: при копировании public в dist он перезаписал бы сгенерированный SW.
+       * Кэш-стратегии задаются здесь (Workbox).
+       */
+      workbox: {
+        globPatterns: ["**/*.{js,css,html,ico,png,svg,woff2,webmanifest}"],
+        maximumFileSizeToCacheInBytes: 6 * 1024 * 1024,
+        navigateFallback: "/index.html",
+        navigateFallbackDenylist: [/^\/api\//],
+        /**
+         * Фоновые push: отдельный файл собирает `firebaseMessagingSwPlugin` в dist.
+         * Подключается тем же регистрацией `sw.js`, отдельно `firebase-messaging-sw.js` не регистрируем.
+         */
+        importScripts: ["firebase-messaging-sw.js"],
+        cleanupOutdatedCaches: true,
+        skipWaiting: true,
+        clientsClaim: true,
+        runtimeCaching: [
+          {
+            urlPattern: /^https:\/\/www\.gstatic\.com\/generate_204$/,
+            handler: "NetworkOnly",
+          },
+          {
+            urlPattern: /^https:\/\/connectivitycheck\.gstatic\.com\/generate_204$/,
+            handler: "NetworkOnly",
+          },
+          {
+            urlPattern: /^https:\/\/firestore\.googleapis\.com\/.*/i,
+            handler: "NetworkOnly",
+          },
+          {
+            urlPattern: /^https:\/\/firebase\.googleapis\.com\/.*/i,
+            handler: "NetworkOnly",
+          },
+          {
+            urlPattern: /^https:\/\/identitytoolkit\.googleapis\.com\/.*/i,
+            handler: "NetworkOnly",
+          },
+          {
+            urlPattern: /^https:\/\/securetoken\.googleapis\.com\/.*/i,
+            handler: "NetworkOnly",
+          },
+          {
+            urlPattern: /^https:\/\/www\.googleapis\.com\/.*/i,
+            handler: "NetworkOnly",
+          },
+          {
+            urlPattern: /^https:\/\/api\.startavto\.ru\/.*/i,
+            handler: "NetworkFirst",
+            options: {
+              cacheName: "startavto-api-v1",
+              expiration: { maxEntries: 200, maxAgeSeconds: 24 * 60 * 60 },
+              networkTimeoutSeconds: 10,
+            },
+          },
+          {
+            urlPattern: /^https:\/\/api-maps\.yandex\.ru\/.*/i,
+            handler: "StaleWhileRevalidate",
+            options: {
+              cacheName: "startavto-maps-v1",
+              expiration: { maxEntries: 500, maxAgeSeconds: 7 * 24 * 60 * 60 },
+            },
+          },
+          {
+            urlPattern: /^https:\/\/[^/]+\.maps\.yandex\.net\/.*/i,
+            handler: "StaleWhileRevalidate",
+            options: {
+              cacheName: "startavto-maps-v1",
+              expiration: { maxEntries: 500, maxAgeSeconds: 7 * 24 * 60 * 60 },
+            },
+          },
+          {
+            urlPattern: /^https:\/\/core-renderer-tiles\.maps\.yandex\.net\/.*/i,
+            handler: "StaleWhileRevalidate",
+            options: {
+              cacheName: "startavto-maps-v1",
+              expiration: { maxEntries: 500, maxAgeSeconds: 7 * 24 * 60 * 60 },
+            },
+          },
+          {
+            urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,
+            handler: "StaleWhileRevalidate",
+            options: {
+              cacheName: "startavto-static-v1",
+              expiration: { maxEntries: 20, maxAgeSeconds: 365 * 24 * 60 * 60 },
+            },
+          },
+          {
+            urlPattern: /^https:\/\/fonts\.gstatic\.com\/.*/i,
+            handler: "CacheFirst",
+            options: {
+              cacheName: "startavto-static-v1",
+              expiration: { maxEntries: 30, maxAgeSeconds: 365 * 24 * 60 * 60 },
+            },
+          },
+          {
+            urlPattern: /\.(?:png|jpg|jpeg|svg|webp|gif)$/i,
+            handler: "CacheFirst",
+            options: {
+              cacheName: "startavto-images-v1",
+              expiration: { maxEntries: 200, maxAgeSeconds: 30 * 24 * 60 * 60 },
+            },
+          },
+          {
+            urlPattern: /\.(?:js|css|woff2?)$/i,
+            handler: "CacheFirst",
+            options: {
+              cacheName: "startavto-static-v1",
+              expiration: { maxEntries: 80, maxAgeSeconds: 365 * 24 * 60 * 60 },
+            },
+          },
+        ],
+      },
+    }),
     firebaseMessagingSwPlugin(mode),
     yandexSamplesApiKeyPlugin(mode),
   ],
