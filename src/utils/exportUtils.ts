@@ -182,6 +182,7 @@ export function generateScheduleHTML(
     }
     html {
       width: 100%;
+      font-size: 12pt;
     }
     .schedule-export-body,
     .schedule-export-body table,
@@ -237,7 +238,8 @@ export function generateScheduleHTML(
       clear: both;
       text-align: center;
       font-weight: bold;
-      font-size: 14pt;
+      font-size: 12pt;
+      mso-ansi-font-size: 12.0pt;
       margin: 0 0 4px;
     }
     .subtitle {
@@ -251,6 +253,11 @@ export function generateScheduleHTML(
       font-size: 12pt;
     }
     .info div { margin: 2px 0; }
+    .schedule-export-body strong,
+    .schedule-export-body b {
+      font-size: 12pt;
+      mso-ansi-font-size: 12.0pt;
+    }
     .week-block {
       margin-bottom: 8px;
       page-break-inside: avoid;
