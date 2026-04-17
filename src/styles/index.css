@@ -8617,6 +8617,28 @@ html[data-theme="light"] .drive-live-session-panel__toolbar {
   gap: 0.5rem;
 }
 
+.chat-msg-day-separator {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 0.15rem 0 0;
+  margin: 0;
+  list-style: none;
+  flex-shrink: 0;
+}
+
+.chat-msg-day-separator-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: var(--theme-muted);
+  text-align: center;
+  padding: 0.2rem 0.65rem;
+  border-radius: 999px;
+  background: rgba(148, 163, 184, 0.12);
+  border: 1px solid var(--theme-line-subtle);
+}
+
 .chat-msg {
   display: flex;
 }

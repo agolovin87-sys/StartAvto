@@ -11,6 +11,7 @@ import type {
   UserProfile,
 } from "@/types";
 import { formatShortFio } from "@/admin/formatShortFio";
+import { groupChatMessagesByDay } from "@/utils/chatDateUtils";
 import { CreateGroupChatModal } from "@/pages/dashboards/admin/CreateGroupChatModal";
 import { EditGroupChatModal } from "@/pages/dashboards/admin/EditGroupChatModal";
 import {
@@ -1943,6 +1944,16 @@ export function AdminChatTab({
   }, [messagesForDisplay]);
 
   const lastMsgId = messagesForDisplay[messagesForDisplay.length - 1]?.id ?? null;
+
+  const messageTimeline = useMemo(
+    () => groupChatMessagesByDay(messagesForDisplay),
+    [messagesForDisplay]
+  );
+
+  const correspondenceTimeline = useMemo(
+    () => groupChatMessagesByDay(correspondenceViewMessages),
+    [correspondenceViewMessages]
+  );
 
   useEffect(() => {
     deletingMessageIdRef.current = deletingMessageId;
@@ -4117,7 +4128,19 @@ export function AdminChatTab({
                 <div className="chat-messages-empty">Нет сообщений в этой переписке.</div>
               ) : (
                 <ul className="chat-message-list">
-                  {correspondenceViewMessages.map((m) => {
+                  {correspondenceTimeline.map((entry) => {
+                    if (entry.type === "date") {
+                      return (
+                        <li
+                          key={`date-${entry.dayKey}`}
+                          className="chat-msg-day-separator"
+                          role="presentation"
+                        >
+                          <span className="chat-msg-day-separator-label">{entry.label}</span>
+                        </li>
+                      );
+                    }
+                    const m = entry.message;
                     const peerRightUid = correspondenceViewerU2Uid;
                     const mine = peerRightUid != null && m.senderId === peerRightUid;
                     const sender = getProfileForMessageSender(m.senderId);
@@ -4834,8 +4857,20 @@ export function AdminChatTab({
                   <div className="chat-messages-empty">Нет сообщений.</div>
                 ) : (
                   <ul className="chat-message-list">
-                    {messagesForDisplay.map((m, i) => {
-                      const isLast = i === messagesForDisplay.length - 1;
+                    {messageTimeline.map((entry) => {
+                      if (entry.type === "date") {
+                        return (
+                          <li
+                            key={`date-${entry.dayKey}`}
+                            className="chat-msg-day-separator"
+                            role="presentation"
+                          >
+                            <span className="chat-msg-day-separator-label">{entry.label}</span>
+                          </li>
+                        );
+                      }
+                      const m = entry.message;
+                      const isLast = m.id === lastMsgId;
                       const mine = m.senderId === currentUserId;
                       const reactionBurst =
                         reactionBursts.find((b) => b.messageId === m.id) ?? null;

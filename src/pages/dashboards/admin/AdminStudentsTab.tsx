@@ -486,6 +486,13 @@ function GroupMemberStudentCard({
                 <IconTalons className="instructor-ico--purple" />
                 <span>Талоны: {effectiveTalons}</span>
               </span>
+              <span
+                className="instructor-preview-status-row"
+                title="Количество завершённых вождений"
+              >
+                <IconDrives />
+                <span>Вождение: {student.drivesCount}</span>
+              </span>
             </span>
             <IconChevron open={open} />
           </button>
