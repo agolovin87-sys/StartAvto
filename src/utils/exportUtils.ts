@@ -150,15 +150,31 @@ export function generateScheduleHTML(
     .join("\n");
 
   return `<!DOCTYPE html>
-<html lang="ru">
+<html lang="ru" xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word">
 <head>
   <meta charset="UTF-8" />
+  <meta name="ProgId" content="Word.Document" />
+  <meta name="Generator" content="Microsoft Word" />
   <title>${escapeHtml(fileTitle)}</title>
+  <!--[if gte mso 9]><xml>
+   <w:WordDocument>
+    <w:View>Print</w:View>
+    <w:Zoom>100</w:Zoom>
+    <w:DoNotOptimizeForBrowser/>
+   </w:WordDocument>
+  </xml><![endif]-->
   <style>
-    /* Альбомная A4: ширина × высота (297 > 210) */
+    /* Общая альбомная A4 */
     @page { size: 297mm 210mm; margin: 10mm; }
+    /* Секция Word: при открытии .doc в Word страница альбомная */
+    @page Section1 {
+      size: 297mm 210mm;
+      margin: 10mm;
+      mso-page-orientation: landscape;
+    }
     @media print {
       @page { size: 297mm 210mm; margin: 10mm; }
+      @page Section1 { size: 297mm 210mm; margin: 10mm; mso-page-orientation: landscape; }
       body {
         -webkit-print-color-adjust: exact;
         print-color-adjust: exact;
@@ -183,11 +199,17 @@ export function generateScheduleHTML(
       mso-fareast-font-family: "Times New Roman";
       mso-hansi-font-family: "Times New Roman";
       mso-bidi-font-family: "Times New Roman";
-      margin: 0.4cm 0.6cm 0.5cm;
+      margin: 0;
+      padding: 0;
       color: #000;
       box-sizing: border-box;
       max-width: 100%;
       overflow-x: hidden;
+    }
+    div.WordSection1 {
+      page: Section1;
+      mso-page-orientation: landscape;
+      margin: 0.4cm 0.6cm 0.5cm;
     }
     /* Блок у правого края; все строки по правому краю */
     .header-approve {
@@ -272,13 +294,26 @@ export function generateScheduleHTML(
       word-break: break-word;
     }
     th { background-color: #f0f0f0; font-weight: bold; }
-    td:first-child, td:nth-child(2), th:first-child, th:nth-child(2) {
+    /* Столбцы 1–2: явная ширина (в PDF и Word не сжимать до полоски) */
+    .table-wrap th:first-child,
+    .table-wrap td:first-child {
+      width: 7em;
+      min-width: 7em;
+      max-width: 9em;
+      white-space: normal;
+      word-break: normal;
+    }
+    .table-wrap th:nth-child(2),
+    .table-wrap td:nth-child(2) {
+      width: 8.5em;
+      min-width: 8.5em;
+      max-width: 11em;
       white-space: nowrap;
-      width: 1%;
     }
   </style>
 </head>
 <body class="schedule-export-body" style="mso-page-orientation: landscape;">
+  <div class="WordSection1">
   <div class="header-approve">
     <div class="header-approve-inner">
       <div>Утверждаю</div>
@@ -293,6 +328,7 @@ export function generateScheduleHTML(
     <div><strong>Мастер ПОВ:</strong> ${escapeHtml(instructor.name || EM_DASH)}</div>
   </div>
   ${weekSections}
+  </div>
 </body>
 </html>`;
 }
