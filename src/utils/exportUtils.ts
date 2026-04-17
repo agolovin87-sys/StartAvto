@@ -155,10 +155,10 @@ export function generateScheduleHTML(
   <meta charset="UTF-8" />
   <title>${escapeHtml(fileTitle)}</title>
   <style>
-    /* Альбомная A4 — экран, печать и Word */
-    @page { size: A4 landscape; margin: 10mm; }
+    /* Альбомная A4: ширина × высота (297 > 210) */
+    @page { size: 297mm 210mm; margin: 10mm; }
     @media print {
-      @page { size: A4 landscape; margin: 10mm; }
+      @page { size: 297mm 210mm; margin: 10mm; }
       body {
         -webkit-print-color-adjust: exact;
         print-color-adjust: exact;
@@ -189,18 +189,18 @@ export function generateScheduleHTML(
       max-width: 100%;
       overflow-x: hidden;
     }
-    /* Блок в правом верхнем углу; строки выровнены по левому краю внутри блока */
+    /* Блок у правого края; все строки по правому краю */
     .header-approve {
       width: 100%;
-      display: flex;
-      justify-content: flex-end;
       margin: 0 0 10px 0;
       font-size: 12pt;
       line-height: 1.35;
+      text-align: right;
     }
     .header-approve-inner {
-      text-align: left;
-      max-width: min(380px, 42%);
+      display: inline-block;
+      text-align: right;
+      max-width: min(380px, 45%);
     }
     .header-approve-inner > div {
       margin: 0 0 4px 0;
@@ -283,7 +283,7 @@ export function generateScheduleHTML(
     <div class="header-approve-inner">
       <div>Утверждаю</div>
       <div>Директор ООО "Старт-Авто"</div>
-      <div class="header-approve-sign">_________________ А.М. Головин</div>
+      <div class="header-approve-sign">____________ А.М. Головин</div>
     </div>
   </div>
   <div class="title">График проведения занятий по вождению ТС</div>
@@ -314,20 +314,23 @@ function downloadBlob(blob: Blob, filename: string): void {
   window.setTimeout(() => URL.revokeObjectURL(url), 60_000);
 }
 
-/** A4 альбомная: в некоторых сборках jsPDF нужны разные варианты orientation. */
-function createLandscapeA4Pdf(): jsPDF {
-  const attempts: Array<() => jsPDF> = [
-    () => new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" }),
-    () => new jsPDF({ unit: "mm", format: "a4", orientation: "l" }),
-    () => new jsPDF({ unit: "mm", format: "a4", orientation: "landscape" }),
-  ];
-  for (const make of attempts) {
-    const pdf = make();
-    const w = pdf.internal.pageSize.getWidth();
-    const h = pdf.internal.pageSize.getHeight();
-    if (w > h) return pdf;
+/** A4 альбомная в мм (явная подстановка, если движок отдаёт книжные размеры). */
+const PDF_A4_LANDSCAPE_MM = { w: 297, h: 210 };
+
+function forcePdfPageLandscapeMm(pdf: jsPDF): void {
+  const w = pdf.internal.pageSize.getWidth();
+  const h = pdf.internal.pageSize.getHeight();
+  if (w < h) {
+    pdf.internal.pageSize.width = PDF_A4_LANDSCAPE_MM.w;
+    pdf.internal.pageSize.height = PDF_A4_LANDSCAPE_MM.h;
   }
-  throw new Error("jsPDF: не удалось создать альбомную страницу");
+}
+
+/** Создаёт документ и при необходимости принудительно задаёт A4 альбом (297×210 мм). */
+function createLandscapeA4Pdf(): jsPDF {
+  const pdf = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
+  forcePdfPageLandscapeMm(pdf);
+  return pdf;
 }
 
 /**
@@ -375,7 +378,10 @@ function tallCanvasToLandscapePdfBlob(
     pageCtx.drawImage(canvas, 0, page * pxPageHeight, w, h, 0, 0, w, h);
 
     const imgData = pageCanvas.toDataURL("image/jpeg", 0.92);
-    if (page > 0) pdf.addPage("a4", "landscape");
+    if (page > 0) {
+      pdf.addPage("a4", "landscape");
+      forcePdfPageLandscapeMm(pdf);
+    }
     pdf.addImage(imgData, "JPEG", m[1], m[0], innerW, pageHeightMm);
   }
 
