@@ -431,6 +431,38 @@ function tallCanvasToLandscapePdfBlob(
   return pdf.output("blob") as Blob;
 }
 
+/**
+ * Если контент даёт больше maxPages страниц, сжимает снимок по вертикали (без обрезки текста),
+ * чтобы вписаться в maxPages (экзаменационный лист на 2 листах).
+ */
+function squashCanvasToMaxPdfPages(
+  canvas: HTMLCanvasElement,
+  marginMm: [number, number, number, number],
+  maxPages: number
+): HTMLCanvasElement {
+  const m = marginMm;
+  const pdf = createLandscapeA4Pdf();
+  const pageFullW = pdf.internal.pageSize.getWidth();
+  const pageFullH = pdf.internal.pageSize.getHeight();
+  const innerW = pageFullW - m[1] - m[3];
+  const innerH = pageFullH - m[0] - m[2];
+  const innerRatio = innerH / innerW;
+  const pxPageHeight = Math.max(1, Math.floor(canvas.width * innerRatio));
+  const nPages = Math.max(1, Math.ceil(canvas.height / pxPageHeight));
+  if (nPages <= maxPages) return canvas;
+
+  const targetH = maxPages * pxPageHeight;
+  const out = document.createElement("canvas");
+  out.width = canvas.width;
+  out.height = targetH;
+  const ctx = out.getContext("2d");
+  if (!ctx) throw new Error("Canvas 2D недоступен");
+  ctx.fillStyle = "#ffffff";
+  ctx.fillRect(0, 0, out.width, out.height);
+  ctx.drawImage(canvas, 0, 0, canvas.width, canvas.height, 0, 0, canvas.width, targetH);
+  return out;
+}
+
 /** Опции компактного PDF из HTML (экзаменационный лист и т.п.). */
 export type ExportHtmlToPdfOptions = {
   fontSize?: string;
@@ -440,6 +472,10 @@ export type ExportHtmlToPdfOptions = {
   widthPx?: number;
   /** Поля страницы PDF в мм [верх, лево, низ, право]. */
   marginMm?: [number, number, number, number];
+  /** Масштаб html2canvas (по умолчанию 2). */
+  canvasScale?: number;
+  /** Максимум страниц A4 альбом: при переполнении снимок слегка сжимается по вертикали. */
+  maxPdfPages?: number;
 };
 
 /**
@@ -505,8 +541,9 @@ export async function exportToPDF(
   });
 
   try {
+    const canvasScale = options?.canvasScale ?? 2;
     let canvas = await html2canvas(wrapper, {
-      scale: 2,
+      scale: canvasScale,
       useCORS: true,
       logging: false,
       backgroundColor: "#ffffff",
@@ -516,7 +553,7 @@ export async function exportToPDF(
 
     if (canvas.width < 4 || canvas.height < 4) {
       canvas = await html2canvas(shell, {
-        scale: 2,
+        scale: canvasScale,
         useCORS: true,
         logging: false,
         backgroundColor: "#ffffff",
@@ -527,7 +564,12 @@ export async function exportToPDF(
       throw new Error("Пустой снимок");
     }
 
-    const pdfBlob = tallCanvasToLandscapePdfBlob(canvas, options?.marginMm ?? [8, 8, 8, 8]);
+    const marginMm = options?.marginMm ?? [8, 8, 8, 8];
+    let pdfCanvas = canvas;
+    if (options?.maxPdfPages != null && options.maxPdfPages >= 1) {
+      pdfCanvas = squashCanvasToMaxPdfPages(canvas, marginMm, options.maxPdfPages);
+    }
+    const pdfBlob = tallCanvasToLandscapePdfBlob(pdfCanvas, marginMm);
 
     if (!pdfBlob || pdfBlob.size < 64) {
       throw new Error("Пустой PDF");

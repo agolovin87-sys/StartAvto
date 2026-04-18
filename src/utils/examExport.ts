@@ -32,7 +32,7 @@ function downloadBlob(blob: Blob, filename: string): void {
   window.setTimeout(() => URL.revokeObjectURL(url), 60_000);
 }
 
-/** Полный HTML документа для печати / Word / PDF (компактная вёрстка 9 pt). */
+/** Полный HTML документа для печати / Word / PDF (2 стр. A4 альбом, 8 pt, читаемо). */
 export function generateExamWordHTML(sheet: InternalExamSheet): string {
   const resultText = sheet.isPassed ? "Сдан" : "Не сдан";
   const exerciseRows = INTERNAL_EXAM_EXERCISES.map(
@@ -67,23 +67,31 @@ export function generateExamWordHTML(sheet: InternalExamSheet): string {
   <meta charset="utf-8" />
   <title>Экзаменационный лист</title>
   <style>
-    body { font-family: "Times New Roman", Times, serif; font-size: 9pt; line-height: 1.12; color: #111; margin: 6px 8px; }
-    h1 { font-size: 10pt; text-align: center; margin: 0 0 4px; font-weight: 700; }
-    h2 { font-size: 9pt; margin: 5px 0 3px; font-weight: 700; }
-    .meta { margin-bottom: 5px; line-height: 1.2; font-size: 9pt; }
-    table { border-collapse: collapse; width: 100%; margin: 2px 0 4px; }
-    th, td { border: 1px solid #333; padding: 2px 4px; vertical-align: top; font-size: 9pt; }
-    th { background: #f0f0f0; font-weight: 600; }
-    .err-h3 { font-size: 9pt; margin: 3px 0 2px; font-weight: 700; }
-    .err-rule { border: none; border-top: 1px solid #666; margin: 4px 0 3px; }
-    .result { font-size: 9pt; font-weight: bold; margin: 5px 0; padding: 4px 6px; border-radius: 2px; line-height: 1.25; }
+    @page { size: A4 landscape; margin: 3mm; }
+    body {
+      font-family: "Times New Roman", Times, serif;
+      font-size: 8pt;
+      line-height: 1.08;
+      color: #111;
+      margin: 0;
+      padding: 3px 4px;
+    }
+    h1 { font-size: 8.5pt; text-align: center; margin: 0 0 2px; font-weight: 700; }
+    h2 { font-size: 8pt; margin: 3px 0 2px; font-weight: 700; }
+    .meta { margin-bottom: 3px; line-height: 1.15; font-size: 7.5pt; }
+    table { border-collapse: collapse; width: 100%; margin: 1px 0 2px; }
+    th, td { border: 1px solid #333; padding: 1px 3px; vertical-align: top; font-size: 8pt; line-height: 1.07; }
+    th { background: #f0f0f0; font-weight: 600; font-size: 7.5pt; }
+    .err-h3 { font-size: 8pt; margin: 2px 0 1px; font-weight: 700; }
+    .err-rule { border: none; border-top: 1px solid #666; margin: 2px 0 2px; }
+    .result { font-size: 8pt; font-weight: bold; margin: 3px 0; padding: 2px 4px; border-radius: 2px; line-height: 1.2; }
     .result.pass { background: #e8f5e9; color: #1b5e20; border: 1px solid #a5d6a7; }
     .result.fail { background: #ffebee; color: #b71c1c; border: 1px solid #ef9a9a; }
-    .sign { margin-top: 8px; display: flex; justify-content: space-between; gap: 12px; font-size: 9pt; }
-    .hint { font-size: 7.5pt; color: #444; margin-top: 4px; }
-    .comment-box { border: 1px solid #999; min-height: 28px; padding: 4px; white-space: pre-wrap; font-size: 9pt; }
+    .sign { margin-top: 4px; display: flex; justify-content: space-between; gap: 8px; font-size: 8pt; }
+    .hint { font-size: 6.5pt; color: #444; margin-top: 2px; }
+    .comment-box { border: 1px solid #999; min-height: 18px; padding: 2px 3px; white-space: pre-wrap; font-size: 8pt; line-height: 1.08; }
     @media print {
-      body { margin: 4mm 6mm; }
+      body { margin: 0; padding: 2mm 3mm; }
     }
   </style>
 </head>
@@ -123,15 +131,17 @@ export function exportToWord(sheet: InternalExamSheet, filename: string): void {
   downloadBlob(blob, `${filename}.doc`);
 }
 
-/** PDF через общий конвертер HTML → canvas → PDF (узкие поля, ширина под два листа). */
+/** PDF: альбом A4, не более 2 страниц (плотная вёрстка + при необходимости вертикальное сжатие снимка). */
 export async function exportToPDF(sheet: InternalExamSheet, filename: string): Promise<void> {
   const html = generateExamWordHTML(sheet);
   await exportHtmlToPdf(html, filename, {
-    fontSize: "9pt",
-    lineHeight: "1.12",
-    padding: "4px 6px",
-    widthPx: 1500,
-    marginMm: [4, 4, 4, 4],
+    fontSize: "8pt",
+    lineHeight: "1.06",
+    padding: "2px 4px",
+    widthPx: 1780,
+    marginMm: [2, 2, 2, 2],
+    maxPdfPages: 2,
+    canvasScale: 2,
   });
 }
 
