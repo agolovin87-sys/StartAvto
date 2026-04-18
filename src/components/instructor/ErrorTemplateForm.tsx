@@ -4,6 +4,12 @@ import type {
   ErrorTemplateCategory,
   ErrorTemplateSeverity,
 } from "@/types/errorTemplate";
+import {
+  LESSON_TEMPLATE_ALLOWED_POINTS,
+  clampLessonTemplatePoints,
+} from "@/types/errorTemplate";
+import type { InternalExamErrorPoints } from "@/types/internalExam";
+import { internalExamErrorSubsectionTitle } from "@/types/internalExam";
 
 export const CATEGORY_OPTIONS: { value: ErrorTemplateCategory; label: string }[] = [
   { value: "traffic", label: "ПДД" },
@@ -60,7 +66,7 @@ export function ErrorTemplateForm({
       setName(initial.name);
       setCategory(initial.category);
       setSeverity(initial.severity);
-      setPoints(initial.points);
+      setPoints(clampLessonTemplatePoints(initial.points));
       setDescription(initial.description ?? "");
     } else {
       setName("");
@@ -80,7 +86,7 @@ export function ErrorTemplateForm({
       setLocalErr("Укажите название ошибки.");
       return;
     }
-    const p = Math.max(0, Math.min(10, Math.floor(Number(points) || 0)));
+    const p = clampLessonTemplatePoints(Number(points) || 0);
     setBusy(true);
     setLocalErr(null);
     try {
@@ -161,16 +167,18 @@ export function ErrorTemplateForm({
             </select>
           </label>
           <label className="field">
-            <span className="field-label">Штрафные баллы (0–10)</span>
-            <input
+            <span className="field-label">Штрафные баллы (как в экзаменационном листе)</span>
+            <select
               className="input"
-              type="number"
-              min={0}
-              max={10}
-              step={1}
               value={points}
               onChange={(e) => setPoints(Number(e.target.value))}
-            />
+            >
+              {LESSON_TEMPLATE_ALLOWED_POINTS.map((p) => (
+                <option key={p} value={p}>
+                  {internalExamErrorSubsectionTitle(p as InternalExamErrorPoints)}
+                </option>
+              ))}
+            </select>
           </label>
           <label className="field">
             <span className="field-label">Описание (необязательно)</span>

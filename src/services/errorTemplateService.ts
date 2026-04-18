@@ -25,7 +25,7 @@ import type {
   ErrorTemplateSeverity,
   LessonDriveError,
 } from "@/types/errorTemplate";
-import { DEFAULT_TEMPLATES } from "@/types/errorTemplate";
+import { DEFAULT_TEMPLATES, clampLessonTemplatePoints } from "@/types/errorTemplate";
 import { getFirebase, isFirebaseConfigured } from "@/firebase/config";
 
 const USERS = "users";
@@ -52,8 +52,8 @@ function normalizeCustomTemplate(id: string, data: Record<string, unknown>): Err
     description: typeof data.description === "string" ? data.description : "",
     points:
       typeof data.points === "number" && Number.isFinite(data.points)
-        ? Math.max(0, Math.min(10, Math.floor(data.points)))
-        : 0,
+        ? clampLessonTemplatePoints(data.points)
+        : 3,
     isCustom: true,
     instructorId: typeof data.instructorId === "string" ? data.instructorId : undefined,
     usageCount: 0,
@@ -133,7 +133,7 @@ export async function createTemplate(
     category: data.category,
     severity: data.severity,
     description: (data.description ?? "").trim(),
-    points: Math.max(0, Math.min(10, Math.floor(data.points))),
+    points: clampLessonTemplatePoints(data.points),
     isCustom: true,
     instructorId: uid,
     createdAt: Date.now(),
@@ -156,7 +156,7 @@ export async function updateTemplate(
   if (data.severity !== undefined) patch.severity = data.severity;
   if (data.description !== undefined) patch.description = data.description.trim();
   if (data.points !== undefined) {
-    patch.points = Math.max(0, Math.min(10, Math.floor(data.points)));
+    patch.points = clampLessonTemplatePoints(data.points);
   }
   if (Object.keys(patch).length === 0) return;
   await updateDoc(ref, patch as DocumentData);

@@ -1,10 +1,18 @@
 import { useMemo, useState } from "react";
 import { CATEGORY_OPTIONS } from "@/components/instructor/ErrorTemplateForm";
 import type { ErrorTemplate, LessonDriveError } from "@/types/errorTemplate";
+import { LESSON_TEMPLATE_ALLOWED_POINTS } from "@/types/errorTemplate";
+import type { InternalExamErrorPoints } from "@/types/internalExam";
+import {
+  INTERNAL_EXAM_ERROR_POINT_ORDER,
+  internalExamErrorSubsectionTitle,
+} from "@/types/internalExam";
 
 function categoryLabel(c: ErrorTemplate["category"]): string {
   return CATEGORY_OPTIONS.find((x) => x.value === c)?.label ?? c;
 }
+
+const TIER_POINT_SET = new Set<number>([...INTERNAL_EXAM_ERROR_POINT_ORDER]);
 
 type ErrorTemplateSelectorProps = {
   /** Список шаблонов (системные + кастомные) с актуальными счётчиками */
@@ -19,7 +27,7 @@ type ErrorTemplateSelectorProps = {
 };
 
 /**
- * Панель быстрого выбора ошибок при оценке текущего урока вождения.
+ * Панель выбора ошибок при оценке текущего урока: пункты как в экзаменационном листе, по группам баллов.
  */
 export function ErrorTemplateSelector({
   templates,
@@ -31,29 +39,42 @@ export function ErrorTemplateSelector({
   const [q, setQ] = useState("");
   const [customOpen, setCustomOpen] = useState(false);
   const [customName, setCustomName] = useState("");
-  const [customPoints, setCustomPoints] = useState(2);
+  const [customPoints, setCustomPoints] =
+    useState<(typeof LESSON_TEMPLATE_ALLOWED_POINTS)[number]>(1);
 
-  const popular = useMemo(() => {
-    return [...templates]
-      .sort((a, b) => b.usageCount - a.usageCount || a.name.localeCompare(b.name))
-      .slice(0, 5);
+  const templatesByTier = useMemo(() => {
+    return INTERNAL_EXAM_ERROR_POINT_ORDER.map((pts) => {
+      const list = templates
+        .filter((t) => t.points === pts)
+        .sort((a, b) => a.name.localeCompare(b.name, "ru"));
+      return { pts, list };
+    }).filter((x) => x.list.length > 0);
+  }, [templates]);
+
+  const offTierTemplates = useMemo(() => {
+    return templates
+      .filter((t) => !TIER_POINT_SET.has(t.points))
+      .sort((a, b) => a.name.localeCompare(b.name, "ru"));
   }, [templates]);
 
   const suggestions = useMemo(() => {
     const s = q.trim().toLowerCase();
     if (!s) return [];
     return templates
-      .filter((t) => t.name.toLowerCase().includes(s))
-      .slice(0, 12);
+      .filter(
+        (t) =>
+          t.name.toLowerCase().includes(s) ||
+          (t.description && t.description.toLowerCase().includes(s))
+      )
+      .slice(0, 16);
   }, [templates, q]);
 
   function submitManual() {
     const n = customName.trim();
     if (!n) return;
-    const p = Math.max(0, Math.min(10, Math.floor(Number(customPoints) || 0)));
-    onAddManualError(n, p);
+    onAddManualError(n, customPoints);
     setCustomName("");
-    setCustomPoints(2);
+    setCustomPoints(1);
     setCustomOpen(false);
   }
 
@@ -84,22 +105,55 @@ export function ErrorTemplateSelector({
         <p className="instructor-error-template-selector__empty">Пока нет отмеченных ошибок.</p>
       )}
 
-      <div className="instructor-error-template-selector__popular">
-        <span className="instructor-error-template-selector__label">Популярные</span>
-        <div className="instructor-error-template-selector__popular-btns">
-          {popular.map((t) => (
-            <button
-              key={t.id}
-              type="button"
-              className="btn btn-ghost btn-sm instructor-error-template-selector__pop-btn"
-              title={t.description || t.name}
-              onClick={() => void onPickTemplate(t)}
-            >
-              {t.name}
-            </button>
-          ))}
-        </div>
+      <p className="instructor-error-template-selector__exam-hint field-hint">
+        Те же формулировки и штрафные баллы, что в экзаменационном листе. Сначала 7, затем 5, 4, 3, 2, 1
+        балл.
+      </p>
+
+      <div className="instructor-error-template-selector__tiers">
+        {templatesByTier.map(({ pts, list }) => (
+          <div key={pts} className="instructor-error-template-selector__tier">
+            <h4 className="instructor-error-template-selector__tier-title">
+              {internalExamErrorSubsectionTitle(pts)}
+            </h4>
+            <div className="instructor-error-template-selector__tier-btns">
+              {list.map((t) => (
+                <button
+                  key={t.id}
+                  type="button"
+                  className="btn btn-ghost btn-sm instructor-error-template-selector__tier-btn"
+                  title={t.description || t.name}
+                  onClick={() => void onPickTemplate(t)}
+                >
+                  {t.name}
+                </button>
+              ))}
+            </div>
+          </div>
+        ))}
       </div>
+
+      {offTierTemplates.length > 0 ? (
+        <div className="instructor-error-template-selector__tier instructor-error-template-selector__tier--offscale">
+          <h4 className="instructor-error-template-selector__tier-title">
+            Свои шаблоны (другие баллы)
+          </h4>
+          <div className="instructor-error-template-selector__tier-btns">
+            {offTierTemplates.map((t) => (
+              <button
+                key={t.id}
+                type="button"
+                className="btn btn-ghost btn-sm instructor-error-template-selector__tier-btn"
+                title={t.description || t.name}
+                onClick={() => void onPickTemplate(t)}
+              >
+                <span className="instructor-error-template-selector__tier-btn-name">{t.name}</span>
+                <span className="instructor-error-template-selector__tier-btn-meta">{t.points} б.</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      ) : null}
 
       <label className="field instructor-error-template-selector__search">
         <span className="field-label">Найти шаблон</span>
@@ -108,7 +162,7 @@ export function ErrorTemplateSelector({
           type="search"
           value={q}
           onChange={(e) => setQ(e.target.value)}
-          placeholder="Начните вводить название…"
+          placeholder="Начните вводить текст пункта…"
           autoComplete="off"
         />
       </label>
@@ -153,16 +207,23 @@ export function ErrorTemplateSelector({
               maxLength={200}
             />
             <div className="instructor-error-template-selector__manual-row">
-              <label>
-                Баллы
-                <input
+              <label className="instructor-error-template-selector__manual-points">
+                <span className="field-label">Баллы</span>
+                <select
                   className="input"
-                  type="number"
-                  min={0}
-                  max={10}
                   value={customPoints}
-                  onChange={(e) => setCustomPoints(Number(e.target.value))}
-                />
+                  onChange={(e) =>
+                    setCustomPoints(
+                      Number(e.target.value) as (typeof LESSON_TEMPLATE_ALLOWED_POINTS)[number]
+                    )
+                  }
+                >
+                  {LESSON_TEMPLATE_ALLOWED_POINTS.map((p) => (
+                    <option key={p} value={p}>
+                      {internalExamErrorSubsectionTitle(p as InternalExamErrorPoints)}
+                    </option>
+                  ))}
+                </select>
               </label>
               <button
                 type="button"

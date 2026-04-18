@@ -34,7 +34,7 @@ export const INTERNAL_EXAM_EXERCISES: { id: string; label: string }[] = [
   },
 ];
 
-export type InternalExamErrorPoints = 7 | 4 | 3 | 2 | 1;
+export type InternalExamErrorPoints = 7 | 5 | 4 | 3 | 2 | 1;
 
 /** Штрафные нарушения по подразделам (баллы фиксированы для каждого пункта). */
 export const INTERNAL_EXAM_ERRORS: {
@@ -293,9 +293,9 @@ export const INTERNAL_EXAM_ERRORS: {
   },
 ];
 
-/** Порядок подразделов в листе и в экспорте. */
+/** Порядок подразделов в листе, экспорте и выборе ошибок на уроке (как в экзаменационном листе). */
 export const INTERNAL_EXAM_ERROR_POINT_ORDER: readonly InternalExamErrorPoints[] = [
-  7, 4, 3, 2, 1,
+  7, 5, 4, 3, 2, 1,
 ];
 
 /** Заголовок группы нарушений по числу баллов (грамматика для русского UI). */
@@ -303,6 +303,8 @@ export function internalExamErrorSubsectionTitle(points: InternalExamErrorPoints
   switch (points) {
     case 7:
       return "7 баллов";
+    case 5:
+      return "5 баллов";
     case 4:
       return "4 балла";
     case 3:
