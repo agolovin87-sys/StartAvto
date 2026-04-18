@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import type { InternalExamSheet as SheetModel } from "@/types/internalExam";
 import {
   INTERNAL_EXAM_ERRORS,
@@ -14,6 +14,7 @@ import {
 import { saveExamSheetDraft } from "@/services/internalExamService";
 import type { CompleteExamInput } from "@/services/internalExamService";
 import { exportExamSheetPDF, exportExamSheetWord } from "@/services/examExportService";
+import { ExamSignatureModal } from "@/components/exam/ExamSignatureModal";
 
 const INTERNAL_EXAM_ERROR_SUBSECTIONS = INTERNAL_EXAM_ERROR_POINT_ORDER.flatMap((pts) => {
   const list = INTERNAL_EXAM_ERRORS.filter((x) => x.points === pts);
@@ -44,6 +45,8 @@ export function InternalExamSheet({
   const [busy, setBusy] = useState(false);
   const [draftBusy, setDraftBusy] = useState(false);
   const [localErr, setLocalErr] = useState<string | null>(null);
+  const [sigStep, setSigStep] = useState<null | "instructor" | "student">(null);
+  const instructorSigRef = useRef<string | null>(null);
 
   const totalPoints = useMemo(() => sumInternalExamPenaltyPoints(errors), [errors]);
   const passed = useMemo(() => isInternalExamPassed(totalPoints), [totalPoints]);
@@ -56,32 +59,33 @@ export function InternalExamSheet({
     setErrors((prev) => ({ ...prev, [id]: !prev[id] }));
   }, []);
 
-  const buildPayload = useCallback((): CompleteExamInput => {
-    return {
-      id: baseSheet.id,
-      examSessionId: baseSheet.examSessionId || sessionId,
-      studentId: baseSheet.studentId,
-      studentName: baseSheet.studentName,
-      instructorId: baseSheet.instructorId,
-      instructorName: baseSheet.instructorName,
-      trainingVehicleLabel: baseSheet.trainingVehicleLabel,
-      examDate: baseSheet.examDate,
-      examTime: baseSheet.examTime,
-      exercises,
-      errors,
-      totalPoints,
-      isPassed: passed,
-      examinerComment: comment.trim(),
-    };
-  }, [
-    baseSheet,
-    sessionId,
-    exercises,
-    errors,
-    totalPoints,
-    passed,
-    comment,
-  ]);
+  const buildPayload = useCallback(
+    (signatures?: { instructor: string; student: string }): CompleteExamInput => {
+      return {
+        id: baseSheet.id,
+        examSessionId: baseSheet.examSessionId || sessionId,
+        studentId: baseSheet.studentId,
+        studentName: baseSheet.studentName,
+        instructorId: baseSheet.instructorId,
+        instructorName: baseSheet.instructorName,
+        trainingVehicleLabel: baseSheet.trainingVehicleLabel,
+        examDate: baseSheet.examDate,
+        examTime: baseSheet.examTime,
+        exercises,
+        errors,
+        totalPoints,
+        isPassed: passed,
+        examinerComment: comment.trim(),
+        ...(signatures
+          ? {
+              instructorSignatureDataUrl: signatures.instructor,
+              studentSignatureDataUrl: signatures.student,
+            }
+          : {}),
+      };
+    },
+    [baseSheet, sessionId, exercises, errors, totalPoints, passed, comment]
+  );
 
   async function handleDraft() {
     setLocalErr(null);
@@ -103,11 +107,16 @@ export function InternalExamSheet({
     }
   }
 
-  async function handleFinish() {
+  function handleFinishClick() {
     setLocalErr(null);
+    instructorSigRef.current = null;
+    setSigStep("instructor");
+  }
+
+  async function completeAfterSignatures(instructorUrl: string, studentUrl: string) {
     setBusy(true);
     try {
-      const done = buildPayload();
+      const done = buildPayload({ instructor: instructorUrl, student: studentUrl });
       await onComplete(done);
       const fname = `Внутренний_экзамен_${baseSheet.studentName.replace(/\s+/g, "_")}_${baseSheet.examDate}`;
       await exportExamSheetPDF(
@@ -134,8 +143,38 @@ export function InternalExamSheet({
     );
   }
 
+  function cancelSignatureFlow() {
+    setSigStep(null);
+    instructorSigRef.current = null;
+  }
+
   return (
     <div className="internal-exam-sheet">
+      <ExamSignatureModal
+        open={sigStep === "instructor"}
+        title="Подпись экзаменатора"
+        onCancel={cancelSignatureFlow}
+        onConfirm={(url) => {
+          instructorSigRef.current = url;
+          setSigStep("student");
+        }}
+      />
+      <ExamSignatureModal
+        open={sigStep === "student"}
+        title="Подпись курсанта"
+        onCancel={cancelSignatureFlow}
+        onConfirm={(url) => {
+          const inst = instructorSigRef.current;
+          if (!inst) {
+            setLocalErr("Сначала подпишите экзаменатором");
+            setSigStep("instructor");
+            return;
+          }
+          setSigStep(null);
+          instructorSigRef.current = null;
+          void completeAfterSignatures(inst, url);
+        }}
+      />
       <div className="internal-exam-sheet__head">
         <h2 className="internal-exam-sheet__title">Экзаменационный лист</h2>
         <p className="internal-exam-sheet__meta">
@@ -222,27 +261,32 @@ export function InternalExamSheet({
       </label>
 
       <div className="internal-exam-sheet__actions">
-        <button type="button" className="btn btn-ghost btn-sm" onClick={onClose} disabled={busy}>
+        <button type="button" className="btn btn-ghost btn-sm" onClick={onClose} disabled={busy || sigStep != null}>
           Назад
         </button>
         <button
           type="button"
           className="btn btn-ghost btn-sm"
           onClick={() => void handleDraft()}
-          disabled={busy || draftBusy}
+          disabled={busy || draftBusy || sigStep != null}
         >
           {draftBusy ? "Сохранение…" : "Сохранить черновик"}
         </button>
-        <button type="button" className="btn btn-ghost btn-sm" onClick={handleExportWord} disabled={busy}>
+        <button type="button" className="btn btn-ghost btn-sm" onClick={handleExportWord} disabled={busy || sigStep != null}>
           Экспорт Word
         </button>
-        <button type="button" className="btn btn-primary btn-sm" onClick={() => void handleFinish()} disabled={busy}>
+        <button
+          type="button"
+          className="btn btn-primary btn-sm"
+          onClick={handleFinishClick}
+          disabled={busy || sigStep != null}
+        >
           {busy ? "Завершение…" : "Завершить экзамен"}
         </button>
       </div>
       <p className="internal-exam-sheet__footnote">
-        После «Завершить экзамен» формируется отчёт (PDF); данные сохраняются в системе — доступны вам, курсанту и
-        администратору.
+        После «Завершить экзамен» сначала подпись экзаменатора, затем курсанта; затем формируется PDF и данные
+        сохраняются в системе — доступны вам, курсанту и администратору.
       </p>
     </div>
   );

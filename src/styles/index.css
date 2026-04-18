@@ -11888,6 +11888,73 @@ html[data-theme="purple"] .instr-side-btn:hover {
   margin-top: 0.5rem;
 }
 
+/* Подпись к экзаменационному листу (поверх модалки листа) */
+.exam-signature-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1310;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  background: rgba(0, 0, 0, 0.55);
+  box-sizing: border-box;
+}
+
+.exam-signature-modal {
+  width: 100%;
+  max-width: 22rem;
+  padding: 1rem 1rem 0.85rem;
+  border-radius: 12px;
+  background: var(--theme-surface-elevated, #1e293b);
+  border: 1px solid var(--theme-line-subtle, rgba(255, 255, 255, 0.15));
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.45);
+}
+
+.exam-signature-modal__title {
+  margin: 0 0 0.35rem;
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.exam-signature-modal__hint {
+  margin: 0 0 0.6rem;
+  font-size: 0.8rem;
+  opacity: 0.85;
+  line-height: 1.35;
+}
+
+.exam-signature-modal__pad-wrap {
+  width: 100%;
+  height: 140px;
+  border-radius: 8px;
+  border: 1px solid var(--theme-line-subtle, rgba(255, 255, 255, 0.25));
+  background: #fff;
+  overflow: hidden;
+  touch-action: none;
+}
+
+.exam-signature-modal__pad {
+  display: block;
+  width: 100%;
+  height: 100%;
+  cursor: crosshair;
+  touch-action: none;
+}
+
+.exam-signature-modal__err {
+  margin: 0.4rem 0 0;
+  font-size: 0.82rem;
+}
+
+.exam-signature-modal__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  justify-content: flex-end;
+  margin-top: 0.75rem;
+}
+
 .exam-student-card {
   display: flex;
   flex-wrap: wrap;

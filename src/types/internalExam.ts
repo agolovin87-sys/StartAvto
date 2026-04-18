@@ -362,6 +362,9 @@ export interface InternalExamSheet {
   totalPoints: number;
   isPassed: boolean;
   examinerComment: string;
+  /** PNG data URL (после завершения экзамена), для вставки в Word/PDF. */
+  instructorSignatureDataUrl?: string;
+  studentSignatureDataUrl?: string;
   createdAt: number;
   isDraft?: boolean;
 }

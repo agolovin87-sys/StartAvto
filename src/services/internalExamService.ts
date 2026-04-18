@@ -172,6 +172,10 @@ export function normalizeInternalExamSheet(
     totalPoints,
     isPassed: data.isPassed === true,
     examinerComment: typeof data.examinerComment === "string" ? data.examinerComment : "",
+    instructorSignatureDataUrl:
+      typeof data.instructorSignatureDataUrl === "string" ? data.instructorSignatureDataUrl : undefined,
+    studentSignatureDataUrl:
+      typeof data.studentSignatureDataUrl === "string" ? data.studentSignatureDataUrl : undefined,
     createdAt: toMillis(data.createdAt),
     isDraft: data.isDraft === true,
   };
@@ -420,6 +424,12 @@ export async function completeStudentExam(
     examinerComment: sheet.examinerComment,
     ...(sheet.trainingVehicleLabel !== undefined
       ? { trainingVehicleLabel: sheet.trainingVehicleLabel }
+      : {}),
+    ...(sheet.instructorSignatureDataUrl !== undefined
+      ? { instructorSignatureDataUrl: sheet.instructorSignatureDataUrl }
+      : {}),
+    ...(sheet.studentSignatureDataUrl !== undefined
+      ? { studentSignatureDataUrl: sheet.studentSignatureDataUrl }
       : {}),
     isDraft: false,
   });

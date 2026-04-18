@@ -20,6 +20,24 @@ function escapeHtml(s: string): string {
     .replace(/"/g, "&quot;");
 }
 
+/** data:image/... для атрибута src (экранирование & "). */
+function escapeDataUrlForAttr(dataUrl: string): string {
+  return dataUrl.replace(/&/g, "&amp;").replace(/"/g, "&quot;");
+}
+
+function signatureBlockHtml(label: string, name: string, dataUrl: string | undefined): string {
+  const u = (dataUrl ?? "").trim();
+  const has = u.startsWith("data:image/");
+  const img = has
+    ? `<img class="sign-img" src="${escapeDataUrlForAttr(u)}" alt="" />`
+    : `<span class="sign-line" aria-hidden="true"></span>`;
+  return `<div class="sign-col">
+    <div class="sign-col__label">${escapeHtml(label)}</div>
+    <div class="sign-col__mark">${img}</div>
+    <div> / ${escapeHtml(name)}</div>
+  </div>`;
+}
+
 function downloadBlob(blob: Blob, filename: string): void {
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
@@ -87,7 +105,12 @@ export function generateExamWordHTML(sheet: InternalExamSheet): string {
     .result { font-size: 8pt; font-weight: bold; margin: 3px 0; padding: 2px 4px; border-radius: 2px; line-height: 1.2; }
     .result.pass { background: #e8f5e9; color: #1b5e20; border: 1px solid #a5d6a7; }
     .result.fail { background: #ffebee; color: #b71c1c; border: 1px solid #ef9a9a; }
-    .sign { margin-top: 4px; display: flex; justify-content: space-between; gap: 8px; font-size: 8pt; }
+    .sign { margin-top: 4px; display: flex; justify-content: space-between; gap: 10px; font-size: 8pt; align-items: flex-end; flex-wrap: wrap; }
+    .sign-col { flex: 1; min-width: 120px; max-width: 48%; }
+    .sign-col__label { font-weight: 600; margin-bottom: 1px; }
+    .sign-col__mark { min-height: 26px; display: flex; align-items: flex-end; flex-wrap: wrap; gap: 4px; }
+    .sign-img { max-height: 28px; max-width: 150px; width: auto; height: auto; vertical-align: bottom; object-fit: contain; display: inline-block; }
+    .sign-line { display: inline-block; min-width: 7em; border-bottom: 1px solid #333; height: 1em; vertical-align: bottom; }
     .hint { font-size: 6.5pt; color: #444; margin-top: 2px; }
     .comment-box { border: 1px solid #999; min-height: 18px; padding: 2px 3px; white-space: pre-wrap; font-size: 8pt; line-height: 1.08; }
     @media print {
@@ -117,8 +140,8 @@ export function generateExamWordHTML(sheet: InternalExamSheet): string {
   <div><strong>Комментарий экзаменатора:</strong></div>
   <div class="comment-box">${escapeHtml(sheet.examinerComment || "—")}</div>
   <div class="sign">
-    <div>Экзаменатор: __________________ / ${escapeHtml(sheet.instructorName)}</div>
-    <div>Курсант: __________________ / ${escapeHtml(sheet.studentName)}</div>
+    ${signatureBlockHtml("Экзаменатор", sheet.instructorName, sheet.instructorSignatureDataUrl)}
+    ${signatureBlockHtml("Курсант", sheet.studentName, sheet.studentSignatureDataUrl)}
   </div>
   <p class="hint">Документ сформирован автоматически в системе StartAvto.</p>
 </body>
