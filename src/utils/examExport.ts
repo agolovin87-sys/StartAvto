@@ -50,7 +50,7 @@ function downloadBlob(blob: Blob, filename: string): void {
   window.setTimeout(() => URL.revokeObjectURL(url), 60_000);
 }
 
-/** Полный HTML документа для печати / Word / PDF (2 стр. A4 альбом, 8 pt, читаемо). */
+/** Полный HTML документа для печати / Word / PDF (A4, ~9 pt основной текст). */
 export function generateExamWordHTML(sheet: InternalExamSheet): string {
   const resultText = sheet.isPassed ? "Сдан" : "Не сдан";
   const exerciseRows = INTERNAL_EXAM_EXERCISES.map(
@@ -88,31 +88,31 @@ export function generateExamWordHTML(sheet: InternalExamSheet): string {
     @page { size: A4 landscape; margin: 3mm; }
     body {
       font-family: "Times New Roman", Times, serif;
-      font-size: 8pt;
-      line-height: 1.08;
+      font-size: 9pt;
+      line-height: 1.1;
       color: #111;
       margin: 0;
       padding: 3px 4px;
     }
-    h1 { font-size: 8.5pt; text-align: center; margin: 0 0 2px; font-weight: 700; }
-    h2 { font-size: 8pt; margin: 3px 0 2px; font-weight: 700; }
-    .meta { margin-bottom: 3px; line-height: 1.15; font-size: 7.5pt; }
+    h1 { font-size: 9.5pt; text-align: center; margin: 0 0 2px; font-weight: 700; }
+    h2 { font-size: 9pt; margin: 3px 0 2px; font-weight: 700; }
+    .meta { margin-bottom: 3px; line-height: 1.18; font-size: 8.5pt; }
     table { border-collapse: collapse; width: 100%; margin: 1px 0 2px; }
-    th, td { border: 1px solid #333; padding: 1px 3px; vertical-align: top; font-size: 8pt; line-height: 1.07; }
-    th { background: #f0f0f0; font-weight: 600; font-size: 7.5pt; }
-    .err-h3 { font-size: 8pt; margin: 2px 0 1px; font-weight: 700; }
+    th, td { border: 1px solid #333; padding: 1px 3px; vertical-align: top; font-size: 9pt; line-height: 1.1; }
+    th { background: #f0f0f0; font-weight: 600; font-size: 8.5pt; }
+    .err-h3 { font-size: 9pt; margin: 2px 0 1px; font-weight: 700; }
     .err-rule { border: none; border-top: 1px solid #666; margin: 2px 0 2px; }
-    .result { font-size: 8pt; font-weight: bold; margin: 3px 0; padding: 2px 4px; border-radius: 2px; line-height: 1.2; }
+    .result { font-size: 9pt; font-weight: bold; margin: 3px 0; padding: 2px 4px; border-radius: 2px; line-height: 1.22; }
     .result.pass { background: #e8f5e9; color: #1b5e20; border: 1px solid #a5d6a7; }
     .result.fail { background: #ffebee; color: #b71c1c; border: 1px solid #ef9a9a; }
-    .sign { margin-top: 4px; display: flex; justify-content: space-between; gap: 10px; font-size: 8pt; align-items: flex-end; flex-wrap: wrap; }
+    .sign { margin-top: 4px; display: flex; justify-content: space-between; gap: 10px; font-size: 9pt; align-items: flex-end; flex-wrap: wrap; }
     .sign-col { flex: 1; min-width: 120px; max-width: 48%; }
     .sign-col__label { font-weight: 600; margin-bottom: 1px; }
     .sign-col__mark { min-height: 26px; display: flex; align-items: flex-end; flex-wrap: wrap; gap: 4px; }
     .sign-img { max-height: 28px; max-width: 150px; width: auto; height: auto; vertical-align: bottom; object-fit: contain; display: inline-block; }
     .sign-line { display: inline-block; min-width: 7em; border-bottom: 1px solid #333; height: 1em; vertical-align: bottom; }
-    .hint { font-size: 6.5pt; color: #444; margin-top: 2px; }
-    .comment-box { border: 1px solid #999; min-height: 18px; padding: 2px 3px; white-space: pre-wrap; font-size: 8pt; line-height: 1.08; }
+    .hint { font-size: 7.5pt; color: #444; margin-top: 2px; }
+    .comment-box { border: 1px solid #999; min-height: 18px; padding: 2px 3px; white-space: pre-wrap; font-size: 9pt; line-height: 1.1; }
     @media print {
       body { margin: 0; padding: 2mm 3mm; }
     }
@@ -162,8 +162,8 @@ export function exportToWord(sheet: InternalExamSheet, filename: string): void {
 export async function exportToPDF(sheet: InternalExamSheet, filename: string): Promise<void> {
   const html = generateExamWordHTML(sheet);
   await exportHtmlToPdf(html, filename, {
-    fontSize: "8pt",
-    lineHeight: "1.08",
+    fontSize: "9pt",
+    lineHeight: "1.1",
     padding: "4px 8px",
     widthPx: 760,
     marginMm: [6, 6, 6, 6],
