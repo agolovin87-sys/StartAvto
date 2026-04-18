@@ -128,6 +128,9 @@ export function normalizeInternalExamSession(
       data.completedAt == null
         ? undefined
         : toMillis(data.completedAt),
+    instructorArchivedAt:
+      data.instructorArchivedAt == null ? undefined : toMillis(data.instructorArchivedAt),
+    adminArchivedAt: data.adminArchivedAt == null ? undefined : toMillis(data.adminArchivedAt),
   };
 }
 
@@ -459,11 +462,9 @@ export async function saveExamSheetDraft(
 }
 
 /**
- * Удалить сессию экзамена и все связанные листы (только автор-создатель инструктор).
- * Листы удаляются по `examSheetId` в документе сессии — без запроса `where(examSessionId)`,
- * иначе Firestore отклоняет list-запрос: правила не гарантируют, что все совпадения принадлежат инструктору.
+ * Перенести сессию в архив инструктора (документ и листы не удаляются — курсант и админ видят сессию).
  */
-export async function deleteInstructorExamSession(sessionId: string): Promise<void> {
+export async function archiveInstructorExamSession(sessionId: string): Promise<void> {
   const { db, auth } = getFirebase();
   const uid = auth.currentUser?.uid;
   if (!uid) throw new Error("Не выполнен вход");
@@ -474,15 +475,19 @@ export async function deleteInstructorExamSession(sessionId: string): Promise<vo
   const session = normalizeInternalExamSession(sessionSnap.id, sessionSnap.data() as Record<string, unknown>);
   if (session.instructorId !== uid) throw new Error("Нет доступа к этой сессии");
 
-  const sheetIds = new Set<string>();
-  for (const st of session.students) {
-    if (st.examSheetId) sheetIds.add(st.examSheetId);
-  }
+  await updateDoc(sref, { instructorArchivedAt: serverTimestamp() });
+}
 
+/** Пометить все сессии группы как архивные для админки (данные и листы не удаляются). */
+export async function archiveAdminExamSessionsForGroup(groupId: string): Promise<void> {
+  if (!isFirebaseConfigured || !groupId.trim()) return;
+  const sessions = await fetchExamSessionsByGroup(groupId.trim());
+  const toArchive = sessions.filter((s) => s.adminArchivedAt == null);
+  if (toArchive.length === 0) return;
+  const { db } = getFirebase();
   const batch = writeBatch(db);
-  for (const sheetId of sheetIds) {
-    batch.delete(doc(db, SHEETS, sheetId));
+  for (const s of toArchive) {
+    batch.update(doc(db, SESSIONS, s.id), { adminArchivedAt: serverTimestamp() });
   }
-  batch.delete(sref);
   await batch.commit();
 }

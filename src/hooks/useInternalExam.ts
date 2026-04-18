@@ -3,7 +3,7 @@ import type { InternalExamSession, InternalExamSheet, InternalExamStudent } from
 import {
   completeStudentExam as completeStudentExamApi,
   createInternalExamSession,
-  deleteInstructorExamSession as deleteInstructorExamSessionApi,
+  archiveInstructorExamSession as archiveInstructorExamSessionApi,
   getInternalExamSession,
   type CreateSessionInput,
   type CompleteExamInput,
@@ -68,8 +68,8 @@ export function useInternalExam(instructorId: string | undefined) {
     []
   );
 
-  const deleteExamSession = useCallback(async (sessionId: string) => {
-    await deleteInstructorExamSessionApi(sessionId);
+  const archiveExamSession = useCallback(async (sessionId: string) => {
+    await archiveInstructorExamSessionApi(sessionId);
   }, []);
 
   return {
@@ -81,6 +81,6 @@ export function useInternalExam(instructorId: string | undefined) {
     completeStudentExam: completeStudentExamFn,
     getExamStudentsBySession,
     saveExamDraft,
-    deleteExamSession,
+    archiveExamSession,
   };
 }

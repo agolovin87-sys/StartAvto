@@ -3,6 +3,7 @@ import type { InternalExamSheet } from "@/types/internalExam";
 import type { TrainingGroup } from "@/types";
 import { subscribeTrainingGroups } from "@/firebase/admin";
 import {
+  archiveAdminExamSessionsForGroup,
   fetchExamSessionsByGroup,
   fetchExamSheetsForSessionIds,
   getInternalExamSheet,
@@ -85,6 +86,10 @@ export function useAdminExam() {
     []
   );
 
+  const archiveAllSessionsForGroup = useCallback(async (groupId: string) => {
+    await archiveAdminExamSessionsForGroup(groupId);
+  }, []);
+
   return {
     groups,
     groupsLoading,
@@ -94,5 +99,6 @@ export function useAdminExam() {
     exportExamSheetPDF: exportExamSheetPDFFn,
     batchExportToZip: batchExportToZipFn,
     exportSummaryVedomost,
+    archiveAllSessionsForGroup,
   };
 }

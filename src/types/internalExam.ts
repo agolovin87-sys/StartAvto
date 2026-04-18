@@ -344,6 +344,10 @@ export interface InternalExamSession {
   studentIds: string[];
   createdAt: number;
   completedAt?: number;
+  /** Скрыто из основного списка у инструктора; курсант и админ видят сессию как обычно. */
+  instructorArchivedAt?: number;
+  /** Скрыто из основной таблицы у админа (раздел «Архив» внизу). */
+  adminArchivedAt?: number;
 }
 
 export interface InternalExamSheet {

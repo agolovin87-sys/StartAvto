@@ -11768,6 +11768,19 @@ html[data-theme="purple"] .instr-side-btn:hover {
   gap: 0.35rem;
 }
 
+.admin-internal-exam-archive-title {
+  margin: 1.25rem 0 0.35rem;
+  font-size: 0.95rem;
+  font-weight: 700;
+}
+
+.admin-internal-exam-archive-desc {
+  margin: 0 0 0.5rem;
+  font-size: 0.82rem;
+  color: var(--theme-muted);
+  line-height: 1.4;
+}
+
 .instructor-internal-exam {
   margin-bottom: 1.25rem;
   padding: 0.75rem 0;
@@ -11877,7 +11890,7 @@ html[data-theme="light"] .instructor-internal-exam__new-session-btn:hover {
   overflow-wrap: anywhere;
 }
 
-.instructor-internal-exam__session-delete {
+.instructor-internal-exam__session-archive {
   flex-shrink: 0;
   align-self: center;
   width: 2.35rem;
@@ -11887,18 +11900,70 @@ html[data-theme="light"] .instructor-internal-exam__new-session-btn:hover {
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  color: var(--theme-muted);
+  border-color: var(--theme-line-input);
 }
 
-.instructor-internal-exam__session-delete-ico {
+.instructor-internal-exam__session-archive:hover:not(:disabled) {
+  color: var(--theme-text);
+  border-color: var(--theme-line-focus);
+}
+
+.instructor-internal-exam__session-archive-ico {
   width: 1.125rem;
   height: 1.125rem;
   display: block;
 }
 
-.instructor-internal-exam__session-delete-busy {
+.instructor-internal-exam__session-archive-busy {
   font-size: 1.1rem;
   line-height: 1;
   letter-spacing: 0.05em;
+}
+
+.instructor-internal-exam__subh--archive {
+  margin-top: 1.25rem;
+  opacity: 0.92;
+}
+
+.instructor-internal-exam__archive-block {
+  margin-top: 0.5rem;
+  padding-top: 0.35rem;
+  border-top: 1px solid var(--theme-line-subtle);
+}
+
+.instructor-internal-exam__archive-hint {
+  margin: 0 0 0.5rem;
+  font-size: 0.78rem;
+  color: var(--theme-muted);
+  line-height: 1.35;
+}
+
+.instructor-internal-exam__archive-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  max-height: min(28vh, 12rem);
+  overflow-y: auto;
+  border: 1px solid var(--theme-line-subtle);
+  border-radius: 8px;
+  padding: 0.4rem 0.5rem;
+  background: var(--theme-bg-soft, rgba(0, 0, 0, 0.12));
+}
+
+.instructor-internal-exam__archive-row {
+  padding: 0.35rem 0.4rem;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  color: var(--theme-muted);
+}
+
+.instructor-internal-exam__archive-text {
+  display: block;
+  overflow-wrap: anywhere;
 }
 
 .instructor-internal-exam__subh {

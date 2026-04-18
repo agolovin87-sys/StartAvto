@@ -31,6 +31,28 @@ function IconChevron({ open }: { open: boolean }) {
 /**
  * Раздел «Внутренний экзамен» на вкладке «График» администратора (по умолчанию свёрнут).
  */
+function buildExamRows(
+  sessionsSlice: InternalExamSession[],
+  sheets: InternalExamSheet[]
+): {
+  session: InternalExamSession;
+  student: InternalExamSession["students"][0];
+  sheet?: InternalExamSheet;
+}[] {
+  const out: {
+    session: InternalExamSession;
+    student: InternalExamSession["students"][0];
+    sheet?: InternalExamSheet;
+  }[] = [];
+  for (const session of sessionsSlice) {
+    for (const st of session.students) {
+      const sheet = sheets.find((sh) => sh.examSessionId === session.id && sh.studentId === st.studentId);
+      out.push({ session, student: st, sheet });
+    }
+  }
+  return out;
+}
+
 export function AdminInternalExamSection() {
   const {
     groups,
@@ -40,6 +62,7 @@ export function AdminInternalExamSection() {
     exportExamSheetWord,
     batchExportToZip,
     exportSummaryVedomost,
+    archiveAllSessionsForGroup,
   } = useAdminExam();
 
   const [open, setOpen] = useState(false);
@@ -48,6 +71,7 @@ export function AdminInternalExamSection() {
   const [sheets, setSheets] = useState<InternalExamSheet[]>([]);
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+  const [archiveAllBusy, setArchiveAllBusy] = useState(false);
 
   const groupName = useMemo(
     () => groups.find((g) => g.id === groupId)?.name ?? "",
@@ -78,22 +102,21 @@ export function AdminInternalExamSection() {
     if (open && groupId) void reload();
   }, [open, groupId, reload]);
 
-  const rowsFlat = useMemo(() => {
-    const out: {
-      session: InternalExamSession;
-      student: InternalExamSession["students"][0];
-      sheet?: InternalExamSheet;
-    }[] = [];
-    for (const session of sessions) {
-      for (const st of session.students) {
-        const sheet = sheets.find(
-          (sh) => sh.examSessionId === session.id && sh.studentId === st.studentId
-        );
-        out.push({ session, student: st, sheet });
-      }
-    }
-    return out;
-  }, [sessions, sheets]);
+  const activeSessions = useMemo(
+    () => sessions.filter((s) => s.adminArchivedAt == null),
+    [sessions]
+  );
+  const archivedSessions = useMemo(
+    () => sessions.filter((s) => s.adminArchivedAt != null),
+    [sessions]
+  );
+
+  const rowsFlat = useMemo(() => buildExamRows(activeSessions, sheets), [activeSessions, sheets]);
+  const rowsArchivedFlat = useMemo(
+    () => buildExamRows(archivedSessions, sheets),
+    [archivedSessions, sheets]
+  );
+  const rowsAllFlat = useMemo(() => buildExamRows(sessions, sheets), [sessions, sheets]);
 
   function exportOne(sheetId: string, base: string) {
     void (async () => {
@@ -114,7 +137,7 @@ export function AdminInternalExamSection() {
   }
 
   function summaryExcel() {
-    const rows = rowsFlat
+    const rows = rowsAllFlat
       .filter((r) => r.student.status === "passed" || r.student.status === "failed")
       .map((r) => ({
         groupName: r.session.groupName,
@@ -130,6 +153,20 @@ export function AdminInternalExamSection() {
               : "—",
       }));
     exportSummaryVedomost(rows, `Ведомость_${groupName || "группа"}`);
+  }
+
+  async function archiveAllToAdminArchive() {
+    if (!groupId.trim()) return;
+    setArchiveAllBusy(true);
+    setErr(null);
+    try {
+      await archiveAllSessionsForGroup(groupId.trim());
+      await reload();
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : "Не удалось перенести в архив");
+    } finally {
+      setArchiveAllBusy(false);
+    }
   }
 
   const panelId = "admin-internal-exam-panel";
@@ -191,6 +228,14 @@ export function AdminInternalExamSection() {
                   <button type="button" className="btn btn-ghost btn-sm" onClick={summaryExcel}>
                     Экспорт сводной ведомости (Excel)
                   </button>
+                  <button
+                    type="button"
+                    className="btn btn-ghost btn-sm"
+                    disabled={archiveAllBusy || activeSessions.length === 0}
+                    onClick={() => void archiveAllToAdminArchive()}
+                  >
+                    {archiveAllBusy ? "Архивирование…" : "В архив"}
+                  </button>
                 </div>
                 <div className="admin-schedule-table-wrap admin-internal-exam-table-wrap">
                   <table className="admin-schedule-table">
@@ -207,7 +252,9 @@ export function AdminInternalExamSection() {
                       {rowsFlat.length === 0 ? (
                         <tr>
                           <td colSpan={5} className="admin-schedule-table-empty">
-                            Нет данных по выбранной группе.
+                            {sessions.length === 0
+                              ? "Нет данных по выбранной группе."
+                              : "Нет сессий в основном списке (все в архиве ниже)."}
                           </td>
                         </tr>
                       ) : (
@@ -260,6 +307,74 @@ export function AdminInternalExamSection() {
                     </tbody>
                   </table>
                 </div>
+                {rowsArchivedFlat.length > 0 ? (
+                  <>
+                    <h3 className="admin-internal-exam-archive-title">Архив</h3>
+                    <p className="admin-internal-exam-archive-desc">
+                      Сессии и листы сохраняются; здесь только отфильтрованный список для администратора.
+                    </p>
+                    <div className="admin-schedule-table-wrap admin-internal-exam-table-wrap">
+                      <table className="admin-schedule-table">
+                        <thead>
+                          <tr>
+                            <th>ФИО</th>
+                            <th>Статус</th>
+                            <th>Дата / время</th>
+                            <th>Баллы</th>
+                            <th>Действия</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {rowsArchivedFlat.map(({ session, student, sheet }) => {
+                            const st = statusRu(student);
+                            const done = student.status === "passed" || student.status === "failed";
+                            const sid = student.examSheetId;
+                            const base = `Экзамен_${student.studentName}_${session.examDate}`.replace(
+                              /\s+/g,
+                              "_"
+                            );
+                            return (
+                              <tr key={`arch-${session.id}-${student.studentId}`}>
+                                <td>{formatShortFio(student.studentName)}</td>
+                                <td>
+                                  <span className={`admin-internal-exam-status ${st.cls}`}>
+                                    {st.label}
+                                  </span>
+                                </td>
+                                <td>
+                                  {session.examDate} {session.examTime}
+                                </td>
+                                <td>
+                                  {sheet?.totalPoints ?? student.totalPoints ?? "—"}
+                                </td>
+                                <td>
+                                  <div className="admin-internal-exam-row-actions">
+                                    <button
+                                      type="button"
+                                      className="btn btn-ghost btn-sm"
+                                      disabled={!done || !sid}
+                                      onClick={() => sid && exportWordOne(sid, base)}
+                                    >
+                                      Word
+                                    </button>
+                                    <button
+                                      type="button"
+                                      className="btn btn-primary btn-sm"
+                                      disabled={!done || !sid}
+                                      onClick={() => sid && exportOne(sid, base)}
+                                    >
+                                      PDF
+                                    </button>
+                                  </div>
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  </>
+                ) : null}
               </>
             ) : (
               <p className="admin-settings-section-desc">Выберите группу для просмотра экзаменов.</p>
