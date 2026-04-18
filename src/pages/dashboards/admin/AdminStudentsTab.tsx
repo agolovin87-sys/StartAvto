@@ -1403,13 +1403,6 @@ export function AdminStudentsTab() {
         )}
       </section>
 
-      <section className="admin-cars-section" aria-labelledby="admin-cars-heading">
-        <h2 id="admin-cars-heading" className="admin-subsection-title">
-          Управление автомобилями
-        </h2>
-        <AdminCarsPanel />
-      </section>
-
       <section
         className="admin-students-ungrouped"
         aria-labelledby="ungrouped-heading"
@@ -1459,6 +1452,13 @@ export function AdminStudentsTab() {
             ))}
           </ul>
         )}
+      </section>
+
+      <section className="admin-cars-section" aria-labelledby="admin-cars-heading">
+        <h2 id="admin-cars-heading" className="admin-subsection-title">
+          Управление автомобилями
+        </h2>
+        <AdminCarsPanel />
       </section>
 
       <GroupFormModal
