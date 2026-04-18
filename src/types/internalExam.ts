@@ -353,6 +353,8 @@ export interface InternalExamSheet {
   studentName: string;
   instructorId: string;
   instructorName: string;
+  /** Марка, модель, госномер (из профиля инструктора при начале экзамена). */
+  trainingVehicleLabel?: string;
   examDate: string;
   examTime: string;
   exercises: Record<string, boolean>;

@@ -27,6 +27,7 @@ import {
   isInternalExamPassed,
   sumInternalExamPenaltyPoints,
 } from "@/types/internalExam";
+import { getUserProfile } from "@/firebase/users";
 import { getFirebase, isFirebaseConfigured } from "@/firebase/config";
 
 const SESSIONS = "internalExamSessions";
@@ -162,6 +163,8 @@ export function normalizeInternalExamSheet(
     studentName: typeof data.studentName === "string" ? data.studentName : "",
     instructorId: typeof data.instructorId === "string" ? data.instructorId : "",
     instructorName: typeof data.instructorName === "string" ? data.instructorName : "",
+    trainingVehicleLabel:
+      typeof data.trainingVehicleLabel === "string" ? data.trainingVehicleLabel : undefined,
     examDate: typeof data.examDate === "string" ? data.examDate : "",
     examTime: typeof data.examTime === "string" ? data.examTime : "",
     exercises: { ...exerciseKeys, ...ex },
@@ -330,6 +333,14 @@ export async function startStudentExam(sessionId: string, studentId: string): Pr
   const startedAt = Date.now();
   const { examDate: startDate, examTime: startTime } = formatExamStartLocal(startedAt);
 
+  let trainingVehicleLabel = "";
+  try {
+    const profile = await getUserProfile(session.instructorId);
+    trainingVehicleLabel = (profile?.vehicleLabel ?? "").trim();
+  } catch {
+    /* профиль недоступен — поле останется пустым */
+  }
+
   const sheetId = doc(collection(db, SHEETS)).id;
   const sheetData = {
     examSessionId: sessionId,
@@ -337,6 +348,7 @@ export async function startStudentExam(sessionId: string, studentId: string): Pr
     studentName: st.studentName,
     instructorId: session.instructorId,
     instructorName: session.instructorName,
+    trainingVehicleLabel,
     examDate: startDate,
     examTime: startTime,
     exercises: emptyExerciseState(),
@@ -406,6 +418,9 @@ export async function completeStudentExam(
     totalPoints,
     isPassed: passed,
     examinerComment: sheet.examinerComment,
+    ...(sheet.trainingVehicleLabel !== undefined
+      ? { trainingVehicleLabel: sheet.trainingVehicleLabel }
+      : {}),
     isDraft: false,
   });
 

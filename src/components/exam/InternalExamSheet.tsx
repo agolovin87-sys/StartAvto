@@ -64,6 +64,7 @@ export function InternalExamSheet({
       studentName: baseSheet.studentName,
       instructorId: baseSheet.instructorId,
       instructorName: baseSheet.instructorName,
+      trainingVehicleLabel: baseSheet.trainingVehicleLabel,
       examDate: baseSheet.examDate,
       examTime: baseSheet.examTime,
       exercises,

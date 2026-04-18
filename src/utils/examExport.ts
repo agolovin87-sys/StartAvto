@@ -100,6 +100,7 @@ export function generateExamWordHTML(sheet: InternalExamSheet): string {
   <div class="meta">
     <div><strong>Курсант:</strong> ${escapeHtml(sheet.studentName)}</div>
     <div><strong>Экзаменатор:</strong> ${escapeHtml(sheet.instructorName)}</div>
+    <div><strong>Учебное ТС:</strong> ${escapeHtml((sheet.trainingVehicleLabel ?? "").trim() || "—")}</div>
     <div><strong>Дата:</strong> ${escapeHtml(sheet.examDate)} &nbsp; <strong>Время:</strong> ${escapeHtml(sheet.examTime)}</div>
   </div>
   <h2>Упражнения</h2>
