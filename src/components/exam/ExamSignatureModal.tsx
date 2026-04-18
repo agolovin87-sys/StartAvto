@@ -75,8 +75,8 @@ export function ExamSignatureModal({ open, title, onCancel, onConfirm }: ExamSig
     ctx.scale(dpr, dpr);
     ctx.fillStyle = "#ffffff";
     ctx.fillRect(0, 0, w, h);
-    ctx.strokeStyle = "#111111";
-    ctx.lineWidth = 2;
+    ctx.strokeStyle = "#2563eb";
+    ctx.lineWidth = 2.25;
     ctx.lineCap = "round";
     ctx.lineJoin = "round";
   }, []);

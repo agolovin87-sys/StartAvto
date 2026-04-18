@@ -12023,8 +12023,8 @@ html[data-theme="purple"] .instr-side-btn:hover {
 
 .exam-signature-modal {
   width: 100%;
-  max-width: 22rem;
-  padding: 1rem 1rem 0.85rem;
+  max-width: 28rem;
+  padding: 1.15rem 1.15rem 0.95rem;
   border-radius: 12px;
   background: var(--theme-surface-elevated, #1e293b);
   border: 1px solid var(--theme-line-subtle, rgba(255, 255, 255, 0.15));
@@ -12046,7 +12046,7 @@ html[data-theme="purple"] .instr-side-btn:hover {
 
 .exam-signature-modal__pad-wrap {
   width: 100%;
-  height: 140px;
+  height: 200px;
   border-radius: 8px;
   border: 1px solid var(--theme-line-subtle, rgba(255, 255, 255, 0.25));
   background: #fff;
