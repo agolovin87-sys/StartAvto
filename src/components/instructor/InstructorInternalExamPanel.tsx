@@ -7,6 +7,7 @@ import type { InternalExamSession, InternalExamSheet as SheetModel } from "@/typ
 import { useInternalExam } from "@/hooks/useInternalExam";
 import { getInternalExamSheet, startStudentExam } from "@/services/internalExamService";
 import { openExamSheetPreview } from "@/services/examExportService";
+import { ConfirmDialog } from "@/components/ConfirmDialog";
 
 type InstructorInternalExamPanelProps = {
   instructorUid: string;
@@ -36,7 +37,7 @@ export function InstructorInternalExamPanel({
   attachedStudents,
   placement = "default",
 }: InstructorInternalExamPanelProps) {
-  const { sessions, loading, createExamSession, completeStudentExam: completeExamApi } =
+  const { sessions, loading, createExamSession, completeStudentExam: completeExamApi, deleteExamSession } =
     useInternalExam(instructorUid);
 
   const [panelOpen, setPanelOpen] = useState(false);
@@ -53,10 +54,16 @@ export function InstructorInternalExamPanel({
   const [startBusy, setStartBusy] = useState<string | null>(null);
   const [doneCollapsed, setDoneCollapsed] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [deleteBusy, setDeleteBusy] = useState(false);
 
   useEffect(() => {
-    if (!sessionId && sessions.length > 0) {
-      setSessionId(sessions[0].id);
+    if (sessions.length === 0) {
+      setSessionId(null);
+      return;
+    }
+    if (!sessionId || !sessions.some((s) => s.id === sessionId)) {
+      setSessionId(sessions[0]!.id);
     }
   }, [sessions, sessionId]);
 
@@ -172,6 +179,25 @@ export function InstructorInternalExamPanel({
     if (sheet) openExamSheetPreview(sheet);
   }, []);
 
+  async function onConfirmDeleteSession() {
+    if (!currentSession) return;
+    const sid = currentSession.id;
+    setDeleteBusy(true);
+    setErr(null);
+    try {
+      await deleteExamSession(sid);
+      if (overlaySessionId === sid) {
+        setSheetOverlay(null);
+        setOverlaySessionId(null);
+      }
+      setDeleteConfirmOpen(false);
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : "Не удалось удалить сессию");
+    } finally {
+      setDeleteBusy(false);
+    }
+  }
+
   if (!instructorUid) return null;
 
   const bookingUi = placement === "booking";
@@ -226,6 +252,16 @@ export function InstructorInternalExamPanel({
                   ))}
                 </select>
               </label>
+            ) : null}
+            {sessions.length > 0 ? (
+              <button
+                type="button"
+                className="btn btn-danger btn-sm"
+                disabled={deleteBusy || !currentSession}
+                onClick={() => setDeleteConfirmOpen(true)}
+              >
+                {deleteBusy ? "Удаление…" : "Удалить сессию"}
+              </button>
             ) : null}
           </div>
 
@@ -386,6 +422,21 @@ export function InstructorInternalExamPanel({
           </div>
         </div>
       ) : null}
+
+      <ConfirmDialog
+        open={deleteConfirmOpen}
+        title="Удалить сессию экзамена?"
+        message="Сессия и все связанные экзаменационные листы будут удалены без восстановления. У курсантов эта сессия тоже пропадёт из списка. Продолжить?"
+        confirmLabel="Удалить"
+        cancelLabel="Отмена"
+        onConfirm={() => {
+          if (deleteBusy) return;
+          void onConfirmDeleteSession();
+        }}
+        onCancel={() => {
+          if (!deleteBusy) setDeleteConfirmOpen(false);
+        }}
+      />
     </section>
   );
 }

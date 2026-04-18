@@ -1060,7 +1060,11 @@ service cloud.firestore {
           isInstructorAccount()
           && resource.data.instructorId == request.auth.uid
         );
-      allow delete: if isAdmin();
+      allow delete: if isAdmin()
+        || (
+          isInstructorAccount()
+          && resource.data.instructorId == request.auth.uid
+        );
     }
 
     match /internalExamSheets/{sheetId} {
@@ -1083,7 +1087,11 @@ service cloud.firestore {
           isInstructorAccount()
           && resource.data.instructorId == request.auth.uid
         );
-      allow delete: if isAdmin();
+      allow delete: if isAdmin()
+        || (
+          isInstructorAccount()
+          && resource.data.instructorId == request.auth.uid
+        );
     }
 
     /** Учебные автомобили и журнал ТО (только админ). */

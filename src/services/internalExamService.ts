@@ -457,3 +457,28 @@ export async function saveExamSheetDraft(
     isDraft: true,
   });
 }
+
+/**
+ * Удалить сессию экзамена и все связанные листы (только автор-создатель инструктор).
+ */
+export async function deleteInstructorExamSession(sessionId: string): Promise<void> {
+  const { db, auth } = getFirebase();
+  const uid = auth.currentUser?.uid;
+  if (!uid) throw new Error("Не выполнен вход");
+
+  const sref = doc(db, SESSIONS, sessionId);
+  const sessionSnap = await getDoc(sref);
+  if (!sessionSnap.exists()) throw new Error("Сессия не найдена");
+  const data = sessionSnap.data() as Record<string, unknown>;
+  if (data.instructorId !== uid) throw new Error("Нет доступа к этой сессии");
+
+  const sheetsQ = query(collection(db, SHEETS), where("examSessionId", "==", sessionId));
+  const sheetsSnap = await getDocs(sheetsQ);
+
+  const batch = writeBatch(db);
+  batch.delete(sref);
+  for (const d of sheetsSnap.docs) {
+    batch.delete(d.ref);
+  }
+  await batch.commit();
+}
