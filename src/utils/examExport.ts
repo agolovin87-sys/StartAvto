@@ -156,9 +156,8 @@ export function exportToWord(sheet: InternalExamSheet, filename: string): void {
 }
 
 /**
- * PDF: та же вёрстка, что в Word, но ширина контейнера ближе к печатной зоне A4 альбом
- * (~1200px), чтобы при масштабировании на страницу текст не казался мелким и «сжатым»
- * (очень широкий canvas давал сильный даунскейл).
+ * PDF: та же вёрстка, что в Word; страницы A4 **книжная** ориентация, ширина контейнера ~колонке A4
+ * (~760px), чтобы текст читался без сильного масштабирования.
  */
 export async function exportToPDF(sheet: InternalExamSheet, filename: string): Promise<void> {
   const html = generateExamWordHTML(sheet);
@@ -166,9 +165,10 @@ export async function exportToPDF(sheet: InternalExamSheet, filename: string): P
     fontSize: "8pt",
     lineHeight: "1.08",
     padding: "4px 8px",
-    widthPx: 1200,
-    marginMm: [5, 5, 5, 5],
+    widthPx: 760,
+    marginMm: [6, 6, 6, 6],
     canvasScale: 2,
+    pageOrientation: "portrait",
   });
 }
 

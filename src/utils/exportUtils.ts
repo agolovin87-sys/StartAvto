@@ -377,14 +377,18 @@ function createLandscapeA4Pdf(): jsPDF {
 }
 
 /**
- * Разбивает высокий canvas на страницы A4 альбомной ориентации (как в html2pdf, но без их overlay).
+ * Разбивает высокий canvas на страницы A4 (альбом или книга).
  * Поля marginMm: [верх, лево, низ, право] в мм.
  */
-function tallCanvasToLandscapePdfBlob(
+function tallCanvasToA4PdfBlob(
   canvas: HTMLCanvasElement,
-  marginMm: [number, number, number, number]
+  marginMm: [number, number, number, number],
+  orientation: "landscape" | "portrait"
 ): Blob {
-  const pdf = createLandscapeA4Pdf();
+  const pdf =
+    orientation === "portrait"
+      ? new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" })
+      : createLandscapeA4Pdf();
   const pageFullW = pdf.internal.pageSize.getWidth();
   const pageFullH = pdf.internal.pageSize.getHeight();
   const m = marginMm;
@@ -422,8 +426,10 @@ function tallCanvasToLandscapePdfBlob(
 
     const imgData = pageCanvas.toDataURL("image/jpeg", 0.92);
     if (page > 0) {
-      pdf.addPage("a4", "landscape");
-      forcePdfPageLandscapeMm(pdf);
+      pdf.addPage("a4", orientation);
+      if (orientation === "landscape") {
+        forcePdfPageLandscapeMm(pdf);
+      }
     }
     pdf.addImage(imgData, "JPEG", m[1], m[0], innerW, pageHeightMm);
   }
@@ -438,10 +444,14 @@ function tallCanvasToLandscapePdfBlob(
 function squashCanvasToMaxPdfPages(
   canvas: HTMLCanvasElement,
   marginMm: [number, number, number, number],
-  maxPages: number
+  maxPages: number,
+  orientation: "landscape" | "portrait"
 ): HTMLCanvasElement {
   const m = marginMm;
-  const pdf = createLandscapeA4Pdf();
+  const pdf =
+    orientation === "portrait"
+      ? new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" })
+      : createLandscapeA4Pdf();
   const pageFullW = pdf.internal.pageSize.getWidth();
   const pageFullH = pdf.internal.pageSize.getHeight();
   const innerW = pageFullW - m[1] - m[3];
@@ -474,8 +484,10 @@ export type ExportHtmlToPdfOptions = {
   marginMm?: [number, number, number, number];
   /** Масштаб html2canvas (по умолчанию 2). */
   canvasScale?: number;
-  /** Максимум страниц A4 альбом: при переполнении снимок слегка сжимается по вертикали. */
+  /** Максимум страниц A4: при переполнении снимок слегка сжимается по вертикали. */
   maxPdfPages?: number;
+  /** Ориентация страницы PDF (расписание — альбом; экзаменационный лист — книга). */
+  pageOrientation?: "landscape" | "portrait";
 };
 
 /**
@@ -565,11 +577,12 @@ export async function exportToPDF(
     }
 
     const marginMm = options?.marginMm ?? [8, 8, 8, 8];
+    const pageOrientation = options?.pageOrientation ?? "landscape";
     let pdfCanvas = canvas;
     if (options?.maxPdfPages != null && options.maxPdfPages >= 1) {
-      pdfCanvas = squashCanvasToMaxPdfPages(canvas, marginMm, options.maxPdfPages);
+      pdfCanvas = squashCanvasToMaxPdfPages(canvas, marginMm, options.maxPdfPages, pageOrientation);
     }
-    const pdfBlob = tallCanvasToLandscapePdfBlob(pdfCanvas, marginMm);
+    const pdfBlob = tallCanvasToA4PdfBlob(pdfCanvas, marginMm, pageOrientation);
 
     if (!pdfBlob || pdfBlob.size < 64) {
       throw new Error("Пустой PDF");
