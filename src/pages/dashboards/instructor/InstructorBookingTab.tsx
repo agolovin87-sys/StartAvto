@@ -405,12 +405,6 @@ export function InstructorBookingTab({ freeWindows }: { freeWindows: FreeDriveWi
         </div>
       ) : null}
 
-      <InstructorInternalExamPanel
-        instructorUid={instructorUid}
-        instructorName={profile.displayName?.trim() ? profile.displayName : "Инструктор"}
-        attachedStudents={attachedStudents}
-      />
-
       <section
         className="instructor-booking-section instructor-booking-section--planned"
         aria-labelledby="planned-heading"
@@ -618,6 +612,13 @@ export function InstructorBookingTab({ freeWindows }: { freeWindows: FreeDriveWi
           <IconNavigator />
           <span>НАВИГАТОР</span>
         </button>
+
+        <InstructorInternalExamPanel
+          instructorUid={instructorUid}
+          instructorName={profile.displayName?.trim() ? profile.displayName : "Инструктор"}
+          attachedStudents={attachedStudents}
+          placement="booking"
+        />
 
         {formOpen ? (
           <div className="modal-backdrop" role="presentation" onClick={() => setFormOpen(false)}>
