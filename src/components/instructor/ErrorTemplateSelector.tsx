@@ -41,6 +41,14 @@ export function ErrorTemplateSelector({
   const [customName, setCustomName] = useState("");
   const [customPoints, setCustomPoints] =
     useState<(typeof LESSON_TEMPLATE_ALLOWED_POINTS)[number]>(1);
+  /** Развёрнутые блоки по баллам (по умолчанию все свёрнуты). */
+  const [expandedPointTiers, setExpandedPointTiers] = useState<Set<number>>(() => new Set());
+  const [offscaleOpen, setOffscaleOpen] = useState(false);
+
+  const pickedTemplateIds = useMemo(
+    () => new Set(lessonErrors.map((e) => e.templateId)),
+    [lessonErrors]
+  );
 
   const templatesByTier = useMemo(() => {
     return INTERNAL_EXAM_ERROR_POINT_ORDER.map((pts) => {
@@ -78,6 +86,15 @@ export function ErrorTemplateSelector({
     setCustomOpen(false);
   }
 
+  function togglePointTier(pts: number) {
+    setExpandedPointTiers((prev) => {
+      const n = new Set(prev);
+      if (n.has(pts)) n.delete(pts);
+      else n.add(pts);
+      return n;
+    });
+  }
+
   return (
     <section className="instructor-error-template-selector" aria-label="Ошибки курсанта на уроке">
       <h3 className="instructor-error-template-selector__title">Ошибки на уроке</h3>
@@ -85,7 +102,10 @@ export function ErrorTemplateSelector({
       {lessonErrors.length > 0 ? (
         <ul className="instructor-error-template-selector__list">
           {lessonErrors.map((e) => (
-            <li key={e.id} className="instructor-error-template-selector__chip">
+            <li
+              key={e.id}
+              className="instructor-error-template-selector__chip instructor-error-template-selector__chip--picked"
+            >
               <span className="instructor-error-template-selector__chip-text">
                 {e.name}
                 <span className="instructor-error-template-selector__chip-points">−{e.points}</span>
@@ -111,47 +131,82 @@ export function ErrorTemplateSelector({
       </p>
 
       <div className="instructor-error-template-selector__tiers">
-        {templatesByTier.map(({ pts, list }) => (
-          <div key={pts} className="instructor-error-template-selector__tier">
-            <h4 className="instructor-error-template-selector__tier-title">
-              {internalExamErrorSubsectionTitle(pts)}
-            </h4>
-            <div className="instructor-error-template-selector__tier-btns">
-              {list.map((t) => (
-                <button
-                  key={t.id}
-                  type="button"
-                  className="btn btn-ghost btn-sm instructor-error-template-selector__tier-btn"
-                  title={t.description || t.name}
-                  onClick={() => void onPickTemplate(t)}
-                >
-                  {t.name}
-                </button>
-              ))}
+        {templatesByTier.map(({ pts, list }) => {
+          const open = expandedPointTiers.has(pts);
+          return (
+            <div key={pts} className="instructor-error-template-selector__tier">
+              <button
+                type="button"
+                className="instructor-error-template-selector__tier-head"
+                aria-expanded={open}
+                onClick={() => togglePointTier(pts)}
+              >
+                <span className="instructor-error-template-selector__tier-title">
+                  {internalExamErrorSubsectionTitle(pts)}
+                </span>
+                <span className="instructor-error-template-selector__tier-count">{list.length}</span>
+                <span className="instructor-error-template-selector__tier-chevron" aria-hidden>
+                  {open ? "▼" : "▶"}
+                </span>
+              </button>
+              {open ? (
+                <div className="instructor-error-template-selector__tier-btns">
+                  {list.map((t) => {
+                    const picked = pickedTemplateIds.has(t.id);
+                    return (
+                      <button
+                        key={t.id}
+                        type="button"
+                        className={`btn btn-ghost btn-sm instructor-error-template-selector__tier-btn${picked ? " instructor-error-template-selector__tier-btn--picked" : ""}`}
+                        title={t.description || t.name}
+                        onClick={() => void onPickTemplate(t)}
+                      >
+                        {t.name}
+                      </button>
+                    );
+                  })}
+                </div>
+              ) : null}
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
       {offTierTemplates.length > 0 ? (
         <div className="instructor-error-template-selector__tier instructor-error-template-selector__tier--offscale">
-          <h4 className="instructor-error-template-selector__tier-title">
-            Свои шаблоны (другие баллы)
-          </h4>
-          <div className="instructor-error-template-selector__tier-btns">
-            {offTierTemplates.map((t) => (
-              <button
-                key={t.id}
-                type="button"
-                className="btn btn-ghost btn-sm instructor-error-template-selector__tier-btn"
-                title={t.description || t.name}
-                onClick={() => void onPickTemplate(t)}
-              >
-                <span className="instructor-error-template-selector__tier-btn-name">{t.name}</span>
-                <span className="instructor-error-template-selector__tier-btn-meta">{t.points} б.</span>
-              </button>
-            ))}
-          </div>
+          <button
+            type="button"
+            className="instructor-error-template-selector__tier-head"
+            aria-expanded={offscaleOpen}
+            onClick={() => setOffscaleOpen((v) => !v)}
+          >
+            <span className="instructor-error-template-selector__tier-title">
+              Свои шаблоны (другие баллы)
+            </span>
+            <span className="instructor-error-template-selector__tier-count">{offTierTemplates.length}</span>
+            <span className="instructor-error-template-selector__tier-chevron" aria-hidden>
+              {offscaleOpen ? "▼" : "▶"}
+            </span>
+          </button>
+          {offscaleOpen ? (
+            <div className="instructor-error-template-selector__tier-btns">
+              {offTierTemplates.map((t) => {
+                const picked = pickedTemplateIds.has(t.id);
+                return (
+                  <button
+                    key={t.id}
+                    type="button"
+                    className={`btn btn-ghost btn-sm instructor-error-template-selector__tier-btn${picked ? " instructor-error-template-selector__tier-btn--picked" : ""}`}
+                    title={t.description || t.name}
+                    onClick={() => void onPickTemplate(t)}
+                  >
+                    <span className="instructor-error-template-selector__tier-btn-name">{t.name}</span>
+                    <span className="instructor-error-template-selector__tier-btn-meta">{t.points} б.</span>
+                  </button>
+                );
+              })}
+            </div>
+          ) : null}
         </div>
       ) : null}
 
@@ -173,7 +228,7 @@ export function ErrorTemplateSelector({
             <li key={t.id}>
               <button
                 type="button"
-                className="instructor-error-template-selector__suggest-item"
+                className={`instructor-error-template-selector__suggest-item${pickedTemplateIds.has(t.id) ? " instructor-error-template-selector__suggest-item--picked" : ""}`}
                 onClick={() => {
                   void onPickTemplate(t);
                   setQ("");
