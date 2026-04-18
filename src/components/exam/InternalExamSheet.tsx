@@ -4,7 +4,7 @@ import {
   INTERNAL_EXAM_ERRORS,
   INTERNAL_EXAM_EXERCISES,
   INTERNAL_EXAM_ERROR_POINT_ORDER,
-  INTERNAL_EXAM_PASS_MAX_POINTS,
+  INTERNAL_EXAM_FAIL_MIN_POINTS,
   emptyErrorState,
   emptyExerciseState,
   internalExamErrorSubsectionTitle,
@@ -14,6 +14,11 @@ import {
 import { saveExamSheetDraft } from "@/services/internalExamService";
 import type { CompleteExamInput } from "@/services/internalExamService";
 import { exportExamSheetPDF, exportExamSheetWord } from "@/services/examExportService";
+
+const INTERNAL_EXAM_ERROR_SUBSECTIONS = INTERNAL_EXAM_ERROR_POINT_ORDER.flatMap((pts) => {
+  const list = INTERNAL_EXAM_ERRORS.filter((x) => x.points === pts);
+  return list.length > 0 ? [{ pts, list }] : [];
+});
 
 type InternalExamSheetProps = {
   sessionId: string;
@@ -166,27 +171,24 @@ export function InternalExamSheet({
         <h3 id="ex-err-head" className="internal-exam-sheet__h3 internal-exam-sheet__h3--major">
           Ошибки и нарушения, допущенные в процессе экзамена
         </h3>
-        {INTERNAL_EXAM_ERROR_POINT_ORDER.map((pts) => {
-          const list = INTERNAL_EXAM_ERRORS.filter((x) => x.points === pts);
-          if (list.length === 0) return null;
-          return (
-            <div key={pts} className="internal-exam-sheet__subsection">
-              <h4 className="internal-exam-sheet__h4">{internalExamErrorSubsectionTitle(pts)}</h4>
-              <ul className="internal-exam-sheet__checks">
-                {list.map((e) => (
-                  <li key={e.id}>
-                    <label className="internal-exam-sheet__check">
-                      <input type="checkbox" checked={!!errors[e.id]} onChange={() => toggleError(e.id)} />
-                      <span>
-                        {e.label} ({e.points} б.)
-                      </span>
-                    </label>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          );
-        })}
+        {INTERNAL_EXAM_ERROR_SUBSECTIONS.map((sec, idx) => (
+          <div key={sec.pts} className="internal-exam-sheet__subsection">
+            {idx > 0 ? <hr className="internal-exam-sheet__rule" /> : null}
+            <h4 className="internal-exam-sheet__h4">{internalExamErrorSubsectionTitle(sec.pts)}</h4>
+            <ul className="internal-exam-sheet__checks">
+              {sec.list.map((e) => (
+                <li key={e.id}>
+                  <label className="internal-exam-sheet__check">
+                    <input type="checkbox" checked={!!errors[e.id]} onChange={() => toggleError(e.id)} />
+                    <span>
+                      {e.label} ({e.points} б.)
+                    </span>
+                  </label>
+                </li>
+              ))}
+            </ul>
+          </div>
+        ))}
       </section>
 
       <div
@@ -197,7 +199,7 @@ export function InternalExamSheet({
           <strong>Итого баллов: {totalPoints}</strong>
           <span className="internal-exam-sheet__total-hint">
             {" "}
-            (суммируется по отмеченным пунктам; зачёт при сумме не более {INTERNAL_EXAM_PASS_MAX_POINTS})
+            (суммируется по отмеченным пунктам; не сдан при {INTERNAL_EXAM_FAIL_MIN_POINTS} и более баллах)
           </span>
         </div>
         <div

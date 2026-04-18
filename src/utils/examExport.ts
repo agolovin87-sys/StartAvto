@@ -7,7 +7,7 @@ import {
   INTERNAL_EXAM_ERRORS,
   INTERNAL_EXAM_EXERCISES,
   INTERNAL_EXAM_ERROR_POINT_ORDER,
-  INTERNAL_EXAM_PASS_MAX_POINTS,
+  INTERNAL_EXAM_FAIL_MIN_POINTS,
   internalExamErrorSubsectionTitle,
 } from "@/types/internalExam";
 import { exportToPDF as exportHtmlToPdf } from "@/utils/exportUtils";
@@ -32,7 +32,7 @@ function downloadBlob(blob: Blob, filename: string): void {
   window.setTimeout(() => URL.revokeObjectURL(url), 60_000);
 }
 
-/** Полный HTML документа для печати / Word / PDF. */
+/** Полный HTML документа для печати / Word / PDF (компактная вёрстка 9 pt). */
 export function generateExamWordHTML(sheet: InternalExamSheet): string {
   const resultText = sheet.isPassed ? "Сдан" : "Не сдан";
   const exerciseRows = INTERNAL_EXAM_EXERCISES.map(
@@ -40,21 +40,26 @@ export function generateExamWordHTML(sheet: InternalExamSheet): string {
       `<tr><td>${escapeHtml(e.label)}</td><td style="text-align:center">${sheet.exercises[e.id] ? "✓" : "—"}</td></tr>`
   ).join("");
 
-  const errorSections = INTERNAL_EXAM_ERROR_POINT_ORDER.map((pts) => {
+  const errorTierBlocks = INTERNAL_EXAM_ERROR_POINT_ORDER.flatMap((pts) => {
     const items = INTERNAL_EXAM_ERRORS.filter((x) => x.points === pts);
-    if (items.length === 0) return "";
-    const rows = items
-      .map((e) => {
-        const on = sheet.errors[e.id] === true || sheet.errors[e.id] === 1;
-        return `<tr><td>${escapeHtml(e.label)}</td><td style="text-align:center">${e.points}</td><td style="text-align:center">${on ? "✓" : "—"}</td></tr>`;
-      })
-      .join("");
-    return `<h3 style="font-size:11pt;margin:10px 0 4px;">${escapeHtml(internalExamErrorSubsectionTitle(pts))}</h3>
-<table>
-<thead><tr><th>Нарушение</th><th style="width:52px">Баллы</th><th style="width:72px">Отметка</th></tr></thead>
+    return items.length > 0 ? [{ pts, items }] : [];
+  });
+  const errorSections = errorTierBlocks
+    .map((block, idx) => {
+      const rows = block.items
+        .map((e) => {
+          const on = sheet.errors[e.id] === true || sheet.errors[e.id] === 1;
+          return `<tr><td>${escapeHtml(e.label)}</td><td style="text-align:center">${e.points}</td><td style="text-align:center">${on ? "✓" : "—"}</td></tr>`;
+        })
+        .join("");
+      const divider = idx > 0 ? `<hr class="err-rule" />` : "";
+      return `${divider}<h3 class="err-h3">${escapeHtml(internalExamErrorSubsectionTitle(block.pts))}</h3>
+<table class="err-table">
+<thead><tr><th>Нарушение</th><th style="width:40px">Б.</th><th style="width:52px">Отм.</th></tr></thead>
 <tbody>${rows}</tbody>
 </table>`;
-  }).join("");
+    })
+    .join("");
 
   return `<!DOCTYPE html>
 <html lang="ru">
@@ -62,17 +67,24 @@ export function generateExamWordHTML(sheet: InternalExamSheet): string {
   <meta charset="utf-8" />
   <title>Экзаменационный лист</title>
   <style>
-    body { font-family: "Times New Roman", Times, serif; font-size: 12pt; color: #111; margin: 16px; }
-    h1 { font-size: 14pt; text-align: center; margin: 0 0 12px; }
-    .meta { margin-bottom: 12px; line-height: 1.45; }
-    table { border-collapse: collapse; width: 100%; margin: 10px 0; }
-    th, td { border: 1px solid #333; padding: 6px 8px; vertical-align: top; }
+    body { font-family: "Times New Roman", Times, serif; font-size: 9pt; line-height: 1.12; color: #111; margin: 6px 8px; }
+    h1 { font-size: 10pt; text-align: center; margin: 0 0 4px; font-weight: 700; }
+    h2 { font-size: 9pt; margin: 5px 0 3px; font-weight: 700; }
+    .meta { margin-bottom: 5px; line-height: 1.2; font-size: 9pt; }
+    table { border-collapse: collapse; width: 100%; margin: 2px 0 4px; }
+    th, td { border: 1px solid #333; padding: 2px 4px; vertical-align: top; font-size: 9pt; }
     th { background: #f0f0f0; font-weight: 600; }
-    .result { font-size: 13pt; font-weight: bold; margin: 12px 0; padding: 8px 10px; border-radius: 4px; }
+    .err-h3 { font-size: 9pt; margin: 3px 0 2px; font-weight: 700; }
+    .err-rule { border: none; border-top: 1px solid #666; margin: 4px 0 3px; }
+    .result { font-size: 9pt; font-weight: bold; margin: 5px 0; padding: 4px 6px; border-radius: 2px; line-height: 1.25; }
     .result.pass { background: #e8f5e9; color: #1b5e20; border: 1px solid #a5d6a7; }
     .result.fail { background: #ffebee; color: #b71c1c; border: 1px solid #ef9a9a; }
-    .sign { margin-top: 24px; display: flex; justify-content: space-between; gap: 24px; }
-    .hint { font-size: 10pt; color: #444; margin-top: 8px; }
+    .sign { margin-top: 8px; display: flex; justify-content: space-between; gap: 12px; font-size: 9pt; }
+    .hint { font-size: 7.5pt; color: #444; margin-top: 4px; }
+    .comment-box { border: 1px solid #999; min-height: 28px; padding: 4px; white-space: pre-wrap; font-size: 9pt; }
+    @media print {
+      body { margin: 4mm 6mm; }
+    }
   </style>
 </head>
 <body>
@@ -82,19 +94,19 @@ export function generateExamWordHTML(sheet: InternalExamSheet): string {
     <div><strong>Экзаменатор:</strong> ${escapeHtml(sheet.instructorName)}</div>
     <div><strong>Дата:</strong> ${escapeHtml(sheet.examDate)} &nbsp; <strong>Время:</strong> ${escapeHtml(sheet.examTime)}</div>
   </div>
-  <h2 style="font-size:12pt;">Упражнения</h2>
+  <h2>Упражнения</h2>
   <table>
-    <thead><tr><th>Упражнение</th><th style="width:80px">Выполнено</th></tr></thead>
+    <thead><tr><th>Упражнение</th><th style="width:56px">Вып.</th></tr></thead>
     <tbody>${exerciseRows}</tbody>
   </table>
-  <h2 style="font-size:12pt;">Ошибки и нарушения, допущенные в процессе экзамена</h2>
+  <h2>Ошибки и нарушения, допущенные в процессе экзамена</h2>
   ${errorSections}
   <div class="result ${sheet.isPassed ? "pass" : "fail"}">
-    Итого баллов: ${sheet.totalPoints} (зачёт при сумме не более ${INTERNAL_EXAM_PASS_MAX_POINTS})<br/>
+    Итого баллов: ${sheet.totalPoints} (не сдан при ${INTERNAL_EXAM_FAIL_MIN_POINTS} и более баллах)<br/>
     Статус: ${resultText}
   </div>
   <div><strong>Комментарий экзаменатора:</strong></div>
-  <div style="border:1px solid #999; min-height:48px; padding:8px; white-space:pre-wrap;">${escapeHtml(sheet.examinerComment || "—")}</div>
+  <div class="comment-box">${escapeHtml(sheet.examinerComment || "—")}</div>
   <div class="sign">
     <div>Экзаменатор: __________________ / ${escapeHtml(sheet.instructorName)}</div>
     <div>Курсант: __________________ / ${escapeHtml(sheet.studentName)}</div>
@@ -111,10 +123,16 @@ export function exportToWord(sheet: InternalExamSheet, filename: string): void {
   downloadBlob(blob, `${filename}.doc`);
 }
 
-/** PDF через общий конвертер HTML → canvas → PDF. */
+/** PDF через общий конвертер HTML → canvas → PDF (узкие поля, ширина под два листа). */
 export async function exportToPDF(sheet: InternalExamSheet, filename: string): Promise<void> {
   const html = generateExamWordHTML(sheet);
-  await exportHtmlToPdf(html, filename);
+  await exportHtmlToPdf(html, filename, {
+    fontSize: "9pt",
+    lineHeight: "1.12",
+    padding: "4px 6px",
+    widthPx: 1500,
+    marginMm: [4, 4, 4, 4],
+  });
 }
 
 /** Сводная ведомость (Excel открывает HTML-таблицу). */

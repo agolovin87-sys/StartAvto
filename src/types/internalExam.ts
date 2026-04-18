@@ -298,24 +298,26 @@ export const INTERNAL_EXAM_ERROR_POINT_ORDER: readonly InternalExamErrorPoints[]
   7, 4, 3, 2, 1,
 ];
 
-/** Заголовок подраздела по числу баллов (грамматика для русского UI). */
+/** Заголовок группы нарушений по числу баллов (грамматика для русского UI). */
 export function internalExamErrorSubsectionTitle(points: InternalExamErrorPoints): string {
   switch (points) {
     case 7:
-      return "Подраздел — 7 баллов";
+      return "7 баллов";
     case 4:
-      return "Подраздел — 4 балла";
+      return "4 балла";
     case 3:
-      return "Подраздел — 3 балла";
+      return "3 балла";
     case 2:
-      return "Подраздел — 2 балла";
+      return "2 балла";
     default:
-      return "Подраздел — 1 балл";
+      return "1 балл";
   }
 }
 
-/** Порог сдачи: сумма штрафных баллов не более 7 — зачёт (как в регламенте приложения). */
-export const INTERNAL_EXAM_PASS_MAX_POINTS = 7;
+/**
+ * При сумме штрафных баллов ≥ этого значения экзамен не сдан (зачёт при сумме строго меньше).
+ */
+export const INTERNAL_EXAM_FAIL_MIN_POINTS = 7;
 
 export interface InternalExamStudent {
   studentId: string;
@@ -399,7 +401,7 @@ export function sumInternalExamPenaltyPoints(errors: Record<string, boolean | nu
   return sum;
 }
 
-/** Зачёт при сумме ≤ 7, незачёт при ≥ 8. */
+/** Зачёт при сумме меньше 7 баллов, незачёт при 7 и более баллах. */
 export function isInternalExamPassed(totalPoints: number): boolean {
-  return totalPoints <= INTERNAL_EXAM_PASS_MAX_POINTS;
+  return totalPoints < INTERNAL_EXAM_FAIL_MIN_POINTS;
 }

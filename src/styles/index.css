@@ -11803,6 +11803,12 @@ html[data-theme="purple"] .instr-side-btn:hover {
   margin-bottom: 0.85rem;
 }
 
+.internal-exam-sheet__rule {
+  border: none;
+  border-top: 1px solid var(--theme-line-subtle, rgba(255, 255, 255, 0.2));
+  margin: 0.65rem 0 0.75rem;
+}
+
 .internal-exam-sheet__h4 {
   margin: 0 0 0.4rem;
   font-size: 0.88rem;

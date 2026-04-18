@@ -431,11 +431,26 @@ function tallCanvasToLandscapePdfBlob(
   return pdf.output("blob") as Blob;
 }
 
+/** Опции компактного PDF из HTML (экзаменационный лист и т.п.). */
+export type ExportHtmlToPdfOptions = {
+  fontSize?: string;
+  lineHeight?: string;
+  padding?: string;
+  /** Ширина контейнера в px (больше — меньше переносов по высоте). */
+  widthPx?: number;
+  /** Поля страницы PDF в мм [верх, лево, низ, право]. */
+  marginMm?: [number, number, number, number];
+};
+
 /**
  * PDF: html2canvas + jsPDF. Контент должен быть в видимой области окна — иначе многие движки дают пустой canvas.
  * Кратко показываем полноэкранный белый слой на время снимка.
  */
-export async function exportToPDF(html: string, filename: string): Promise<void> {
+export async function exportToPDF(
+  html: string,
+  filename: string,
+  options?: ExportHtmlToPdfOptions
+): Promise<void> {
   const parser = new DOMParser();
   const parsed = parser.parseFromString(html, "text/html");
 
@@ -457,17 +472,17 @@ export async function exportToPDF(html: string, filename: string): Promise<void>
   const wrapper = document.createElement("div");
   wrapper.setAttribute("data-export-schedule-pdf", "1");
   Object.assign(wrapper.style, {
-    width: "1200px",
+    width: options?.widthPx != null ? `${options.widthPx}px` : "1200px",
     maxWidth: "100%",
     margin: "0 auto",
-    padding: "16px",
+    padding: options?.padding ?? "16px",
     boxSizing: "border-box",
     background: "#ffffff",
     color: "#000000",
     position: "relative",
     fontFamily: SCHEDULE_EXPORT_FONT_FAMILY,
-    fontSize: "12pt",
-    lineHeight: "1.15",
+    fontSize: options?.fontSize ?? "12pt",
+    lineHeight: options?.lineHeight ?? "1.15",
   });
 
   for (const node of parsed.head.querySelectorAll("style")) {
@@ -512,7 +527,7 @@ export async function exportToPDF(html: string, filename: string): Promise<void>
       throw new Error("Пустой снимок");
     }
 
-    const pdfBlob = tallCanvasToLandscapePdfBlob(canvas, [8, 8, 8, 8]);
+    const pdfBlob = tallCanvasToLandscapePdfBlob(canvas, options?.marginMm ?? [8, 8, 8, 8]);
 
     if (!pdfBlob || pdfBlob.size < 64) {
       throw new Error("Пустой PDF");
