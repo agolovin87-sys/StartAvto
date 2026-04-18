@@ -1032,6 +1032,53 @@ service cloud.firestore {
         && resource.data.instructorId == request.auth.uid;
     }
 
+    /** Внутренние экзамены по вождению. */
+    match /internalExamSessions/{sessionId} {
+      allow read: if isAdmin()
+        || (
+          isInstructorAccount()
+          && resource.data.instructorId == request.auth.uid
+        )
+        || (
+          isStudentAccount()
+          && request.auth.uid in resource.data.get('studentIds', [])
+        );
+      allow create: if isInstructorAccount()
+        && request.resource.data.instructorId == request.auth.uid
+        && request.resource.data.groupId is string
+        && request.resource.data.groupName is string
+        && request.resource.data.examDate is string
+        && request.resource.data.examTime is string
+        && request.resource.data.students is list
+        && request.resource.data.studentIds is list;
+      allow update: if isAdmin()
+        || (
+          isInstructorAccount()
+          && resource.data.instructorId == request.auth.uid
+        );
+      allow delete: if isAdmin();
+    }
+
+    match /internalExamSheets/{sheetId} {
+      allow read: if isAdmin()
+        || (
+          isInstructorAccount()
+          && resource.data.instructorId == request.auth.uid
+        )
+        || (
+          isStudentAccount()
+          && resource.data.studentId == request.auth.uid
+        );
+      allow create: if isInstructorAccount()
+        && request.resource.data.instructorId == request.auth.uid;
+      allow update: if isAdmin()
+        || (
+          isInstructorAccount()
+          && resource.data.instructorId == request.auth.uid
+        );
+      allow delete: if isAdmin();
+    }
+
     /** Учебные автомобили и журнал ТО (только админ). */
     match /cars/{carId} {
       allow read, write: if isAdmin() || isAdminByTokenEmail();

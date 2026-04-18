@@ -11655,3 +11655,277 @@ html[data-theme="purple"] .instr-side-btn:hover {
 .instructor-error-template-selector__manual-row .input {
   width: 5rem;
 }
+
+/* ——— Внутренний экзамен ——— */
+
+.admin-internal-exam-section {
+  margin-bottom: 1.25rem;
+}
+
+.admin-internal-exam-toggle {
+  width: 100%;
+  justify-content: space-between;
+}
+
+.admin-internal-exam-field {
+  max-width: 24rem;
+  margin-bottom: 0.75rem;
+}
+
+.admin-internal-exam-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.admin-internal-exam-table-wrap {
+  margin-top: 0.5rem;
+}
+
+.admin-internal-exam-status {
+  font-weight: 600;
+  font-size: 0.88rem;
+}
+
+.admin-internal-exam-status--pending {
+  color: #fbbf24;
+}
+
+.admin-internal-exam-status--progress {
+  color: #60a5fa;
+}
+
+.admin-internal-exam-status--pass {
+  color: #4ade80;
+}
+
+.admin-internal-exam-status--fail {
+  color: #f87171;
+}
+
+.admin-internal-exam-row-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.instructor-internal-exam {
+  margin-bottom: 1.25rem;
+  padding: 0.75rem 0;
+  border-bottom: 1px solid var(--theme-line-subtle);
+}
+
+.instructor-internal-exam__body {
+  margin-top: 0.75rem;
+}
+
+.instructor-internal-exam__toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.instructor-internal-exam__select {
+  flex: 1 1 14rem;
+  min-width: 0;
+}
+
+.instructor-internal-exam__subh {
+  margin: 0.5rem 0;
+  font-size: 0.95rem;
+}
+
+.instructor-internal-exam__cards {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.instructor-internal-exam__done-head {
+  margin-top: 1rem;
+}
+
+.internal-exam-create-modal__list {
+  max-height: 220px;
+  overflow: auto;
+  margin: 0.5rem 0 1rem;
+  border: 1px solid var(--theme-line-subtle);
+  border-radius: 8px;
+  padding: 0.5rem;
+}
+
+.internal-exam-create-modal__row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.25rem 0;
+}
+
+.internal-exam-sheet-backdrop {
+  z-index: 1300;
+  align-items: flex-start;
+  padding-top: 2vh;
+  overflow: auto;
+}
+
+.internal-exam-sheet-modal {
+  max-width: 42rem;
+  width: 100%;
+  max-height: 96vh;
+  overflow: auto;
+}
+
+.internal-exam-sheet {
+  text-align: left;
+}
+
+.internal-exam-sheet__section {
+  margin-bottom: 1rem;
+}
+
+.internal-exam-sheet__h3 {
+  margin: 0 0 0.5rem;
+  font-size: 0.95rem;
+}
+
+.internal-exam-sheet__checks {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.internal-exam-sheet__check {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  font-size: 0.88rem;
+  margin-bottom: 0.35rem;
+}
+
+.internal-exam-sheet__total {
+  padding: 0.65rem 0.75rem;
+  border-radius: 8px;
+  margin-bottom: 0.75rem;
+  font-size: 0.95rem;
+}
+
+.internal-exam-sheet__total--pass {
+  background: rgba(22, 101, 52, 0.35);
+  border: 1px solid rgba(74, 222, 128, 0.35);
+}
+
+.internal-exam-sheet__total--fail {
+  background: rgba(127, 29, 29, 0.35);
+  border: 1px solid rgba(248, 113, 113, 0.35);
+}
+
+.internal-exam-sheet__verdict {
+  margin-top: 0.35rem;
+  font-weight: 700;
+}
+
+.internal-exam-sheet__textarea {
+  min-height: 5rem;
+}
+
+.internal-exam-sheet__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  margin-top: 0.5rem;
+}
+
+.exam-student-card {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.65rem 0.75rem;
+  border: 1px solid var(--theme-line-subtle);
+  border-radius: 10px;
+  background: rgba(0, 0, 0, 0.12);
+}
+
+.exam-student-card__name {
+  font-weight: 600;
+}
+
+.exam-student-card__group {
+  font-size: 0.82rem;
+  color: var(--theme-muted);
+}
+
+.exam-student-card__points {
+  font-size: 0.85rem;
+}
+
+.student-exam-card {
+  border: 1px solid var(--theme-line-subtle);
+  border-radius: 12px;
+  padding: 1rem;
+  margin-bottom: 0.75rem;
+  background: var(--theme-surface-elevated, rgba(255, 255, 255, 0.04));
+}
+
+.student-exam-card__title {
+  margin: 0 0 0.65rem;
+  font-size: 1rem;
+}
+
+.student-exam-card__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+.student-exam-card__list li {
+  margin-bottom: 0.35rem;
+}
+
+.student-exam-card__status--pending {
+  color: #fbbf24;
+}
+
+.student-exam-card__status--progress {
+  color: #60a5fa;
+}
+
+.student-exam-card__status--pass {
+  color: #4ade80;
+}
+
+.student-exam-card__status--fail {
+  color: #f87171;
+}
+
+.student-exam-card__hint {
+  margin: 0.65rem 0 0;
+  font-size: 0.85rem;
+  color: var(--theme-muted);
+}
+
+.student-exam-card__result {
+  margin: 0.65rem 0 0;
+  font-weight: 600;
+}
+
+.student-exam-card__pdf-btns {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  margin-top: 0.35rem;
+}
+
+.student-exam-tab__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}

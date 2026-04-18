@@ -32,6 +32,7 @@ import {
   INSTRUCTOR_TALON_MSG_ZERO,
   type TalonBookingBlockReason,
 } from "@/lib/talonBooking";
+import { InstructorInternalExamPanel } from "@/components/instructor/InstructorInternalExamPanel";
 import { AlertDialog, ConfirmDialog } from "@/components/ConfirmDialog";
 import { StudentLocationPickMap } from "@/components/StudentLocationPickMap";
 import {
@@ -403,6 +404,12 @@ export function InstructorBookingTab({ freeWindows }: { freeWindows: FreeDriveWi
           {err}
         </div>
       ) : null}
+
+      <InstructorInternalExamPanel
+        instructorUid={instructorUid}
+        instructorName={profile.displayName?.trim() ? profile.displayName : "Инструктор"}
+        attachedStudents={attachedStudents}
+      />
 
       <section
         className="instructor-booking-section instructor-booking-section--planned"

@@ -17,6 +17,7 @@ import {
 } from "@/firebase/studentDriveLocationShare";
 import { AdminScheduleTripHistoryCell } from "@/components/AdminScheduleTripHistoryCell";
 import { ExportSchedule } from "@/components/admin/ExportSchedule";
+import { AdminInternalExamSection } from "@/pages/admin/GraphTab";
 import type { DriveSlot, UserProfile } from "@/types";
 
 function groupByDateKey(slots: DriveSlot[]): Map<string, DriveSlot[]> {
@@ -217,6 +218,7 @@ export function AdminScheduleTab() {
   return (
     <div className="admin-tab admin-schedule-tab">
       <h1 className="admin-tab-title">График</h1>
+      <AdminInternalExamSection />
       <ExportSchedule />
       {err ? (
         <div className="form-error" role="alert">
