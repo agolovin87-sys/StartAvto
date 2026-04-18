@@ -325,6 +325,8 @@ export interface InternalExamStudent {
   studentGroup: string;
   status: "pending" | "in_progress" | "passed" | "failed";
   examSheetId?: string;
+  /** Момент нажатия «Начать экзамен» (мс, Unix). */
+  examStartedAt?: number;
   totalPoints?: number;
   completedAt?: number;
 }

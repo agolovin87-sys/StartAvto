@@ -8,7 +8,7 @@ import { useStudentExam } from "@/hooks/useStudentExam";
 export function ExamTab() {
   const { user } = useAuth();
   const studentId = user?.uid ?? "";
-  const { loading, activeExam, completedExams, openExamPdf, downloadExamPdf } =
+  const { loading, upcomingExams, completedExams, openExamPdf, downloadExamPdf } =
     useStudentExam(studentId);
 
   return (
@@ -18,13 +18,15 @@ export function ExamTab() {
         <p className="admin-settings-section-desc">Загрузка…</p>
       ) : (
         <>
-          {activeExam ? (
-            <section className="student-exam-tab__section" aria-label="Предстоящий экзамен">
-              <ExamCard
-                exam={activeExam}
-                onOpen={() => {}}
-                onDownload={() => {}}
-              />
+          {upcomingExams.length > 0 ? (
+            <section className="student-exam-tab__section" aria-label="Предстоящие экзамены">
+              <ul className="student-exam-tab__list">
+                {upcomingExams.map((ex) => (
+                  <li key={ex.id}>
+                    <ExamCard exam={ex} onOpen={() => {}} onDownload={() => {}} />
+                  </li>
+                ))}
+              </ul>
             </section>
           ) : (
             <p className="admin-settings-section-desc">Нет запланированных внутренних экзаменов.</p>

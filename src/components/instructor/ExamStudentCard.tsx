@@ -1,5 +1,15 @@
 import type { InternalExamStudent } from "@/types/internalExam";
 
+function formatExamStartedAt(ms: number): string {
+  return new Date(ms).toLocaleString("ru-RU", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
 type ExamStudentCardProps = {
   student: InternalExamStudent;
   onStartExam: () => void;
@@ -50,18 +60,32 @@ export function ExamStudentCard({
       </div>
       <div className="exam-student-card__actions">
         {!done ? (
-          <button
-            type="button"
-            className="btn btn-primary btn-sm"
-            disabled={startBusy}
-            onClick={onStartExam}
-          >
-            {student.status === "in_progress" ? "Продолжить экзамен" : "Начать экзамен"}
-          </button>
+          <>
+            <button
+              type="button"
+              className="btn btn-primary btn-sm"
+              disabled={startBusy}
+              onClick={onStartExam}
+            >
+              {student.status === "in_progress" ? "Продолжить экзамен" : "Начать экзамен"}
+            </button>
+            {student.examStartedAt != null ? (
+              <span className="exam-student-card__started" title="Время нажатия «Начать экзамен»">
+                Начало: {formatExamStartedAt(student.examStartedAt)}
+              </span>
+            ) : null}
+          </>
         ) : (
-          <button type="button" className="btn btn-ghost btn-sm" onClick={onViewSheet}>
-            Просмотреть лист
-          </button>
+          <>
+            <button type="button" className="btn btn-ghost btn-sm" onClick={onViewSheet}>
+              Просмотреть лист
+            </button>
+            {student.examStartedAt != null ? (
+              <span className="exam-student-card__started" title="Время начала экзамена">
+                Начало: {formatExamStartedAt(student.examStartedAt)}
+              </span>
+            ) : null}
+          </>
         )}
       </div>
     </div>

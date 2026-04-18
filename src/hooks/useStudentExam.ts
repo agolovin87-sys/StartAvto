@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { InternalExamSession, StudentExamView } from "@/types/internalExam";
-import { fetchStudentExamSessions, getInternalExamSheet } from "@/services/internalExamService";
+import { getInternalExamSheet, subscribeStudentExamSessions } from "@/services/internalExamService";
 import { exportExamSheetPDF, openExamSheetPreview } from "@/services/examExportService";
 
 function sessionToViews(session: InternalExamSession, studentId: string): StudentExamView[] {
@@ -26,13 +26,13 @@ function sessionToViews(session: InternalExamSession, studentId: string): Studen
 }
 
 /**
- * Экзамены курсанта: список и экспорт листа.
+ * Экзамены курсанта: список и экспорт листа (подписка на Firestore — карточка появляется сразу после создания сессии).
  */
 export function useStudentExam(studentId: string | undefined) {
   const [exams, setExams] = useState<StudentExamView[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const reload = useCallback(async () => {
+  useEffect(() => {
     const uid = studentId?.trim();
     if (!uid) {
       setExams([]);
@@ -40,24 +40,27 @@ export function useStudentExam(studentId: string | undefined) {
       return;
     }
     setLoading(true);
-    try {
-      const sessions = await fetchStudentExamSessions(uid);
-      const flat: StudentExamView[] = [];
-      for (const s of sessions) flat.push(...sessionToViews(s, uid));
-      flat.sort((a, b) => {
-        const ca = a.completedAt ?? 0;
-        const cb = b.completedAt ?? 0;
-        return cb - ca;
-      });
-      setExams(flat);
-    } finally {
-      setLoading(false);
-    }
+    return subscribeStudentExamSessions(
+      uid,
+      (sessions) => {
+        const flat: StudentExamView[] = [];
+        for (const s of sessions) flat.push(...sessionToViews(s, uid));
+        flat.sort((a, b) => {
+          const ca = a.completedAt ?? 0;
+          const cb = b.completedAt ?? 0;
+          return cb - ca;
+        });
+        setExams(flat);
+        setLoading(false);
+      },
+      () => setLoading(false)
+    );
   }, [studentId]);
 
-  useEffect(() => {
-    void reload();
-  }, [reload]);
+  const upcomingExams = useMemo(
+    () => exams.filter((e) => e.status === "pending" || e.status === "in_progress"),
+    [exams]
+  );
 
   const activeExam = useMemo(() => {
     const prog = exams.find((e) => e.status === "in_progress");
@@ -82,10 +85,14 @@ export function useStudentExam(studentId: string | undefined) {
     await exportExamSheetPDF(sheet, filename);
   }, []);
 
+  /** Зарезервировано; список обновляется через подписку Firestore. */
+  const fetchStudentExams = useCallback(() => Promise.resolve(), []);
+
   return {
     exams,
     loading,
-    fetchStudentExams: reload,
+    fetchStudentExams,
+    upcomingExams,
     getActiveExam: () => activeExam,
     activeExam,
     getCompletedExams: () => completedExams,

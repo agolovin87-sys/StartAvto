@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { InternalExamSheet } from "@/components/exam/InternalExamSheet";
 import { ExamStudentCard } from "@/components/instructor/ExamStudentCard";
-import type { UserProfile } from "@/types";
+import { subscribeTrainingGroups } from "@/firebase/admin";
+import type { TrainingGroup, UserProfile } from "@/types";
 import type { InternalExamSession, InternalExamSheet as SheetModel } from "@/types/internalExam";
 import { useInternalExam } from "@/hooks/useInternalExam";
 import { getInternalExamSheet, startStudentExam } from "@/services/internalExamService";
@@ -26,7 +27,8 @@ export function InstructorInternalExamPanel({
 
   const [panelOpen, setPanelOpen] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
-  const [groupName, setGroupName] = useState("");
+  const [trainingGroups, setTrainingGroups] = useState<TrainingGroup[]>([]);
+  const [selectedGroupId, setSelectedGroupId] = useState("");
   const [examDate, setExamDate] = useState(() => new Date().toISOString().slice(0, 10));
   const [examTime, setExamTime] = useState("09:00");
   const [pick, setPick] = useState<Record<string, boolean>>({});
@@ -43,6 +45,15 @@ export function InstructorInternalExamPanel({
       setSessionId(sessions[0].id);
     }
   }, [sessions, sessionId]);
+
+  useEffect(() => {
+    return subscribeTrainingGroups(setTrainingGroups);
+  }, []);
+
+  const studentsInSelectedGroup = useMemo(() => {
+    if (!selectedGroupId.trim()) return [];
+    return attachedStudents.filter((s) => (s.groupId ?? "").trim() === selectedGroupId);
+  }, [attachedStudents, selectedGroupId]);
 
   const currentSession = useMemo(
     () => sessions.find((s) => s.id === sessionId) ?? null,
@@ -65,6 +76,11 @@ export function InstructorInternalExamPanel({
     setPick((p) => ({ ...p, [id]: !p[id] }));
   }, []);
 
+  const onSelectGroup = useCallback((groupId: string) => {
+    setSelectedGroupId(groupId);
+    setPick({});
+  }, []);
+
   async function submitCreate() {
     const ids = Object.entries(pick)
       .filter(([, v]) => v)
@@ -73,21 +89,20 @@ export function InstructorInternalExamPanel({
       setErr("Отметьте хотя бы одного курсанта.");
       return;
     }
-    if (!groupName.trim()) {
-      setErr("Укажите название группы.");
+    const gid = selectedGroupId.trim();
+    if (!gid) {
+      setErr("Выберите учебную группу (список задаётся администратором).");
+      return;
+    }
+    const group = trainingGroups.find((g) => g.id === gid);
+    if (!group) {
+      setErr("Группа не найдена. Обновите страницу и выберите группу снова.");
       return;
     }
     setErr(null);
     setCreateBusy(true);
     try {
-      const groupIds = new Set(
-        ids
-          .map((id) => attachedStudents.find((x) => x.uid === id)?.groupId?.trim())
-          .filter((g): g is string => !!g)
-      );
-      const groupId =
-        groupIds.size === 1 ? [...groupIds][0]! : `grp_${instructorUid.slice(0, 8)}_${Date.now()}`;
-      const gname = groupName.trim();
+      const gname = group.name.trim();
       const students = ids.map((id) => {
         const st = attachedStudents.find((x) => x.uid === id);
         return {
@@ -99,7 +114,7 @@ export function InstructorInternalExamPanel({
       const sid = await createExamSession({
         instructorId: instructorUid,
         instructorName,
-        groupId,
+        groupId: gid,
         groupName: gname,
         examDate,
         examTime,
@@ -254,13 +269,22 @@ export function InstructorInternalExamPanel({
           >
             <h2 className="modal-title">Выбор курсантов для экзамена</h2>
             <label className="field">
-              <span className="field-label">Название группы</span>
-              <input
+              <span className="field-label">Учебная группа</span>
+              <select
                 className="input"
-                value={groupName}
-                onChange={(e) => setGroupName(e.target.value)}
-                placeholder="Например: Группа 12А"
-              />
+                value={selectedGroupId}
+                onChange={(e) => onSelectGroup(e.target.value)}
+              >
+                <option value="">— Выберите группу —</option>
+                {trainingGroups.map((g) => (
+                  <option key={g.id} value={g.id}>
+                    {g.name}
+                  </option>
+                ))}
+              </select>
+              {trainingGroups.length === 0 ? (
+                <span className="field-hint">Администратор ещё не создал учебные группы.</span>
+              ) : null}
             </label>
             <label className="field">
               <span className="field-label">Дата экзамена</span>
@@ -281,10 +305,14 @@ export function InstructorInternalExamPanel({
               />
             </label>
             <div className="internal-exam-create-modal__list">
-              {attachedStudents.length === 0 ? (
+              {!selectedGroupId.trim() ? (
+                <p className="field-hint">Сначала выберите учебную группу — появятся закреплённые за вами курсанты из неё.</p>
+              ) : attachedStudents.length === 0 ? (
                 <p>Нет закреплённых курсантов.</p>
+              ) : studentsInSelectedGroup.length === 0 ? (
+                <p>Нет закреплённых курсантов в выбранной группе (проверьте, что курсанты переведены в эту группу администратором).</p>
               ) : (
-                attachedStudents.map((s) => (
+                studentsInSelectedGroup.map((s) => (
                   <label key={s.uid} className="internal-exam-create-modal__row">
                     <input
                       type="checkbox"

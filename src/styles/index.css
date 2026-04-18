@@ -11899,6 +11899,23 @@ html[data-theme="purple"] .instr-side-btn:hover {
   background: rgba(0, 0, 0, 0.12);
 }
 
+.exam-student-card__actions {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 0.35rem;
+  min-width: 10.5rem;
+  text-align: right;
+}
+
+.exam-student-card__started {
+  font-size: 0.78rem;
+  color: var(--theme-muted);
+  line-height: 1.25;
+  max-width: 14rem;
+}
+
 .exam-student-card__name {
   font-weight: 600;
 }

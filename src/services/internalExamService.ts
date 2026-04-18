@@ -45,6 +45,32 @@ function toMillis(v: unknown): number {
   return Date.now();
 }
 
+/** Локальная дата и время на момент начала экзамена (для листа). */
+function formatExamStartLocal(ms: number): { examDate: string; examTime: string } {
+  const d = new Date(ms);
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  const hh = String(d.getHours()).padStart(2, "0");
+  const mi = String(d.getMinutes()).padStart(2, "0");
+  return { examDate: `${y}-${m}-${day}`, examTime: `${hh}:${mi}` };
+}
+
+/** Число или Firestore Timestamp → мс (для полей курсанта в сессии). */
+function numberOrFirestoreTimestampMs(raw: unknown): number | undefined {
+  if (raw == null) return undefined;
+  if (typeof raw === "number" && Number.isFinite(raw)) return Math.floor(raw);
+  if (
+    raw &&
+    typeof raw === "object" &&
+    "toMillis" in raw &&
+    typeof (raw as { toMillis: () => number }).toMillis === "function"
+  ) {
+    return (raw as { toMillis: () => number }).toMillis();
+  }
+  return undefined;
+}
+
 function normalizeStudent(raw: unknown): InternalExamStudent | null {
   if (!raw || typeof raw !== "object") return null;
   const o = raw as Record<string, unknown>;
@@ -64,14 +90,12 @@ function normalizeStudent(raw: unknown): InternalExamStudent | null {
     studentGroup: typeof o.studentGroup === "string" ? o.studentGroup : "",
     status: st,
     examSheetId: typeof o.examSheetId === "string" ? o.examSheetId : undefined,
+    examStartedAt: numberOrFirestoreTimestampMs(o.examStartedAt),
     totalPoints:
       typeof o.totalPoints === "number" && Number.isFinite(o.totalPoints)
         ? Math.floor(o.totalPoints)
         : undefined,
-    completedAt:
-      typeof o.completedAt === "number" && Number.isFinite(o.completedAt)
-        ? o.completedAt
-        : undefined,
+    completedAt: numberOrFirestoreTimestampMs(o.completedAt),
   };
 }
 
@@ -263,6 +287,31 @@ export async function fetchStudentExamSessions(studentId: string): Promise<Inter
   );
 }
 
+/** Подписка: сессии, где курсант в списке (сразу после создания сессии инструктором). */
+export function subscribeStudentExamSessions(
+  studentId: string,
+  onUpdate: (sessions: InternalExamSession[]) => void,
+  onError?: (e: Error) => void
+): Unsubscribe {
+  if (!studentId.trim() || !isFirebaseConfigured) {
+    onUpdate([]);
+    return () => {};
+  }
+  const { db } = getFirebase();
+  const q = query(
+    collection(db, SESSIONS),
+    where("studentIds", "array-contains", studentId.trim()),
+    orderBy("createdAt", "desc")
+  );
+  return onSnapshot(
+    q,
+    (snap) => {
+      onUpdate(snap.docs.map((d) => normalizeInternalExamSession(d.id, d.data() as Record<string, unknown>)));
+    },
+    (e) => onError?.(e as Error)
+  );
+}
+
 /** Начать экзамен: черновик листа + статус in_progress. */
 export async function startStudentExam(sessionId: string, studentId: string): Promise<string> {
   const { db } = getFirebase();
@@ -278,6 +327,9 @@ export async function startStudentExam(sessionId: string, studentId: string): Pr
     if (existing.exists()) return st.examSheetId;
   }
 
+  const startedAt = Date.now();
+  const { examDate: startDate, examTime: startTime } = formatExamStartLocal(startedAt);
+
   const sheetId = doc(collection(db, SHEETS)).id;
   const sheetData = {
     examSessionId: sessionId,
@@ -285,8 +337,8 @@ export async function startStudentExam(sessionId: string, studentId: string): Pr
     studentName: st.studentName,
     instructorId: session.instructorId,
     instructorName: session.instructorName,
-    examDate: session.examDate,
-    examTime: session.examTime,
+    examDate: startDate,
+    examTime: startTime,
     exercises: emptyExerciseState(),
     errors: emptyErrorState(),
     totalPoints: 0,
@@ -298,7 +350,12 @@ export async function startStudentExam(sessionId: string, studentId: string): Pr
 
   const nextStudents = session.students.map((x) =>
     x.studentId === studentId
-      ? { ...x, status: "in_progress" as const, examSheetId: sheetId }
+      ? {
+          ...x,
+          status: "in_progress" as const,
+          examSheetId: sheetId,
+          examStartedAt: startedAt,
+        }
       : x
   );
 
