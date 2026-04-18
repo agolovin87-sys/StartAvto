@@ -131,16 +131,19 @@ export function exportToWord(sheet: InternalExamSheet, filename: string): void {
   downloadBlob(blob, `${filename}.doc`);
 }
 
-/** PDF: альбом A4, не более 2 страниц (плотная вёрстка + при необходимости вертикальное сжатие снимка). */
+/**
+ * PDF: та же вёрстка, что в Word, но ширина контейнера ближе к печатной зоне A4 альбом
+ * (~1200px), чтобы при масштабировании на страницу текст не казался мелким и «сжатым»
+ * (очень широкий canvas давал сильный даунскейл).
+ */
 export async function exportToPDF(sheet: InternalExamSheet, filename: string): Promise<void> {
   const html = generateExamWordHTML(sheet);
   await exportHtmlToPdf(html, filename, {
     fontSize: "8pt",
-    lineHeight: "1.06",
-    padding: "2px 4px",
-    widthPx: 1780,
-    marginMm: [2, 2, 2, 2],
-    maxPdfPages: 2,
+    lineHeight: "1.08",
+    padding: "4px 8px",
+    widthPx: 1200,
+    marginMm: [5, 5, 5, 5],
     canvasScale: 2,
   });
 }
