@@ -78,7 +78,7 @@ export function ExamStudentCard({
         ) : (
           <>
             <button type="button" className="btn btn-ghost btn-sm" onClick={onViewSheet}>
-              Скачать PDF
+              Экз.лист
             </button>
             {student.examStartedAt != null ? (
               <span className="exam-student-card__started" title="Время начала экзамена">
