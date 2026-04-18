@@ -6,7 +6,7 @@ import type { TrainingGroup, UserProfile } from "@/types";
 import type { InternalExamSession, InternalExamSheet as SheetModel } from "@/types/internalExam";
 import { useInternalExam } from "@/hooks/useInternalExam";
 import { getInternalExamSheet, startStudentExam } from "@/services/internalExamService";
-import { openExamSheetPreview } from "@/services/examExportService";
+import { exportExamSheetPDF } from "@/services/examExportService";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 
 type InstructorInternalExamPanelProps = {
@@ -175,9 +175,28 @@ export function InstructorInternalExamPanel({
     []
   );
 
-  const viewSheet = useCallback(async (examSheetId: string) => {
-    const sheet = await getInternalExamSheet(examSheetId);
-    if (sheet) openExamSheetPreview(sheet);
+  /** Скачивание листа в PDF (без всплывающего окна — надёжнее, чем HTML-превью). */
+  const downloadExamSheetPdf = useCallback(async (examSheetId: string | undefined) => {
+    if (!examSheetId?.trim()) {
+      setErr("Нет привязанного листа экзамена.");
+      return;
+    }
+    setErr(null);
+    try {
+      const sheet = await getInternalExamSheet(examSheetId);
+      if (!sheet) {
+        setErr("Лист не найден.");
+        return;
+      }
+      if (sheet.isDraft) {
+        setErr("Лист ещё в черновике — откройте экзамен и завершите его.");
+        return;
+      }
+      const fname = `Внутренний_экзамен_${sheet.studentName.replace(/\s+/g, "_")}_${sheet.examDate}`;
+      await exportExamSheetPDF(sheet, fname);
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : "Не удалось сформировать PDF");
+    }
   }, []);
 
   const deleteTargetSession = useMemo(
@@ -336,9 +355,7 @@ export function InstructorInternalExamPanel({
                       <ExamStudentCard
                         student={st}
                         onStartExam={() => {}}
-                        onViewSheet={() => {
-                          if (st.examSheetId) void viewSheet(st.examSheetId);
-                        }}
+                        onViewSheet={() => void downloadExamSheetPdf(st.examSheetId)}
                       />
                     </li>
                   ))}
