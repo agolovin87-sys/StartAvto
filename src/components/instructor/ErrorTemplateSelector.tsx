@@ -41,8 +41,8 @@ export function ErrorTemplateSelector({
   const [customName, setCustomName] = useState("");
   const [customPoints, setCustomPoints] =
     useState<(typeof LESSON_TEMPLATE_ALLOWED_POINTS)[number]>(1);
-  /** Развёрнутые блоки по баллам (по умолчанию все свёрнуты). */
-  const [expandedPointTiers, setExpandedPointTiers] = useState<Set<number>>(() => new Set());
+  /** Аккордеон: одновременно открыт не больше одного блока по баллам (по умолчанию все свёрнуты). */
+  const [expandedPointTier, setExpandedPointTier] = useState<number | null>(null);
   const [offscaleOpen, setOffscaleOpen] = useState(false);
   /** Вся панель «Ошибки на уроке» (по умолчанию свёрнута). */
   const [panelOpen, setPanelOpen] = useState(false);
@@ -89,11 +89,18 @@ export function ErrorTemplateSelector({
   }
 
   function togglePointTier(pts: number) {
-    setExpandedPointTiers((prev) => {
-      const n = new Set(prev);
-      if (n.has(pts)) n.delete(pts);
-      else n.add(pts);
-      return n;
+    setExpandedPointTier((prev) => {
+      if (prev === pts) return null;
+      return pts;
+    });
+    setOffscaleOpen(false);
+  }
+
+  function toggleOffscale() {
+    setOffscaleOpen((v) => {
+      const next = !v;
+      if (next) setExpandedPointTier(null);
+      return next;
     });
   }
 
@@ -192,7 +199,7 @@ export function ErrorTemplateSelector({
 
         <div className="instructor-error-template-selector__tiers">
         {templatesByTier.map(({ pts, list }) => {
-          const open = expandedPointTiers.has(pts);
+          const open = expandedPointTier === pts;
           return (
             <div key={pts} className="instructor-error-template-selector__tier">
               <button
@@ -238,7 +245,7 @@ export function ErrorTemplateSelector({
             type="button"
             className="instructor-error-template-selector__tier-head"
             aria-expanded={offscaleOpen}
-            onClick={() => setOffscaleOpen((v) => !v)}
+            onClick={toggleOffscale}
           >
             <span className="instructor-error-template-selector__tier-title">
               Свои шаблоны (другие баллы)
