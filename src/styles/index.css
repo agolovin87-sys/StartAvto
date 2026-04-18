@@ -11355,6 +11355,34 @@ html[data-theme="purple"] .instr-side-btn:hover {
   color: var(--theme-muted);
 }
 
+.admin-schedule-export-card--nested {
+  margin-bottom: 1rem;
+}
+
+/* Вкладка «График» админа: экспорт + список инструкторов в одном сворачиваемом блоке */
+.admin-schedule-drive-section {
+  margin: 0.5rem 0 0;
+}
+
+.admin-schedule-drive-toggle {
+  margin-top: 0;
+}
+
+.admin-schedule-drive-panel {
+  margin-top: 0.5rem;
+  padding: 0.5rem 0 0;
+}
+
+.admin-schedule-drive-panel .admin-schedule-instructor-list {
+  margin-top: 0.75rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--theme-line-soft);
+}
+
+.admin-schedule-drive-empty {
+  margin-top: 0.75rem;
+}
+
 /* ——— Шаблоны ошибок (инструктор) ——— */
 
 .instructor-error-templates-page .instructor-error-templates-lead {

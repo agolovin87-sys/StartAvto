@@ -15,7 +15,12 @@ function safeFilePart(raw: string): string {
   return t.replaceAll(/[\\/:*?"<>|]/g, "") || "instructor";
 }
 
-export function ExportSchedule() {
+type ExportScheduleProps = {
+  /** Внутри общего сворачиваемого блока на вкладке «График» — без отдельного крупного заголовка. */
+  nested?: boolean;
+};
+
+export function ExportSchedule({ nested = false }: ExportScheduleProps) {
   const { instructors, instructorById, loading, error, fetchLessonsForWeeks } = useScheduleExport();
 
   const [selectedInstructorId, setSelectedInstructorId] = useState("");
@@ -73,8 +78,15 @@ export function ExportSchedule() {
   };
 
   return (
-    <section className="admin-schedule-export-card" aria-label="Экспорт графика">
-      <h2 className="admin-schedule-export-title">Экспорт графика занятий</h2>
+    <section
+      className={
+        nested
+          ? "admin-schedule-export-card admin-schedule-export-card--nested"
+          : "admin-schedule-export-card"
+      }
+      aria-label="Экспорт графика"
+    >
+      {!nested ? <h2 className="admin-schedule-export-title">Экспорт графика занятий</h2> : null}
       <p className="admin-schedule-export-desc">
         Выберите инструктора и период (неделя «с» и «по» включительно). В документе — Фамилия И.О.
         курсантов по времени и дням. PDF в альбомной ориентации; если файл не сохранится, откроется

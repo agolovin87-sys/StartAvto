@@ -1,4 +1,4 @@
-import type { ElementType } from "react";
+import type { CSSProperties, ElementType } from "react";
 import { useEffect, useMemo, useState } from "react";
 import { formatShortFio } from "@/admin/formatShortFio";
 import {
@@ -130,9 +130,9 @@ function ScheduleDayBlock({
   );
 }
 
-function IconChevronDown({ className }: { className?: string }) {
+function IconChevronDown({ className, style }: { className?: string; style?: CSSProperties }) {
   return (
-    <svg className={className} viewBox="0 0 24 24" width="20" height="20" aria-hidden>
+    <svg className={className} style={style} viewBox="0 0 24 24" width="20" height="20" aria-hidden>
       <path
         fill="currentColor"
         d="M7.41 8.59L12 13.17l4.59-4.58L18 10l-6 6-6-6 1.41-1.41z"
@@ -149,6 +149,8 @@ export function AdminScheduleTab() {
   const [historyOpenByInstructor, setHistoryOpenByInstructor] = useState<
     Record<string, boolean>
   >({});
+  /** Экспорт графика + расписание по инструкторам — один сворачиваемый блок (по умолчанию свёрнут). */
+  const [driveScheduleOpen, setDriveScheduleOpen] = useState(false);
   const [err, setErr] = useState<string | null>(null);
 
   const instructorList = useMemo(
@@ -214,12 +216,12 @@ export function AdminScheduleTab() {
   }, [allSlots]);
 
   const todayKey = localDateKey();
+  const driveSchedulePanelId = "admin-schedule-drive-schedule-panel";
 
   return (
     <div className="admin-tab admin-schedule-tab">
       <h1 className="admin-tab-title">График</h1>
       <AdminInternalExamSection />
-      <ExportSchedule />
       {err ? (
         <div className="form-error" role="alert">
           {err}
@@ -235,22 +237,48 @@ export function AdminScheduleTab() {
         </div>
       ) : null}
 
-      {instructorList.length === 0 ? (
-        <p className="admin-empty">Нет инструкторов.</p>
-      ) : (
-        <ul className="admin-schedule-instructor-list">
-          {instructorList.map((ins) => {
-            const instructorSlots = slotsByInstructor.get(ins.uid) ?? [];
-            const byDay = groupByDateKey(instructorSlots);
-            const historyKeys = historyDateKeysOrdered(instructorSlots, todayKey);
-            const historyOpen = historyOpenByInstructor[ins.uid] ?? false;
-            const panelId = `history-panel-${ins.uid}`;
-            const btnId = `history-btn-${ins.uid}`;
-            return (
-              <li key={ins.uid} className="admin-schedule-instructor-block">
-                <h2 className="admin-schedule-instructor-name">
-                  {formatShortFio(ins.displayName)}
-                </h2>
+      <section className="admin-schedule-drive-section" aria-label="Экспорт и график вождений">
+        <button
+          type="button"
+          className="instructor-home-section-toggle admin-schedule-drive-toggle"
+          aria-expanded={driveScheduleOpen}
+          aria-controls={driveSchedulePanelId}
+          onClick={() => setDriveScheduleOpen((v) => !v)}
+        >
+          <span className="instructor-home-section-toggle-label">
+            Экспорт графика вождений и расписание по инструкторам (Фамилия И.О.)
+          </span>
+          <IconChevronDown
+            className="admin-schedule-drive-chevron"
+            style={{
+              transform: driveScheduleOpen ? "rotate(180deg)" : undefined,
+              transition: "transform 0.2s ease",
+              flexShrink: 0,
+            }}
+          />
+        </button>
+        <div
+          id={driveSchedulePanelId}
+          className="admin-history-collapse-panel admin-schedule-drive-panel"
+          hidden={!driveScheduleOpen}
+        >
+          <ExportSchedule nested />
+          {instructorList.length === 0 ? (
+            <p className="admin-empty admin-schedule-drive-empty">Нет инструкторов.</p>
+          ) : (
+            <ul className="admin-schedule-instructor-list">
+              {instructorList.map((ins) => {
+                const instructorSlots = slotsByInstructor.get(ins.uid) ?? [];
+                const byDay = groupByDateKey(instructorSlots);
+                const historyKeys = historyDateKeysOrdered(instructorSlots, todayKey);
+                const historyOpen = historyOpenByInstructor[ins.uid] ?? false;
+                const panelId = `history-panel-${ins.uid}`;
+                const btnId = `history-btn-${ins.uid}`;
+                return (
+                  <li key={ins.uid} className="admin-schedule-instructor-block">
+                    <h2 className="admin-schedule-instructor-name">
+                      {formatShortFio(ins.displayName)}
+                    </h2>
                 <div className="admin-schedule-today-wrap">
                   <ScheduleDayBlock
                     dateKey={todayKey}
@@ -311,11 +339,13 @@ export function AdminScheduleTab() {
                     )}
                   </div>
                 ) : null}
-              </li>
-            );
-          })}
-        </ul>
-      )}
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </div>
+      </section>
     </div>
   );
 }
