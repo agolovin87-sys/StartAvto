@@ -47,7 +47,7 @@ export function ExamStudentCard({
   const done = student.status === "passed" || student.status === "failed";
 
   return (
-    <div className="exam-student-card">
+    <div className={`exam-student-card exam-student-card--${student.status}`}>
       <div className="exam-student-card__main">
         <div className="exam-student-card__name">{student.studentName}</div>
         {student.studentGroup ? (

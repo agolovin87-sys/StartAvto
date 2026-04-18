@@ -28,6 +28,17 @@ function IconInternalExamBooking() {
   );
 }
 
+function IconTrash({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" aria-hidden>
+      <path
+        fill="currentColor"
+        d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"
+      />
+    </svg>
+  );
+}
+
 /**
  * Блок «Внутренний экзамен» на вкладке записи инструктора.
  */
@@ -302,10 +313,21 @@ export function InstructorInternalExamPanel({
                         className="btn btn-danger btn-sm instructor-internal-exam__session-delete"
                         disabled={deleteBusy}
                         title="Удалить эту сессию"
-                        aria-label={`Удалить сессию: ${s.groupName} ${s.examDate}`}
+                        aria-busy={deleteBusy && deleteTargetId === s.id}
+                        aria-label={
+                          deleteBusy && deleteTargetId === s.id
+                            ? `Удаление сессии: ${s.groupName} ${s.examDate}`
+                            : `Удалить сессию: ${s.groupName} ${s.examDate}`
+                        }
                         onClick={() => setDeleteTargetId(s.id)}
                       >
-                        {deleteBusy && deleteTargetId === s.id ? "Удаление…" : "Удалить"}
+                        {deleteBusy && deleteTargetId === s.id ? (
+                          <span className="instructor-internal-exam__session-delete-busy" aria-hidden>
+                            …
+                          </span>
+                        ) : (
+                          <IconTrash className="instructor-internal-exam__session-delete-ico" />
+                        )}
                       </button>
                     </li>
                   );

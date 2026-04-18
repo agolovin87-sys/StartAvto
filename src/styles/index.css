@@ -11851,6 +11851,25 @@ html[data-theme="purple"] .instr-side-btn:hover {
 .instructor-internal-exam__session-delete {
   flex-shrink: 0;
   align-self: center;
+  width: 2.35rem;
+  min-width: 2.35rem;
+  height: 2.35rem;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.instructor-internal-exam__session-delete-ico {
+  width: 1.125rem;
+  height: 1.125rem;
+  display: block;
+}
+
+.instructor-internal-exam__session-delete-busy {
+  font-size: 1.1rem;
+  line-height: 1;
+  letter-spacing: 0.05em;
 }
 
 .instructor-internal-exam__subh {
@@ -12079,11 +12098,83 @@ html[data-theme="purple"] .instr-side-btn:hover {
   display: flex;
   flex-wrap: wrap;
   justify-content: space-between;
-  gap: 0.5rem;
-  padding: 0.65rem 0.75rem;
+  align-items: flex-start;
+  gap: 0.65rem;
+  padding: 0.75rem 0.85rem;
   border: 1px solid var(--theme-line-subtle);
-  border-radius: 10px;
-  background: rgba(0, 0, 0, 0.12);
+  border-radius: 12px;
+  border-left-width: 3px;
+  border-left-color: var(--theme-line-subtle);
+  background: var(--theme-surface-elevated, rgba(255, 255, 255, 0.04));
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+}
+
+.exam-student-card--pending {
+  border-left-color: #fbbf24;
+  background: linear-gradient(
+    90deg,
+    rgba(251, 191, 36, 0.1) 0%,
+    var(--theme-surface-elevated, rgba(255, 255, 255, 0.04)) 42%
+  );
+}
+
+.exam-student-card--in_progress {
+  border-left-color: #60a5fa;
+  background: linear-gradient(
+    90deg,
+    rgba(96, 165, 250, 0.12) 0%,
+    var(--theme-surface-elevated, rgba(255, 255, 255, 0.04)) 42%
+  );
+}
+
+.exam-student-card--passed {
+  border-left-color: #4ade80;
+  background: linear-gradient(
+    90deg,
+    rgba(74, 222, 128, 0.1) 0%,
+    var(--theme-surface-elevated, rgba(255, 255, 255, 0.04)) 42%
+  );
+}
+
+.exam-student-card--failed {
+  border-left-color: #f87171;
+  background: linear-gradient(
+    90deg,
+    rgba(248, 113, 113, 0.1) 0%,
+    var(--theme-surface-elevated, rgba(255, 255, 255, 0.04)) 42%
+  );
+}
+
+.exam-student-card__main {
+  flex: 1 1 12rem;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.exam-student-card__status {
+  display: inline-block;
+  margin-top: 0.15rem;
+  font-size: 0.82rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+
+.exam-student-card__status--pending {
+  color: #fbbf24;
+}
+
+.exam-student-card__status--progress {
+  color: #60a5fa;
+}
+
+.exam-student-card__status--pass {
+  color: #4ade80;
+}
+
+.exam-student-card__status--fail {
+  color: #f87171;
 }
 
 .exam-student-card__actions {
@@ -12105,6 +12196,8 @@ html[data-theme="purple"] .instr-side-btn:hover {
 
 .exam-student-card__name {
   font-weight: 600;
+  font-size: 0.95rem;
+  line-height: 1.3;
 }
 
 .exam-student-card__group {
@@ -12114,6 +12207,9 @@ html[data-theme="purple"] .instr-side-btn:hover {
 
 .exam-student-card__points {
   font-size: 0.85rem;
+  font-weight: 600;
+  margin-top: 0.1rem;
+  color: var(--theme-fg, inherit);
 }
 
 .student-exam-card {
