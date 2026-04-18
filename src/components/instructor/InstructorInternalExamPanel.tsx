@@ -81,6 +81,8 @@ export function InstructorInternalExamPanel({
   const [overlaySessionId, setOverlaySessionId] = useState<string | null>(null);
   const [startBusy, setStartBusy] = useState<string | null>(null);
   const [doneCollapsed, setDoneCollapsed] = useState(false);
+  /** true = блок «Архив» свёрнут (по умолчанию) */
+  const [archiveCollapsed, setArchiveCollapsed] = useState(true);
   const [err, setErr] = useState<string | null>(null);
   /** id сессии, для которой открыто подтверждение переноса в архив */
   const [archiveTargetId, setArchiveTargetId] = useState<string | null>(null);
@@ -450,63 +452,75 @@ export function InstructorInternalExamPanel({
           )}
           {!loading && archivedSessions.length > 0 ? (
             <div className="instructor-internal-exam__archive-block">
-              <h3 className="instructor-internal-exam__subh instructor-internal-exam__subh--archive">
-                Архив
-              </h3>
-              <p className="instructor-internal-exam__archive-hint">
-                Сессии остаются у курсантов и в админке; здесь только ваш список для справки.
-              </p>
-              <ul className="instructor-internal-exam__archive-list" aria-label="Архив сессий">
-                {archivedSessions.map((s) => {
-                  const expanded = expandedArchiveSessionId === s.id;
-                  return (
-                    <li key={s.id} className="instructor-internal-exam__archive-item">
-                      <div className="instructor-internal-exam__archive-item-head">
-                        <button
-                          type="button"
-                          className="instructor-internal-exam__archive-toggle"
-                          aria-expanded={expanded}
-                          onClick={() => setExpandedArchiveSessionId(expanded ? null : s.id)}
-                        >
-                          <span className="instructor-internal-exam__archive-text">
-                            {s.groupName} · {s.examDate} {s.examTime}
-                          </span>
-                          <span className="instructor-internal-exam__archive-chevron" aria-hidden>
-                            {expanded ? "▼" : "▶"}
-                          </span>
-                        </button>
-                        <button
-                          type="button"
-                          className="btn btn-danger btn-sm"
-                          disabled={dismissArchiveBusy}
-                          onClick={() => setDismissArchiveTargetId(s.id)}
-                        >
-                          Удалить
-                        </button>
-                      </div>
-                      {expanded ? (
-                        <div className="instructor-internal-exam__archive-detail">
-                          <p className="instructor-internal-exam__archive-detail-hint">
-                            Просмотр листов (PDF). У курсанта экзамен не меняется.
-                          </p>
-                          <ul className="instructor-internal-exam__cards">
-                            {s.students.map((st) => (
-                              <li key={st.studentId}>
-                                <ExamStudentCard
-                                  student={st}
-                                  readOnlyArchive
-                                  onStartExam={() => {}}
-                                  onViewSheet={() => void downloadExamSheetPdf(st.examSheetId)}
-                                />
-                              </li>
-                            ))}
-                          </ul>
-                        </div>
-                      ) : null}
-                    </li>
-                  );
-                })}
-              </ul>
+              <div className="instructor-internal-exam__done-head">
+                <button
+                  type="button"
+                  className="instructor-home-section-toggle instructor-internal-exam__done-toggle"
+                  aria-expanded={!archiveCollapsed}
+                  onClick={() => setArchiveCollapsed((c) => !c)}
+                >
+                  <span className="instructor-home-section-toggle-label">Архив</span>
+                  <span className="instructor-home-section-toggle-meta">{archivedSessions.length}</span>
+                </button>
+              </div>
+              {!archiveCollapsed ? (
+                <>
+                  <p className="instructor-internal-exam__archive-hint">
+                    Сессии остаются у курсантов и в админке; здесь только ваш список для справки.
+                  </p>
+                  <ul className="instructor-internal-exam__archive-list" aria-label="Архив сессий">
+                    {archivedSessions.map((s) => {
+                      const expanded = expandedArchiveSessionId === s.id;
+                      return (
+                        <li key={s.id} className="instructor-internal-exam__archive-item">
+                          <div className="instructor-internal-exam__archive-item-head">
+                            <button
+                              type="button"
+                              className="instructor-internal-exam__archive-toggle"
+                              aria-expanded={expanded}
+                              onClick={() => setExpandedArchiveSessionId(expanded ? null : s.id)}
+                            >
+                              <span className="instructor-internal-exam__archive-text">
+                                {s.groupName} · {s.examDate} {s.examTime}
+                              </span>
+                              <span className="instructor-internal-exam__archive-chevron" aria-hidden>
+                                {expanded ? "▼" : "▶"}
+                              </span>
+                            </button>
+                            <button
+                              type="button"
+                              className="btn btn-danger btn-sm"
+                              disabled={dismissArchiveBusy}
+                              onClick={() => setDismissArchiveTargetId(s.id)}
+                            >
+                              Удалить
+                            </button>
+                          </div>
+                          {expanded ? (
+                            <div className="instructor-internal-exam__archive-detail">
+                              <p className="instructor-internal-exam__archive-detail-hint">
+                                Просмотр листов (PDF). У курсанта экзамен не меняется.
+                              </p>
+                              <ul className="instructor-internal-exam__cards">
+                                {s.students.map((st) => (
+                                  <li key={st.studentId}>
+                                    <ExamStudentCard
+                                      student={st}
+                                      readOnlyArchive
+                                      onStartExam={() => {}}
+                                      onViewSheet={() => void downloadExamSheetPdf(st.examSheetId)}
+                                    />
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
+                          ) : null}
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </>
+              ) : null}
             </div>
           ) : null}
         </div>

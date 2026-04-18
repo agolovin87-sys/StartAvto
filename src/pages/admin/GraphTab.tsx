@@ -76,6 +76,7 @@ export function AdminInternalExamSection() {
     exportSummaryVedomost,
     archiveAllSessionsForGroup,
     dismissAdminArchive,
+    loadAdminArchiveGlobal,
   } = useAdminExam();
 
   const [open, setOpen] = useState(false);
@@ -87,13 +88,18 @@ export function AdminInternalExamSection() {
   const [archiveAllBusy, setArchiveAllBusy] = useState(false);
   const [adminDismissTargetId, setAdminDismissTargetId] = useState<string | null>(null);
   const [adminDismissBusy, setAdminDismissBusy] = useState(false);
+  const [globalArchiveSessions, setGlobalArchiveSessions] = useState<InternalExamSession[]>([]);
+  const [globalArchiveSheets, setGlobalArchiveSheets] = useState<InternalExamSheet[]>([]);
+  const [globalArchiveLoading, setGlobalArchiveLoading] = useState(false);
+  /** false = свёрнут (по умолчанию) */
+  const [adminArchiveExpanded, setAdminArchiveExpanded] = useState(false);
 
   const groupName = useMemo(
     () => groups.find((g) => g.id === groupId)?.name ?? "",
     [groups, groupId]
   );
 
-  const reload = useCallback(async () => {
+  const reloadGroup = useCallback(async () => {
     if (!groupId.trim()) {
       setSessions([]);
       setSheets([]);
@@ -113,25 +119,35 @@ export function AdminInternalExamSection() {
     }
   }, [groupId, getExamSessionsByGroup, getExamSheetsByGroup]);
 
+  const reloadGlobalArchive = useCallback(async () => {
+    setGlobalArchiveLoading(true);
+    try {
+      const { sessions: gs, sheets: gsh } = await loadAdminArchiveGlobal();
+      setGlobalArchiveSessions(gs);
+      setGlobalArchiveSheets(gsh);
+    } catch {
+      setGlobalArchiveSessions([]);
+      setGlobalArchiveSheets([]);
+    } finally {
+      setGlobalArchiveLoading(false);
+    }
+  }, [loadAdminArchiveGlobal]);
+
   useEffect(() => {
-    if (open && groupId) void reload();
-  }, [open, groupId, reload]);
+    if (open && groupId) void reloadGroup();
+  }, [open, groupId, reloadGroup]);
+
+  useEffect(() => {
+    if (open && !groupsLoading) void reloadGlobalArchive();
+  }, [open, groupsLoading, reloadGlobalArchive]);
 
   const activeSessions = useMemo(
     () => sessions.filter((s) => s.adminArchivedAt == null),
     [sessions]
   );
-  const archivedSessions = useMemo(
-    () =>
-      sessions.filter(
-        (s) => s.adminArchivedAt != null && s.adminArchiveDismissedAt == null
-      ),
-    [sessions]
-  );
-
-  const archivedSessionsByExamDate = useMemo(() => {
+  const globalArchivedSessionsByExamDate = useMemo(() => {
     const m = new Map<string, InternalExamSession[]>();
-    for (const s of archivedSessions) {
+    for (const s of globalArchiveSessions) {
       const arr = m.get(s.examDate) ?? [];
       arr.push(s);
       m.set(s.examDate, arr);
@@ -140,7 +156,7 @@ export function AdminInternalExamSection() {
       arr.sort((a, b) => b.createdAt - a.createdAt);
     }
     return [...m.entries()].sort((a, b) => b[0].localeCompare(a[0]));
-  }, [archivedSessions]);
+  }, [globalArchiveSessions]);
 
   const rowsFlat = useMemo(() => buildExamRows(activeSessions, sheets), [activeSessions, sheets]);
   const rowsAllFlat = useMemo(() => buildExamRows(sessions, sheets), [sessions, sheets]);
@@ -188,7 +204,8 @@ export function AdminInternalExamSection() {
     setErr(null);
     try {
       await archiveAllSessionsForGroup(groupId.trim());
-      await reload();
+      await reloadGroup();
+      await reloadGlobalArchive();
     } catch (e) {
       setErr(e instanceof Error ? e.message : "Не удалось перенести в архив");
     } finally {
@@ -197,8 +214,13 @@ export function AdminInternalExamSection() {
   }
 
   const adminDismissTargetSession = useMemo(
-    () => (adminDismissTargetId ? sessions.find((s) => s.id === adminDismissTargetId) ?? null : null),
-    [sessions, adminDismissTargetId]
+    () =>
+      adminDismissTargetId
+        ? globalArchiveSessions.find((s) => s.id === adminDismissTargetId) ??
+          sessions.find((s) => s.id === adminDismissTargetId) ??
+          null
+        : null,
+    [adminDismissTargetId, globalArchiveSessions, sessions]
   );
 
   async function onConfirmAdminDismissArchive() {
@@ -208,7 +230,8 @@ export function AdminInternalExamSection() {
     try {
       await dismissAdminArchive(adminDismissTargetId);
       setAdminDismissTargetId(null);
-      await reload();
+      await reloadGlobalArchive();
+      if (groupId.trim()) await reloadGroup();
     } catch (e) {
       setErr(e instanceof Error ? e.message : "Не удалось убрать из архива");
     } finally {
@@ -261,7 +284,14 @@ export function AdminInternalExamSection() {
             ) : groupId ? (
               <>
                 <div className="admin-internal-exam-actions">
-                  <button type="button" className="btn btn-ghost btn-sm" onClick={() => void reload()}>
+                  <button
+                    type="button"
+                    className="btn btn-ghost btn-sm"
+                    onClick={() => {
+                      void reloadGroup();
+                      void reloadGlobalArchive();
+                    }}
+                  >
                     Обновить
                   </button>
                   <button
@@ -354,14 +384,36 @@ export function AdminInternalExamSection() {
                     </tbody>
                   </table>
                 </div>
-                {archivedSessionsByExamDate.length > 0 ? (
+              </>
+            ) : (
+              <p className="admin-settings-section-desc">Выберите группу для просмотра экзаменов.</p>
+            )}
+            <div className="admin-internal-exam-global-archive">
+              {globalArchiveLoading ? (
+                <p className="admin-settings-section-desc">Загрузка архива…</p>
+              ) : null}
+              <div className="instructor-internal-exam__done-head">
+                <button
+                  type="button"
+                  className="instructor-home-section-toggle instructor-internal-exam__done-toggle"
+                  aria-expanded={adminArchiveExpanded}
+                  onClick={() => setAdminArchiveExpanded((v) => !v)}
+                >
+                  <span className="instructor-home-section-toggle-label">Архив</span>
+                  <span className="instructor-home-section-toggle-meta">{globalArchiveSessions.length}</span>
+                  <IconChevron open={adminArchiveExpanded} />
+                </button>
+              </div>
+              {adminArchiveExpanded && !globalArchiveLoading ? (
+                globalArchivedSessionsByExamDate.length === 0 ? (
+                  <p className="admin-settings-section-desc">Архив пуст.</p>
+                ) : (
                   <>
-                    <h3 className="admin-internal-exam-archive-title">Архив</h3>
                     <p className="admin-internal-exam-archive-desc">
                       Сессии и листы сохраняются; сгруппировано по дате экзамена. «Удалить из архива» убирает
                       запись только из вашего списка.
                     </p>
-                    {archivedSessionsByExamDate.map(([examDate, sessList]) => (
+                    {globalArchivedSessionsByExamDate.map(([examDate, sessList]) => (
                       <div key={examDate} className="admin-internal-exam-archive-date-block">
                         <h4 className="admin-internal-exam-archive-date-heading">
                           {formatAdminArchiveExamDate(examDate)}
@@ -394,7 +446,7 @@ export function AdminInternalExamSection() {
                                 </thead>
                                 <tbody>
                                   {session.students.map((student) => {
-                                    const sheet = sheets.find(
+                                    const sheet = globalArchiveSheets.find(
                                       (sh) =>
                                         sh.examSessionId === session.id && sh.studentId === student.studentId
                                     );
@@ -450,11 +502,9 @@ export function AdminInternalExamSection() {
                       </div>
                     ))}
                   </>
-                ) : null}
-              </>
-            ) : (
-              <p className="admin-settings-section-desc">Выберите группу для просмотра экзаменов.</p>
-            )}
+                )
+              ) : null}
+            </div>
           </>
         )}
       </div>

@@ -11,6 +11,7 @@ import {
   orderBy,
   query,
   serverTimestamp,
+  Timestamp,
   updateDoc,
   where,
   writeBatch,
@@ -271,6 +272,23 @@ export async function fetchExamSessionsByGroup(groupId: string): Promise<Interna
   const q = query(collection(db, SESSIONS), where("groupId", "==", groupId), orderBy("createdAt", "desc"));
   const snap = await getDocs(q);
   return snap.docs.map((d) => normalizeInternalExamSession(d.id, d.data() as Record<string, unknown>));
+}
+
+/**
+ * Все сессии в админском архиве по всем группам (в т.ч. если группа уже удалена из справочника).
+ */
+export async function fetchAllAdminArchivedSessions(): Promise<InternalExamSession[]> {
+  if (!isFirebaseConfigured) return [];
+  const { db } = getFirebase();
+  const q = query(
+    collection(db, SESSIONS),
+    where("adminArchivedAt", ">", Timestamp.fromMillis(0)),
+    orderBy("adminArchivedAt", "desc")
+  );
+  const snap = await getDocs(q);
+  return snap.docs
+    .map((d) => normalizeInternalExamSession(d.id, d.data() as Record<string, unknown>))
+    .filter((s) => s.adminArchiveDismissedAt == null);
 }
 
 /** Все листы, привязанные к сессиям группы (по списку session ids). */

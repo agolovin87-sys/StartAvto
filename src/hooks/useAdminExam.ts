@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useState } from "react";
-import type { InternalExamSheet } from "@/types/internalExam";
+import type { InternalExamSession, InternalExamSheet } from "@/types/internalExam";
 import type { TrainingGroup } from "@/types";
 import { subscribeTrainingGroups } from "@/firebase/admin";
 import {
   archiveAdminExamSessionsForGroup,
   dismissAdminArchiveSession,
+  fetchAllAdminArchivedSessions,
   fetchExamSessionsByGroup,
   fetchExamSheetsForSessionIds,
   getInternalExamSheet,
@@ -95,6 +96,17 @@ export function useAdminExam() {
     await dismissAdminArchiveSession(sessionId);
   }, []);
 
+  /** Архив админа по всем группам + листы для этих сессий. */
+  const loadAdminArchiveGlobal = useCallback(async (): Promise<{
+    sessions: InternalExamSession[];
+    sheets: InternalExamSheet[];
+  }> => {
+    const sess = await fetchAllAdminArchivedSessions();
+    const ids = sess.map((s) => s.id);
+    const sheets = await fetchExamSheetsForSessionIds(ids);
+    return { sessions: sess, sheets };
+  }, []);
+
   return {
     groups,
     groupsLoading,
@@ -106,5 +118,6 @@ export function useAdminExam() {
     exportSummaryVedomost,
     archiveAllSessionsForGroup,
     dismissAdminArchive,
+    loadAdminArchiveGlobal,
   };
 }
