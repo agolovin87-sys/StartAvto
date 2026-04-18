@@ -54,7 +54,8 @@ export function InstructorInternalExamPanel({
   const [startBusy, setStartBusy] = useState<string | null>(null);
   const [doneCollapsed, setDoneCollapsed] = useState(false);
   const [err, setErr] = useState<string | null>(null);
-  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  /** id сессии, для которой открыто подтверждение удаления */
+  const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null);
   const [deleteBusy, setDeleteBusy] = useState(false);
 
   useEffect(() => {
@@ -179,9 +180,14 @@ export function InstructorInternalExamPanel({
     if (sheet) openExamSheetPreview(sheet);
   }, []);
 
+  const deleteTargetSession = useMemo(
+    () => (deleteTargetId ? sessions.find((s) => s.id === deleteTargetId) ?? null : null),
+    [sessions, deleteTargetId]
+  );
+
   async function onConfirmDeleteSession() {
-    if (!currentSession) return;
-    const sid = currentSession.id;
+    if (!deleteTargetId) return;
+    const sid = deleteTargetId;
     setDeleteBusy(true);
     setErr(null);
     try {
@@ -190,7 +196,7 @@ export function InstructorInternalExamPanel({
         setSheetOverlay(null);
         setOverlaySessionId(null);
       }
-      setDeleteConfirmOpen(false);
+      setDeleteTargetId(null);
     } catch (e) {
       setErr(e instanceof Error ? e.message : "Не удалось удалить сессию");
     } finally {
@@ -237,33 +243,57 @@ export function InstructorInternalExamPanel({
             <button type="button" className="btn btn-ghost btn-sm" onClick={() => setCreateOpen(true)}>
               Новый экзамен
             </button>
-            {sessions.length > 0 ? (
-              <label className="instructor-internal-exam__select">
-                <span className="field-label">Сессия</span>
-                <select
-                  className="input"
-                  value={sessionId ?? ""}
-                  onChange={(e) => setSessionId(e.target.value || null)}
-                >
-                  {sessions.map((s) => (
-                    <option key={s.id} value={s.id}>
-                      {s.groupName} · {s.examDate} {s.examTime}
-                    </option>
-                  ))}
-                </select>
-              </label>
-            ) : null}
-            {sessions.length > 0 ? (
-              <button
-                type="button"
-                className="btn btn-danger btn-sm"
-                disabled={deleteBusy || !currentSession}
-                onClick={() => setDeleteConfirmOpen(true)}
-              >
-                {deleteBusy ? "Удаление…" : "Удалить сессию"}
-              </button>
-            ) : null}
           </div>
+          {sessions.length > 0 ? (
+            <div className="instructor-internal-exam__session-block">
+              <span className="field-label" id="internal-exam-sessions-label">
+                Сессии
+              </span>
+              <ul
+                className="instructor-internal-exam__session-list"
+                role="listbox"
+                aria-labelledby="internal-exam-sessions-label"
+                aria-activedescendant={sessionId ? `internal-exam-session-${sessionId}` : undefined}
+              >
+                {sessions.map((s) => {
+                  const selected = s.id === sessionId;
+                  return (
+                    <li
+                      key={s.id}
+                      id={`internal-exam-session-${s.id}`}
+                      className={
+                        selected
+                          ? "instructor-internal-exam__session-row instructor-internal-exam__session-row--current"
+                          : "instructor-internal-exam__session-row"
+                      }
+                      role="option"
+                      aria-selected={selected}
+                    >
+                      <button
+                        type="button"
+                        className="instructor-internal-exam__session-pick"
+                        onClick={() => setSessionId(s.id)}
+                      >
+                        <span className="instructor-internal-exam__session-pick-text">
+                          {s.groupName} · {s.examDate} {s.examTime}
+                        </span>
+                      </button>
+                      <button
+                        type="button"
+                        className="btn btn-danger btn-sm instructor-internal-exam__session-delete"
+                        disabled={deleteBusy}
+                        title="Удалить эту сессию"
+                        aria-label={`Удалить сессию: ${s.groupName} ${s.examDate}`}
+                        onClick={() => setDeleteTargetId(s.id)}
+                      >
+                        {deleteBusy && deleteTargetId === s.id ? "Удаление…" : "Удалить"}
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
+          ) : null}
 
           {loading ? (
             <p className="admin-settings-section-desc">Загрузка…</p>
@@ -424,9 +454,13 @@ export function InstructorInternalExamPanel({
       ) : null}
 
       <ConfirmDialog
-        open={deleteConfirmOpen}
+        open={deleteTargetId != null}
         title="Удалить сессию экзамена?"
-        message="Сессия и все связанные экзаменационные листы будут удалены без восстановления. У курсантов эта сессия тоже пропадёт из списка. Продолжить?"
+        message={
+          deleteTargetSession
+            ? `«${deleteTargetSession.groupName}» · ${deleteTargetSession.examDate} ${deleteTargetSession.examTime}. Сессия и все связанные экзаменационные листы будут удалены без восстановления. У курсантов эта сессия тоже пропадёт из списка. Продолжить?`
+            : "Сессия и все связанные экзаменационные листы будут удалены без восстановления. У курсантов эта сессия тоже пропадёт из списка. Продолжить?"
+        }
         confirmLabel="Удалить"
         cancelLabel="Отмена"
         onConfirm={() => {
@@ -434,7 +468,7 @@ export function InstructorInternalExamPanel({
           void onConfirmDeleteSession();
         }}
         onCancel={() => {
-          if (!deleteBusy) setDeleteConfirmOpen(false);
+          if (!deleteBusy) setDeleteTargetId(null);
         }}
       />
     </section>
