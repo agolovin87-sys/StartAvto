@@ -983,5 +983,13 @@ service cloud.firestore {
       allow read: if isAdmin() || isAdminByTokenEmail();
       allow update, delete: if false;
     }
+
+    /** Учебные автомобили и журнал ТО (только админ). */
+    match /cars/{carId} {
+      allow read, write: if isAdmin() || isAdminByTokenEmail();
+      match /maintenance/{maintId} {
+        allow read, write: if isAdmin() || isAdminByTokenEmail();
+      }
+    }
   }
 }

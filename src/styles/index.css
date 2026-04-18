@@ -2770,6 +2770,267 @@ html[data-theme="light"] .page-loading-brand {
   color: var(--theme-dim);
 }
 
+/* Управление автомобилями (админ) */
+.admin-cars-section {
+  margin-top: 1.75rem;
+}
+
+.admin-cars-root {
+  margin-top: 0.5rem;
+}
+
+.admin-cars-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 0.65rem;
+  align-items: center;
+  margin-bottom: 0.65rem;
+}
+
+.admin-cars-search {
+  flex: 1 1 200px;
+  min-width: 160px;
+}
+
+.admin-cars-filter {
+  width: auto;
+  min-width: 9rem;
+}
+
+.admin-cars-table-wrap {
+  overflow-x: auto;
+}
+
+.admin-cars-table .admin-cars-td-photo {
+  width: 52px;
+  vertical-align: middle;
+}
+
+.admin-cars-thumb {
+  width: 44px;
+  height: 44px;
+  object-fit: cover;
+  border-radius: 8px;
+  border: 1px solid var(--theme-line);
+}
+
+.admin-cars-thumb-fallback {
+  display: inline-flex;
+  width: 44px;
+  height: 44px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  background: var(--theme-slate-soft);
+  border: 1px solid var(--theme-line);
+  font-size: 1.25rem;
+}
+
+.admin-cars-sub {
+  font-size: 0.78rem;
+  color: var(--theme-muted);
+}
+
+.admin-cars-plate {
+  font-size: 0.85rem;
+}
+
+.admin-cars-assign-select {
+  max-width: 11rem;
+  font-size: 0.82rem;
+}
+
+.admin-cars-status {
+  display: inline-block;
+  padding: 0.12rem 0.45rem;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.admin-cars-status--active {
+  background: rgba(34, 197, 94, 0.15);
+  color: #4ade80;
+  border: 1px solid rgba(34, 197, 94, 0.35);
+}
+
+.admin-cars-status--maintenance {
+  background: rgba(234, 179, 8, 0.18);
+  color: #facc15;
+  border: 1px solid rgba(234, 179, 8, 0.4);
+}
+
+.admin-cars-status--repair {
+  background: rgba(248, 113, 113, 0.14);
+  color: #f87171;
+  border: 1px solid rgba(248, 113, 113, 0.35);
+}
+
+.admin-cars-status--inactive {
+  background: rgba(148, 163, 184, 0.15);
+  color: var(--theme-muted);
+  border: 1px solid var(--theme-line);
+}
+
+.admin-cars-to-warn {
+  color: #fbbf24;
+  font-weight: 600;
+}
+
+.admin-cars-to-left {
+  font-size: 0.78rem;
+  color: var(--theme-muted);
+  font-weight: 400;
+}
+
+.admin-cars-to-badge {
+  display: inline-block;
+  margin-left: 0.25rem;
+  padding: 0.05rem 0.35rem;
+  border-radius: 4px;
+  font-size: 0.68rem;
+  background: rgba(251, 191, 36, 0.2);
+  color: #fbbf24;
+}
+
+.admin-cars-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  max-width: 220px;
+}
+
+.admin-cars-pager {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  margin-top: 0.65rem;
+}
+
+.admin-cars-pager-info {
+  font-size: 0.85rem;
+  color: var(--theme-muted);
+}
+
+.admin-car-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 12500;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+
+.admin-car-modal-backdrop {
+  position: absolute;
+  inset: 0;
+  border: none;
+  margin: 0;
+  padding: 0;
+  background: rgba(0, 0, 0, 0.55);
+  cursor: pointer;
+}
+
+.admin-car-modal-card {
+  position: relative;
+  z-index: 1;
+  width: min(96vw, 560px);
+  max-height: min(92vh, 720px);
+  overflow: auto;
+  background: var(--theme-bg-near);
+  border: 1px solid var(--theme-line-strong);
+  border-radius: 0.75rem;
+  padding: 1rem 1.1rem 1.15rem;
+  box-shadow: var(--theme-dialog-shadow);
+}
+
+.admin-car-modal-card--sm {
+  width: min(96vw, 420px);
+}
+
+.admin-car-modal-card--wide {
+  width: min(98vw, 900px);
+}
+
+.admin-car-modal-title {
+  margin: 0 0 0.75rem;
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--theme-heading);
+}
+
+.admin-car-form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.55rem 0.75rem;
+}
+
+@media (max-width: 560px) {
+  .admin-car-form-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.admin-car-form .field-span-2 {
+  grid-column: 1 / -1;
+}
+
+.admin-car-form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  margin-top: 0.85rem;
+  flex-wrap: wrap;
+}
+
+.admin-car-photo-preview {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+}
+
+.admin-car-photo-preview-img {
+  width: 72px;
+  height: 72px;
+  object-fit: cover;
+  border-radius: 10px;
+  border: 1px solid var(--theme-line);
+}
+
+.admin-car-maint-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.65rem;
+  margin-bottom: 0.65rem;
+}
+
+.admin-car-maint-head-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  align-items: center;
+}
+
+.admin-car-maint-table-wrap {
+  max-height: min(50vh, 400px);
+  overflow: auto;
+}
+
+.admin-car-maint-desc {
+  max-width: 220px;
+  font-size: 0.82rem;
+  word-break: break-word;
+}
+
+.admin-car-maint-hint {
+  margin: 0.35rem 0 0;
+}
+
 .admin-history-clear-btn {
   flex-shrink: 0;
   width: 44px;
