@@ -30,6 +30,7 @@ import {
   normalizeUserProfile,
 } from "@/firebase/users";
 import { mapFirebaseError } from "@/firebase/errors";
+import { logAuditAction } from "@/utils/audit";
 import { clearBadge } from "@/utils/badging";
 import { hasPasskeyForUser, isPasskeySupported } from "@/utils/passkey";
 
@@ -176,6 +177,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           stayLoggedIn ? browserLocalPersistence : browserSessionPersistence
         );
         const cred = await signInWithEmailAndPassword(auth, email.trim(), password);
+        void logAuditAction("LOGIN", "user", {
+          entityId: cred.user.uid,
+          entityName: `Вход в систему (${cred.user.email ?? email.trim()})`,
+          status: "success",
+        });
         if (isPasskeySupported() && !hasPasskeyForUser(cred.user.uid)) {
           setPasskeyOffer({
             uid: cred.user.uid,
@@ -221,6 +227,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           role,
           phone
         );
+        void logAuditAction("CREATE_USER", "user", {
+          entityId: cred.user.uid,
+          entityName: `Создал пользователя ${name} (роль: ${role})`,
+          newValue: { email: cred.user.email ?? email.trim(), role, displayName: name },
+          status: "success",
+        });
       } catch (e) {
         const msg = mapFirebaseError(e);
         setError(msg);
@@ -234,7 +246,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setError(null);
     const { auth } = getFirebase();
     const uid = auth.currentUser?.uid?.trim();
+    const email = auth.currentUser?.email ?? "";
     if (uid) {
+      try {
+        await logAuditAction("LOGOUT", "user", {
+          entityId: uid,
+          entityName: `Выход из системы (${email || uid})`,
+          status: "success",
+        });
+      } catch {
+        /* аудит не должен блокировать выход */
+      }
       try {
         await removeAllFcmTokensForUser(uid);
       } catch {

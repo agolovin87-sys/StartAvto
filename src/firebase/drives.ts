@@ -826,4 +826,31 @@ export async function instructorCompleteDriveLiveSession(slotId: string): Promis
       fromDisplayName: student.displayName,
     });
   });
+
+  void import("@/utils/audit").then(async ({ logAuditAction }) => {
+    try {
+      const slotRef = doc(db, DRIVES, slotId);
+      const slotSnap = await getDoc(slotRef);
+      if (!slotSnap.exists()) return;
+      const slotDone = normalizeDriveSlot(
+        slotSnap.data() as Record<string, unknown>,
+        slotId
+      );
+      const st = await getUserProfile(slotDone.studentId);
+      const name = st?.displayName ?? slotDone.studentId;
+      await logAuditAction("COMPLETE_LESSON", "lesson", {
+        entityId: slotId,
+        entityName: `Отметил проведение вождения: ${name} · ${slotDone.dateKey} ${slotDone.startTime}`,
+        newValue: {
+          status: slotDone.status,
+          studentId: slotDone.studentId,
+          dateKey: slotDone.dateKey,
+          startTime: slotDone.startTime,
+        },
+        status: "success",
+      });
+    } catch {
+      /* аудит не критичен */
+    }
+  });
 }

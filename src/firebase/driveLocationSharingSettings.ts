@@ -1,4 +1,4 @@
-import { doc, onSnapshot, serverTimestamp, setDoc } from "firebase/firestore";
+import { doc, getDoc, onSnapshot, serverTimestamp, setDoc } from "firebase/firestore";
 import { getFirebase, isFirebaseConfigured } from "@/firebase/config";
 
 const COLLECTION = "appSettings";
@@ -48,8 +48,13 @@ export async function setDriveLocationSharingSettings(
 ): Promise<void> {
   if (!isFirebaseConfigured) return;
   const { db } = getFirebase();
+  const ref = doc(db, COLLECTION, DOC_ID);
+  const prevSnap = await getDoc(ref);
+  const oldVal = prevSnap.exists()
+    ? normalize(prevSnap.data() as Record<string, unknown>)
+    : { ...DEFAULT_DRIVE_LOCATION_SHARING_SETTINGS };
   await setDoc(
-    doc(db, COLLECTION, DOC_ID),
+    ref,
     {
       instructorsEnabled: next.instructorsEnabled,
       studentsEnabled: next.studentsEnabled,
@@ -57,5 +62,22 @@ export async function setDriveLocationSharingSettings(
       updatedAt: serverTimestamp(),
     },
     { merge: true }
+  );
+  void import("@/utils/audit").then(({ logAuditAction }) =>
+    logAuditAction("UPDATE_SETTINGS", "settings", {
+      entityId: DOC_ID,
+      entityName: "Настройки геолокации и трека (appSettings/driveLocationSharing)",
+      oldValue: {
+        instructorsEnabled: oldVal.instructorsEnabled,
+        studentsEnabled: oldVal.studentsEnabled,
+        gpsTrackerEnabled: oldVal.gpsTrackerEnabled,
+      },
+      newValue: {
+        instructorsEnabled: next.instructorsEnabled,
+        studentsEnabled: next.studentsEnabled,
+        gpsTrackerEnabled: next.gpsTrackerEnabled,
+      },
+      status: "success",
+    })
   );
 }

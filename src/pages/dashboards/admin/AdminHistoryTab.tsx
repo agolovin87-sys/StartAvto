@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { formatShortFio } from "@/admin/formatShortFio";
 import { useAuth } from "@/context/AuthContext";
+import { AuditLogPanel } from "@/pages/admin/AuditLog";
 import { subscribeAllUsersAdmin } from "@/firebase/admin";
 import {
   deleteAllTalonHistory,
@@ -65,6 +66,14 @@ function IconClearHistory({ className }: { className?: string }) {
   );
 }
 
+function IconChevron({ open }: { open: boolean }) {
+  return (
+    <svg className={`instr-chevron${open ? " is-open" : ""}`} viewBox="0 0 24 24" aria-hidden>
+      <path fill="currentColor" d="M7 10l5 5 5-5z" />
+    </svg>
+  );
+}
+
 export function AdminHistoryTab() {
   const { user, loading: authLoading } = useAuth();
   const [talonEntries, setTalonEntries] = useState<TalonHistoryEntry[]>([]);
@@ -72,6 +81,10 @@ export function AdminHistoryTab() {
   const [err, setErr] = useState<string | null>(null);
   const [clearTalonConfirm, setClearTalonConfirm] = useState(false);
   const [clearTalonBusy, setClearTalonBusy] = useState(false);
+
+  const [talonOpen, setTalonOpen] = useState(false);
+  const [usersOpen, setUsersOpen] = useState(false);
+  const [auditOpen, setAuditOpen] = useState(false);
 
   useEffect(() => {
     if (authLoading || !user) {
@@ -117,148 +130,200 @@ export function AdminHistoryTab() {
       ) : null}
 
       <section className="admin-history-section" aria-labelledby="history-talon-heading">
-        <div className="admin-history-section-head">
-          <h2 className="admin-history-section-title" id="history-talon-heading">
-            Баланс талонов
-          </h2>
-          {clearTalonConfirm ? (
-            <div
-              className="admin-history-clear-confirm"
-              role="group"
-              aria-label="Подтверждение очистки истории талонов"
-            >
-              <span className="admin-history-clear-question">Вы уверены?</span>
+        <button
+          type="button"
+          id="history-talon-heading"
+          className="instructor-home-section-toggle glossy-panel admin-history-collapse-toggle"
+          aria-expanded={talonOpen}
+          aria-controls="history-talon-panel"
+          onClick={() => setTalonOpen((o) => !o)}
+        >
+          <span className="instructor-home-section-toggle-label">Баланс талонов</span>
+          <span className="instructor-home-section-toggle-meta">{adminTalonEntries.length}</span>
+          <IconChevron open={talonOpen} />
+        </button>
+        <div
+          id="history-talon-panel"
+          className="admin-history-collapse-panel"
+          hidden={!talonOpen}
+        >
+          <div className="admin-history-section-head">
+            {clearTalonConfirm ? (
+              <div
+                className="admin-history-clear-confirm"
+                role="group"
+                aria-label="Подтверждение очистки истории талонов"
+              >
+                <span className="admin-history-clear-question">Вы уверены?</span>
+                <button
+                  type="button"
+                  className="btn btn-sm btn-danger"
+                  disabled={clearTalonBusy}
+                  onClick={() => void confirmClearTalonHistory()}
+                >
+                  {clearTalonBusy ? "…" : "Да"}
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-sm btn-ghost"
+                  disabled={clearTalonBusy}
+                  onClick={() => setClearTalonConfirm(false)}
+                >
+                  Нет
+                </button>
+              </div>
+            ) : (
               <button
                 type="button"
-                className="btn btn-sm btn-danger"
-                disabled={clearTalonBusy}
-                onClick={() => void confirmClearTalonHistory()}
+                className="admin-history-clear-btn glossy-btn"
+                title="Очистить историю баланса талонов"
+                aria-label="Очистить историю баланса талонов"
+                disabled={talonEntries.length === 0 || clearTalonBusy}
+                onClick={() => setClearTalonConfirm(true)}
               >
-                {clearTalonBusy ? "…" : "Да"}
+                <IconClearHistory className="admin-history-clear-icon" />
               </button>
-              <button
-                type="button"
-                className="btn btn-sm btn-ghost"
-                disabled={clearTalonBusy}
-                onClick={() => setClearTalonConfirm(false)}
-              >
-                Нет
-              </button>
-            </div>
-          ) : (
-            <button
-              type="button"
-              className="admin-history-clear-btn glossy-btn"
-              title="Очистить историю баланса талонов"
-              aria-label="Очистить историю баланса талонов"
-              disabled={talonEntries.length === 0 || clearTalonBusy}
-              onClick={() => setClearTalonConfirm(true)}
-            >
-              <IconClearHistory className="admin-history-clear-icon" />
-            </button>
-          )}
-        </div>
-        <div className="admin-schedule-table-wrap admin-history-table-wrap">
-          <table className="admin-schedule-table admin-history-table">
-            <thead>
-              <tr>
-                <th>Дата</th>
-                <th>Время</th>
-                <th>Списание / зачисление</th>
-                <th>Роль</th>
-                <th>Фамилия И.О.</th>
-                <th>Кем</th>
-              </tr>
-            </thead>
-            <tbody>
-              {adminTalonEntries.length === 0 ? (
+            )}
+          </div>
+          <div className="admin-schedule-table-wrap admin-history-table-wrap">
+            <table className="admin-schedule-table admin-history-table">
+              <thead>
                 <tr>
-                  <td colSpan={6} className="admin-schedule-table-empty">
-                    {talonEntries.length === 0
-                      ? "Записей пока нет. Зачисление и списание талонов администратором фиксируются при сохранении в карточках курсантов и инструкторов."
-                      : "Нет операций администратора по талонам. Списания за вождение (инструктор — курсант) здесь не отображаются."}
-                  </td>
+                  <th>Дата</th>
+                  <th>Время</th>
+                  <th>Списание / зачисление</th>
+                  <th>Роль</th>
+                  <th>Фамилия И.О.</th>
+                  <th>Кем</th>
                 </tr>
-              ) : (
-                adminTalonEntries.map((e) => {
-                  const fromParty =
-                    e.fromUid && e.fromRole
-                      ? `${e.fromRole === "admin" ? "Админ" : roleLabel[e.fromRole]} / ${formatShortFio(e.fromDisplayName ?? "")}`
-                      : "—";
-                  return (
-                    <tr key={e.id}>
-                      <td>{formatRuDate(e.at)}</td>
-                      <td>{formatRuTime(e.at)}</td>
-                      <td>
-                        {e.delta > 0 ? (
-                          <span className="admin-history-talon-op">
-                            <span className="admin-history-talon-op__label admin-history-talon-op__label--credit">
-                              Зачисление
+              </thead>
+              <tbody>
+                {adminTalonEntries.length === 0 ? (
+                  <tr>
+                    <td colSpan={6} className="admin-schedule-table-empty">
+                      {talonEntries.length === 0
+                        ? "Записей пока нет. Зачисление и списание талонов администратором фиксируются при сохранении в карточках курсантов и инструкторов."
+                        : "Нет операций администратора по талонам. Списания за вождение (инструктор — курсант) здесь не отображаются."}
+                    </td>
+                  </tr>
+                ) : (
+                  adminTalonEntries.map((e) => {
+                    const fromParty =
+                      e.fromUid && e.fromRole
+                        ? `${e.fromRole === "admin" ? "Админ" : roleLabel[e.fromRole]} / ${formatShortFio(e.fromDisplayName ?? "")}`
+                        : "—";
+                    return (
+                      <tr key={e.id}>
+                        <td>{formatRuDate(e.at)}</td>
+                        <td>{formatRuTime(e.at)}</td>
+                        <td>
+                          {e.delta > 0 ? (
+                            <span className="admin-history-talon-op">
+                              <span className="admin-history-talon-op__label admin-history-talon-op__label--credit">
+                                Зачисление
+                              </span>
+                              <span className="admin-history-talon-op__value admin-history-talon-op__value--credit">
+                                +{e.delta}
+                              </span>
                             </span>
-                            <span className="admin-history-talon-op__value admin-history-talon-op__value--credit">
-                              +{e.delta}
+                          ) : e.delta < 0 ? (
+                            <span className="admin-history-talon-op">
+                              <span className="admin-history-talon-op__label admin-history-talon-op__label--debit">
+                                Списание
+                              </span>
+                              <span className="admin-history-talon-op__value admin-history-talon-op__value--debit">
+                                -{Math.abs(e.delta)}
+                              </span>
                             </span>
-                          </span>
-                        ) : e.delta < 0 ? (
-                          <span className="admin-history-talon-op">
-                            <span className="admin-history-talon-op__label admin-history-talon-op__label--debit">
-                              Списание
-                            </span>
-                            <span className="admin-history-talon-op__value admin-history-talon-op__value--debit">
-                              -{Math.abs(e.delta)}
-                            </span>
-                          </span>
-                        ) : (
-                          "—"
-                        )}
-                      </td>
-                      <td>{roleLabel[e.targetRole]}</td>
-                      <td>{formatShortFio(e.targetDisplayName)}</td>
-                      <td>{fromParty}</td>
-                    </tr>
-                  );
-                })
-              )}
-            </tbody>
-          </table>
+                          ) : (
+                            "—"
+                          )}
+                        </td>
+                        <td>{roleLabel[e.targetRole]}</td>
+                        <td>{formatShortFio(e.targetDisplayName)}</td>
+                        <td>{fromParty}</td>
+                      </tr>
+                    );
+                  })
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
       </section>
 
       <section className="admin-history-section" aria-labelledby="history-users-heading">
-        <h2 className="admin-history-section-title" id="history-users-heading">
-          Пользователи
-        </h2>
-        <div className="admin-schedule-table-wrap admin-history-table-wrap">
-          <table className="admin-schedule-table admin-history-table">
-            <thead>
-              <tr>
-                <th>Дата</th>
-                <th>Время</th>
-                <th>Событие</th>
-                <th>Роль</th>
-                <th>Фамилия И.О.</th>
-              </tr>
-            </thead>
-            <tbody>
-              {userRows.length === 0 ? (
+        <button
+          type="button"
+          id="history-users-heading"
+          className="instructor-home-section-toggle glossy-panel admin-history-collapse-toggle"
+          aria-expanded={usersOpen}
+          aria-controls="history-users-panel"
+          onClick={() => setUsersOpen((o) => !o)}
+        >
+          <span className="instructor-home-section-toggle-label">Пользователи</span>
+          <span className="instructor-home-section-toggle-meta">{userRows.length}</span>
+          <IconChevron open={usersOpen} />
+        </button>
+        <div
+          id="history-users-panel"
+          className="admin-history-collapse-panel"
+          hidden={!usersOpen}
+        >
+          <div className="admin-schedule-table-wrap admin-history-table-wrap">
+            <table className="admin-schedule-table admin-history-table">
+              <thead>
                 <tr>
-                  <td colSpan={5} className="admin-schedule-table-empty">
-                    Нет данных.
-                  </td>
+                  <th>Дата</th>
+                  <th>Время</th>
+                  <th>Событие</th>
+                  <th>Роль</th>
+                  <th>Фамилия И.О.</th>
                 </tr>
-              ) : (
-                userRows.map((r, i) => (
-                  <tr key={`${r.event}-${r.at}-${i}`}>
-                    <td>{formatRuDate(r.at)}</td>
-                    <td>{formatRuTime(r.at)}</td>
-                    <td>{r.event}</td>
-                    <td>{roleLabel[r.role]}</td>
-                    <td>{formatShortFio(r.displayName)}</td>
+              </thead>
+              <tbody>
+                {userRows.length === 0 ? (
+                  <tr>
+                    <td colSpan={5} className="admin-schedule-table-empty">
+                      Нет данных.
+                    </td>
                   </tr>
-                ))
-              )}
-            </tbody>
-          </table>
+                ) : (
+                  userRows.map((r, i) => (
+                    <tr key={`${r.event}-${r.at}-${i}`}>
+                      <td>{formatRuDate(r.at)}</td>
+                      <td>{formatRuTime(r.at)}</td>
+                      <td>{r.event}</td>
+                      <td>{roleLabel[r.role]}</td>
+                      <td>{formatShortFio(r.displayName)}</td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <section className="admin-history-section" aria-labelledby="history-audit-heading">
+        <button
+          type="button"
+          id="history-audit-heading"
+          className="instructor-home-section-toggle glossy-panel admin-history-collapse-toggle"
+          aria-expanded={auditOpen}
+          aria-controls="history-audit-panel"
+          onClick={() => setAuditOpen((o) => !o)}
+        >
+          <span className="instructor-home-section-toggle-label">Аудит действий</span>
+          <span className="instructor-home-section-toggle-meta">журнал</span>
+          <IconChevron open={auditOpen} />
+        </button>
+        <div
+          id="history-audit-panel"
+          className="admin-history-collapse-panel"
+          hidden={!auditOpen}
+        >
+          <AuditLogPanel />
         </div>
       </section>
     </div>

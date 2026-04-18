@@ -53,6 +53,18 @@ export function ExportSchedule() {
       const filename = buildFilename();
       if (kind === "word") exportToWord(html, filename);
       else await exportToPDF(html, filename);
+      void import("@/utils/audit").then(({ logAuditAction }) =>
+        logAuditAction("EXPORT_REPORT", "schedule", {
+          entityId: selectedInstructor.id,
+          entityName: `Экспорт графика (${kind === "word" ? "Word" : "PDF"}) · ${selectedInstructor.name} · ${periodLabel}`,
+          newValue: {
+            format: kind,
+            instructorId: selectedInstructor.id,
+            weekCount: weeks.length,
+          },
+          status: "success",
+        })
+      );
     } catch (e) {
       setLocalErr(e instanceof Error ? e.message : "Ошибка экспорта");
     } finally {

@@ -945,5 +945,43 @@ service cloud.firestore {
         || isAdminByTokenEmail()
         || isAdmin();
     }
+
+    /**
+     * Журнал аудита: пишет только сам пользователь (userId = auth.uid), читает только админ.
+     */
+    match /auditLogs/{logId} {
+      function auditCreateValid() {
+        let d = request.resource.data;
+        return isSignedIn()
+          && d.userId is string
+          && d.userId == request.auth.uid
+          && d.userName is string
+          && d.userName.size() > 0
+          && d.userName.size() <= 200
+          && d.userRole in ['admin', 'instructor', 'student']
+          && d.action is string
+          && d.action.size() > 0
+          && d.action.size() <= 80
+          && d.entityType is string
+          && d.entityType.size() > 0
+          && d.entityType.size() <= 40
+          && d.ipAddress is string
+          && d.ipAddress.size() <= 120
+          && d.userAgent is string
+          && d.userAgent.size() <= 600
+          && (d.timestamp is int || d.timestamp is float)
+          && d.timestamp > 946684800000
+          && d.timestamp < 20000000000000
+          && d.status in ['success', 'failed']
+          && (!('entityId' in d) || (d.entityId is string && d.entityId.size() <= 200))
+          && (!('entityName' in d) || (d.entityName is string && d.entityName.size() <= 600))
+          && (!('errorMessage' in d) || (d.errorMessage is string && d.errorMessage.size() <= 1000))
+          && (!('oldValue' in d) || d.oldValue == null || d.oldValue is map)
+          && (!('newValue' in d) || d.newValue == null || d.newValue is map);
+      }
+      allow create: if auditCreateValid();
+      allow read: if isAdmin() || isAdminByTokenEmail();
+      allow update, delete: if false;
+    }
   }
 }

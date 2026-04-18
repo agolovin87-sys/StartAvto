@@ -272,6 +272,17 @@ export async function setUserAccountStatus(
 ): Promise<void> {
   const { db } = getFirebase();
   const ref = doc(db, USERS, uid);
+  const prevSnap = await getDoc(ref);
+  let prevStatus: AccountStatus | undefined;
+  let prevName = "";
+  if (prevSnap.exists()) {
+    const prev = normalizeUserProfile(
+      prevSnap.data() as Record<string, unknown>,
+      uid
+    );
+    prevStatus = prev.accountStatus;
+    prevName = prev.displayName;
+  }
   if (status === "rejected") {
     await updateDoc(ref, {
       accountStatus: status,
@@ -279,6 +290,17 @@ export async function setUserAccountStatus(
     });
   } else {
     await updateDoc(ref, { accountStatus: status });
+  }
+  if (status === "rejected") {
+    void import("@/utils/audit").then(({ logAuditAction }) =>
+      logAuditAction("DELETE_USER", "user", {
+        entityId: uid,
+        entityName: `Удалил пользователя ${prevName || uid}`,
+        oldValue: prevStatus != null ? { accountStatus: prevStatus } : undefined,
+        newValue: { accountStatus: "rejected" },
+        status: "success",
+      })
+    );
   }
 }
 
