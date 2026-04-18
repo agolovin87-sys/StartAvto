@@ -1164,6 +1164,7 @@ export function AdminStudentsTab() {
   const [confirmCancel, setConfirmCancel] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<TrainingGroup | null>(null);
   const [instructors, setInstructors] = useState<UserProfile[]>([]);
+  const [carsSectionOpen, setCarsSectionOpen] = useState(false);
 
   useEffect(() => {
     const u1 = subscribeTrainingGroups(setGroups, () => {});
@@ -1455,10 +1456,27 @@ export function AdminStudentsTab() {
       </section>
 
       <section className="admin-cars-section" aria-labelledby="admin-cars-heading">
-        <h2 id="admin-cars-heading" className="admin-subsection-title">
-          Управление автомобилями
-        </h2>
-        <AdminCarsPanel />
+        <button
+          type="button"
+          id="admin-cars-heading"
+          className="instructor-home-section-toggle glossy-panel admin-history-collapse-toggle"
+          aria-expanded={carsSectionOpen}
+          aria-controls="admin-cars-panel"
+          onClick={() => setCarsSectionOpen((o) => !o)}
+        >
+          <span className="instructor-home-section-toggle-label">
+            Управление автомобилями
+          </span>
+          <span className="instructor-home-section-toggle-meta">парк</span>
+          <IconChevron open={carsSectionOpen} />
+        </button>
+        <div
+          id="admin-cars-panel"
+          className="admin-history-collapse-panel"
+          hidden={!carsSectionOpen}
+        >
+          <AdminCarsPanel />
+        </div>
       </section>
 
       <GroupFormModal
