@@ -11969,6 +11969,71 @@ html[data-theme="light"] .instructor-internal-exam__new-session-btn:hover {
 
 .internal-exam-sheet__subsection {
   margin-bottom: 0.85rem;
+  padding: 0.65rem 0.75rem 0.75rem;
+  border-radius: 10px;
+  border: 1px solid var(--theme-line-subtle, rgba(255, 255, 255, 0.18));
+  border-left-width: 4px;
+  background: rgba(0, 0, 0, 0.08);
+}
+
+.internal-exam-sheet__subsection--pts7 {
+  border-left-color: #ef4444;
+  background: linear-gradient(90deg, rgba(239, 68, 68, 0.2) 0%, rgba(0, 0, 0, 0.06) 52%);
+  border-color: rgba(239, 68, 68, 0.28);
+}
+
+.internal-exam-sheet__subsection--pts4 {
+  border-left-color: #f97316;
+  background: linear-gradient(90deg, rgba(249, 115, 22, 0.18) 0%, rgba(0, 0, 0, 0.05) 52%);
+  border-color: rgba(249, 115, 22, 0.28);
+}
+
+.internal-exam-sheet__subsection--pts3 {
+  border-left-color: #f59e0b;
+  background: linear-gradient(90deg, rgba(245, 158, 11, 0.17) 0%, rgba(0, 0, 0, 0.05) 52%);
+  border-color: rgba(245, 158, 11, 0.28);
+}
+
+.internal-exam-sheet__subsection--pts2 {
+  border-left-color: #eab308;
+  background: linear-gradient(90deg, rgba(234, 179, 8, 0.16) 0%, rgba(0, 0, 0, 0.05) 52%);
+  border-color: rgba(234, 179, 8, 0.28);
+}
+
+.internal-exam-sheet__subsection--pts1 {
+  border-left-color: #94a3b8;
+  background: linear-gradient(90deg, rgba(148, 163, 184, 0.2) 0%, rgba(0, 0, 0, 0.05) 52%);
+  border-color: rgba(148, 163, 184, 0.3);
+}
+
+html[data-theme="light"] .internal-exam-sheet__subsection {
+  background: rgba(248, 250, 252, 0.95);
+  border-color: rgba(15, 23, 42, 0.12);
+}
+
+html[data-theme="light"] .internal-exam-sheet__subsection--pts7 {
+  background: linear-gradient(90deg, rgba(254, 226, 226, 0.95) 0%, rgba(255, 255, 255, 0.85) 55%);
+  border-color: rgba(220, 38, 38, 0.35);
+}
+
+html[data-theme="light"] .internal-exam-sheet__subsection--pts4 {
+  background: linear-gradient(90deg, rgba(255, 237, 213, 0.95) 0%, rgba(255, 255, 255, 0.85) 55%);
+  border-color: rgba(234, 88, 12, 0.35);
+}
+
+html[data-theme="light"] .internal-exam-sheet__subsection--pts3 {
+  background: linear-gradient(90deg, rgba(254, 243, 199, 0.95) 0%, rgba(255, 255, 255, 0.85) 55%);
+  border-color: rgba(217, 119, 6, 0.35);
+}
+
+html[data-theme="light"] .internal-exam-sheet__subsection--pts2 {
+  background: linear-gradient(90deg, rgba(254, 249, 195, 0.95) 0%, rgba(255, 255, 255, 0.85) 55%);
+  border-color: rgba(202, 138, 4, 0.35);
+}
+
+html[data-theme="light"] .internal-exam-sheet__subsection--pts1 {
+  background: linear-gradient(90deg, rgba(241, 245, 249, 0.98) 0%, rgba(255, 255, 255, 0.9) 55%);
+  border-color: rgba(100, 116, 139, 0.35);
 }
 
 .internal-exam-sheet__rule {
@@ -11988,6 +12053,20 @@ html[data-theme="light"] .instructor-internal-exam__new-session-btn:hover {
   list-style: none;
   margin: 0;
   padding: 0;
+}
+
+.internal-exam-sheet__checks--exercises {
+  padding: 0.55rem 0.65rem 0.65rem;
+  border-radius: 10px;
+  border: 1px solid rgba(59, 130, 246, 0.32);
+  border-left-width: 4px;
+  border-left-color: #3b82f6;
+  background: linear-gradient(90deg, rgba(59, 130, 246, 0.16) 0%, rgba(0, 0, 0, 0.04) 48%);
+}
+
+html[data-theme="light"] .internal-exam-sheet__checks--exercises {
+  border-color: rgba(37, 99, 235, 0.35);
+  background: linear-gradient(90deg, rgba(219, 234, 254, 0.95) 0%, rgba(255, 255, 255, 0.92) 50%);
 }
 
 .internal-exam-sheet__check {

@@ -191,7 +191,7 @@ export function InternalExamSheet({
         <h3 id="ex-ex" className="internal-exam-sheet__h3">
           Упражнения
         </h3>
-        <ul className="internal-exam-sheet__checks">
+        <ul className="internal-exam-sheet__checks internal-exam-sheet__checks--exercises">
           {INTERNAL_EXAM_EXERCISES.map((e) => (
             <li key={e.id}>
               <label className="internal-exam-sheet__check">
@@ -212,7 +212,10 @@ export function InternalExamSheet({
           Ошибки и нарушения, допущенные в процессе экзамена
         </h3>
         {INTERNAL_EXAM_ERROR_SUBSECTIONS.map((sec, idx) => (
-          <div key={sec.pts} className="internal-exam-sheet__subsection">
+          <div
+            key={sec.pts}
+            className={`internal-exam-sheet__subsection internal-exam-sheet__subsection--pts${sec.pts}`}
+          >
             {idx > 0 ? <hr className="internal-exam-sheet__rule" /> : null}
             <h4 className="internal-exam-sheet__h4">{internalExamErrorSubsectionTitle(sec.pts)}</h4>
             <ul className="internal-exam-sheet__checks">
