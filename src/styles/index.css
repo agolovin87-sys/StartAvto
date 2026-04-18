@@ -6013,19 +6013,20 @@ html[data-theme="light"] .instructor-week-schedule-hint-em {
   align-self: stretch;
 }
 
-/** Недельный график: полоса HUD на всю ширину колонки (не max-content). */
+/** Недельный график: полоса HUD на всю ширину колонки; таймер и кнопки ближе к центру с зазором между. */
 .drive-week-schedule-notice-item .drive-live-session-panel__hud {
   width: 100%;
   max-width: none;
-  justify-content: space-between;
+  justify-content: center;
   align-items: center;
   flex-wrap: wrap;
+  gap: 1.35rem;
   box-sizing: border-box;
 }
 
 .drive-week-schedule-notice-item .drive-live-session-panel__toolbar {
   flex: 0 1 auto;
-  justify-content: flex-end;
+  justify-content: center;
 }
 
 /** Общий фон вокруг таймера и кнопок — «стекло» + зелёный акцент (живое вождение) */
