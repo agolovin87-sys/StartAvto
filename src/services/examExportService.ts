@@ -22,7 +22,7 @@ export function exportExamSheetPDF(sheet: InternalExamSheet, filename: string): 
 
 /** Просмотр листа в новой вкладке (HTML, удобно для печати в PDF из браузера). */
 export function openExamSheetPreview(sheet: InternalExamSheet): void {
-  const html = generateExamWordHTML(sheet);
+  const html = generateExamWordHTML(sheet, { bodyPt: 9 });
   const w = window.open("", "_blank", "noopener,noreferrer");
   if (!w) return;
   w.document.open();

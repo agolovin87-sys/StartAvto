@@ -50,8 +50,18 @@ function downloadBlob(blob: Blob, filename: string): void {
   window.setTimeout(() => URL.revokeObjectURL(url), 60_000);
 }
 
-/** Полный HTML документа для печати / Word / PDF (A4, ~10 pt основной текст). */
-export function generateExamWordHTML(sheet: InternalExamSheet): string {
+export type ExamWordHtmlOptions = {
+  /** Кегль основного текста (pt). Word — 9; PDF/превью — 10. */
+  bodyPt?: number;
+};
+
+/** Полный HTML документа для печати / Word / PDF (A4). */
+export function generateExamWordHTML(sheet: InternalExamSheet, options?: ExamWordHtmlOptions): string {
+  const bodyPt = options?.bodyPt ?? 10;
+  const h1Pt = bodyPt + 0.5;
+  const smallPt = bodyPt - 0.5;
+  const hintPt = bodyPt - 1.5;
+  const lh = bodyPt <= 9 ? 1.1 : 1.12;
   const resultText = sheet.isPassed ? "Сдан" : "Не сдан";
   const exerciseRows = INTERNAL_EXAM_EXERCISES.map(
     (e) =>
@@ -88,31 +98,31 @@ export function generateExamWordHTML(sheet: InternalExamSheet): string {
     @page { size: A4 landscape; margin: 3mm; }
     body {
       font-family: "Times New Roman", Times, serif;
-      font-size: 10pt;
-      line-height: 1.12;
+      font-size: ${bodyPt}pt;
+      line-height: ${lh};
       color: #111;
       margin: 0;
       padding: 3px 4px;
     }
-    h1 { font-size: 10.5pt; text-align: center; margin: 0 0 2px; font-weight: 700; }
-    h2 { font-size: 10pt; margin: 3px 0 2px; font-weight: 700; }
-    .meta { margin-bottom: 3px; line-height: 1.18; font-size: 9.5pt; }
+    h1 { font-size: ${h1Pt}pt; text-align: center; margin: 0 0 2px; font-weight: 700; }
+    h2 { font-size: ${bodyPt}pt; margin: 3px 0 2px; font-weight: 700; }
+    .meta { margin-bottom: 3px; line-height: 1.18; font-size: ${smallPt}pt; }
     table { border-collapse: collapse; width: 100%; margin: 1px 0 2px; }
-    th, td { border: 1px solid #333; padding: 1px 3px; vertical-align: top; font-size: 10pt; line-height: 1.12; }
-    th { background: #f0f0f0; font-weight: 600; font-size: 9.5pt; }
-    .err-h3 { font-size: 10pt; margin: 2px 0 1px; font-weight: 700; }
+    th, td { border: 1px solid #333; padding: 1px 3px; vertical-align: top; font-size: ${bodyPt}pt; line-height: ${lh}; }
+    th { background: #f0f0f0; font-weight: 600; font-size: ${smallPt}pt; }
+    .err-h3 { font-size: ${bodyPt}pt; margin: 2px 0 1px; font-weight: 700; }
     .err-rule { border: none; border-top: 1px solid #666; margin: 2px 0 2px; }
-    .result { font-size: 10pt; font-weight: bold; margin: 3px 0; padding: 2px 4px; border-radius: 2px; line-height: 1.22; }
+    .result { font-size: ${bodyPt}pt; font-weight: bold; margin: 3px 0; padding: 2px 4px; border-radius: 2px; line-height: 1.22; }
     .result.pass { background: #e8f5e9; color: #1b5e20; border: 1px solid #a5d6a7; }
     .result.fail { background: #ffebee; color: #b71c1c; border: 1px solid #ef9a9a; }
-    .sign { margin-top: 4px; display: flex; justify-content: space-between; gap: 10px; font-size: 10pt; align-items: flex-end; flex-wrap: wrap; }
+    .sign { margin-top: 4px; display: flex; justify-content: space-between; gap: 10px; font-size: ${bodyPt}pt; align-items: flex-end; flex-wrap: wrap; }
     .sign-col { flex: 1; min-width: 120px; max-width: 48%; }
     .sign-col__label { font-weight: 600; margin-bottom: 1px; }
     .sign-col__mark { min-height: 26px; display: flex; align-items: flex-end; flex-wrap: wrap; gap: 4px; }
     .sign-img { max-height: 28px; max-width: 150px; width: auto; height: auto; vertical-align: bottom; object-fit: contain; display: inline-block; }
     .sign-line { display: inline-block; min-width: 7em; border-bottom: 1px solid #333; height: 1em; vertical-align: bottom; }
-    .hint { font-size: 8.5pt; color: #444; margin-top: 2px; }
-    .comment-box { border: 1px solid #999; min-height: 18px; padding: 2px 3px; white-space: pre-wrap; font-size: 10pt; line-height: 1.12; }
+    .hint { font-size: ${hintPt}pt; color: #444; margin-top: 2px; }
+    .comment-box { border: 1px solid #999; min-height: 18px; padding: 2px 3px; white-space: pre-wrap; font-size: ${bodyPt}pt; line-height: ${lh}; }
     @media print {
       body { margin: 0; padding: 2mm 3mm; }
     }
@@ -148,9 +158,9 @@ export function generateExamWordHTML(sheet: InternalExamSheet): string {
 </html>`;
 }
 
-/** Сохранить как .doc (Word открывает HTML). */
+/** Сохранить как .doc (Word открывает HTML). Основной текст 9 pt. */
 export function exportToWord(sheet: InternalExamSheet, filename: string): void {
-  const html = generateExamWordHTML(sheet);
+  const html = generateExamWordHTML(sheet, { bodyPt: 9 });
   const blob = new Blob(["\ufeff", html], { type: "application/msword;charset=utf-8" });
   downloadBlob(blob, `${filename}.doc`);
 }
@@ -160,10 +170,11 @@ export function exportToWord(sheet: InternalExamSheet, filename: string): void {
  * (~760px), чтобы текст читался без сильного масштабирования.
  */
 export async function exportToPDF(sheet: InternalExamSheet, filename: string): Promise<void> {
-  const html = generateExamWordHTML(sheet);
+  const bodyPt = 10;
+  const html = generateExamWordHTML(sheet, { bodyPt });
   await exportHtmlToPdf(html, filename, {
-    fontSize: "10pt",
-    lineHeight: "1.12",
+    fontSize: `${bodyPt}pt`,
+    lineHeight: bodyPt <= 9 ? "1.1" : "1.12",
     padding: "4px 8px",
     widthPx: 760,
     marginMm: [6, 6, 6, 6],
@@ -206,7 +217,7 @@ export async function batchExportToZip(
 ): Promise<void> {
   const zip = new JSZip();
   for (const { sheet, baseName } of items) {
-    const html = generateExamWordHTML(sheet);
+    const html = generateExamWordHTML(sheet, { bodyPt: 9 });
     const docBlob = new Blob(["\ufeff", html], { type: "application/msword;charset=utf-8" });
     const safe = baseName.replace(/[\\/:*?"<>|]/g, "_").slice(0, 120);
     zip.file(`${safe}.doc`, docBlob);
