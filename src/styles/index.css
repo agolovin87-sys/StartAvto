@@ -12392,14 +12392,56 @@ html[data-theme="light"] .exam-student-card__btn--sheet-fail:hover {
 .student-exam-card {
   border: 1px solid var(--theme-line-subtle);
   border-radius: 12px;
-  padding: 1rem;
+  border-left-width: 4px;
+  border-left-color: var(--theme-line-subtle);
+  padding: 0.85rem 1rem 1rem;
   margin-bottom: 0.75rem;
   background: var(--theme-surface-elevated, rgba(255, 255, 255, 0.04));
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+.student-exam-card--pending {
+  border-left-color: #fbbf24;
+  background: linear-gradient(
+    90deg,
+    rgba(251, 191, 36, 0.12) 0%,
+    var(--theme-surface-elevated, rgba(255, 255, 255, 0.04)) 48%
+  );
+}
+
+.student-exam-card--in_progress {
+  border-left-color: #60a5fa;
+  background: linear-gradient(
+    90deg,
+    rgba(96, 165, 250, 0.14) 0%,
+    var(--theme-surface-elevated, rgba(255, 255, 255, 0.04)) 48%
+  );
+}
+
+.student-exam-card--passed {
+  border-left-color: #4ade80;
+  background: linear-gradient(
+    90deg,
+    rgba(74, 222, 128, 0.12) 0%,
+    var(--theme-surface-elevated, rgba(255, 255, 255, 0.04)) 48%
+  );
+}
+
+.student-exam-card--failed {
+  border-left-color: #f87171;
+  background: linear-gradient(
+    90deg,
+    rgba(248, 113, 113, 0.12) 0%,
+    var(--theme-surface-elevated, rgba(255, 255, 255, 0.04)) 48%
+  );
 }
 
 .student-exam-card__title {
   margin: 0 0 0.65rem;
   font-size: 1rem;
+  font-weight: 700;
+  line-height: 1.35;
+  letter-spacing: 0.01em;
 }
 
 .student-exam-card__list {
@@ -12407,11 +12449,16 @@ html[data-theme="light"] .exam-student-card__btn--sheet-fail:hover {
   margin: 0;
   padding: 0;
   font-size: 0.9rem;
-  line-height: 1.5;
+  line-height: 1.55;
 }
 
 .student-exam-card__list li {
-  margin-bottom: 0.35rem;
+  margin-bottom: 0.4rem;
+}
+
+.student-exam-card__status {
+  margin-top: 0.25rem;
+  font-weight: 600;
 }
 
 .student-exam-card__status--pending {
@@ -12432,13 +12479,45 @@ html[data-theme="light"] .exam-student-card__btn--sheet-fail:hover {
 
 .student-exam-card__hint {
   margin: 0.65rem 0 0;
+  padding: 0.5rem 0.65rem;
   font-size: 0.85rem;
   color: var(--theme-muted);
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.08);
+  border: 1px solid var(--theme-line-subtle);
 }
 
 .student-exam-card__result {
   margin: 0.65rem 0 0;
+  padding: 0.55rem 0.7rem;
   font-weight: 600;
+  font-size: 0.92rem;
+  line-height: 1.45;
+  border-radius: 8px;
+}
+
+.student-exam-card--passed .student-exam-card__result {
+  background: rgba(22, 101, 52, 0.22);
+  border: 1px solid rgba(74, 222, 128, 0.35);
+  color: #86efac;
+}
+
+.student-exam-card--failed .student-exam-card__result {
+  background: rgba(127, 29, 29, 0.2);
+  border: 1px solid rgba(248, 113, 113, 0.35);
+  color: #fecaca;
+}
+
+.student-exam-card__pdf {
+  margin-top: 0.75rem;
+  padding-top: 0.65rem;
+  border-top: 1px solid var(--theme-line-subtle);
+}
+
+.student-exam-card__pdf-label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--theme-muted);
 }
 
 .student-exam-card__pdf-btns {
@@ -12446,6 +12525,43 @@ html[data-theme="light"] .exam-student-card__btn--sheet-fail:hover {
   flex-wrap: wrap;
   gap: 0.45rem;
   margin-top: 0.35rem;
+}
+
+html[data-theme="light"] .student-exam-card--pending {
+  background: linear-gradient(90deg, rgba(254, 243, 199, 0.85) 0%, rgba(255, 255, 255, 0.95) 50%);
+  border-color: rgba(251, 191, 36, 0.45);
+}
+
+html[data-theme="light"] .student-exam-card--in_progress {
+  background: linear-gradient(90deg, rgba(219, 234, 254, 0.9) 0%, rgba(255, 255, 255, 0.95) 50%);
+  border-color: rgba(96, 165, 250, 0.4);
+}
+
+html[data-theme="light"] .student-exam-card--passed {
+  background: linear-gradient(90deg, rgba(220, 252, 231, 0.9) 0%, rgba(255, 255, 255, 0.95) 50%);
+  border-color: rgba(74, 222, 128, 0.45);
+}
+
+html[data-theme="light"] .student-exam-card--failed {
+  background: linear-gradient(90deg, rgba(254, 226, 226, 0.9) 0%, rgba(255, 255, 255, 0.95) 50%);
+  border-color: rgba(248, 113, 113, 0.45);
+}
+
+html[data-theme="light"] .student-exam-card__hint {
+  background: rgba(248, 250, 252, 0.95);
+  color: #64748b;
+}
+
+html[data-theme="light"] .student-exam-card--passed .student-exam-card__result {
+  color: #166534;
+  background: rgba(220, 252, 231, 0.95);
+  border-color: rgba(34, 197, 94, 0.45);
+}
+
+html[data-theme="light"] .student-exam-card--failed .student-exam-card__result {
+  color: #991b1b;
+  background: rgba(254, 226, 226, 0.95);
+  border-color: rgba(239, 68, 68, 0.4);
 }
 
 .student-exam-tab__list {

@@ -41,7 +41,7 @@ export function ExamCard({ exam, onOpen, onDownload }: ExamCardProps) {
           : "student-exam-card__status--fail";
 
   return (
-    <article className="student-exam-card">
+    <article className={`student-exam-card student-exam-card--${exam.status}`}>
       <h3 className="student-exam-card__title">Внутренний экзамен. Вождение</h3>
       <ul className="student-exam-card__list">
         <li>
