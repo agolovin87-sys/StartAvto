@@ -13,14 +13,13 @@ function formatRuDate(isoDate: string): string {
 
 type ExamCardProps = {
   exam: StudentExamView;
-  onOpen: () => void;
   onDownload: () => void;
 };
 
 /**
  * Карточка экзамена для курсанта (предстоящий или завершённый).
  */
-export function ExamCard({ exam, onOpen, onDownload }: ExamCardProps) {
+export function ExamCard({ exam, onDownload }: ExamCardProps) {
   const upcoming = exam.status === "pending" || exam.status === "in_progress";
   const statusText =
     exam.status === "pending"
@@ -74,9 +73,6 @@ export function ExamCard({ exam, onOpen, onDownload }: ExamCardProps) {
             <div className="student-exam-card__pdf">
               <span className="student-exam-card__pdf-label">Экзаменационный лист:</span>
               <div className="student-exam-card__pdf-btns">
-                <button type="button" className="btn btn-ghost btn-sm" onClick={onOpen}>
-                  Открыть лист
-                </button>
                 <button type="button" className="btn btn-primary btn-sm" onClick={onDownload}>
                   Экз.лист
                 </button>

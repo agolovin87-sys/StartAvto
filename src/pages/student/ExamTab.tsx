@@ -8,8 +8,7 @@ import { useStudentExam } from "@/hooks/useStudentExam";
 export function ExamTab() {
   const { user } = useAuth();
   const studentId = user?.uid ?? "";
-  const { loading, upcomingExams, completedExams, openExamPdf, downloadExamPdf } =
-    useStudentExam(studentId);
+  const { loading, upcomingExams, completedExams, downloadExamPdf } = useStudentExam(studentId);
 
   return (
     <div className="admin-tab student-exam-tab">
@@ -23,7 +22,7 @@ export function ExamTab() {
               <ul className="student-exam-tab__list">
                 {upcomingExams.map((ex) => (
                   <li key={ex.id}>
-                    <ExamCard exam={ex} onOpen={() => {}} onDownload={() => {}} />
+                    <ExamCard exam={ex} onDownload={() => {}} />
                   </li>
                 ))}
               </ul>
@@ -39,9 +38,6 @@ export function ExamTab() {
                   <li key={ex.id}>
                     <ExamCard
                       exam={ex}
-                      onOpen={() => {
-                        if (ex.examSheetId) void openExamPdf(ex.examSheetId);
-                      }}
                       onDownload={() => {
                         if (ex.examSheetId) {
                           void downloadExamPdf(
