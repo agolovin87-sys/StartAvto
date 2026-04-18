@@ -984,6 +984,54 @@ service cloud.firestore {
       allow update, delete: if false;
     }
 
+    /**
+     * Шаблоны ошибок вождения (инструктор): кастомные шаблоны и счётчики использования
+     * в подколлекциях профиля `users/{uid}`.
+     */
+    match /users/{userId}/customErrorTemplates/{tid} {
+      allow read: if isOwner(userId) && isInstructorAccount();
+      allow create: if isOwner(userId) && isInstructorAccount()
+        && request.resource.data.instructorId == request.auth.uid
+        && request.resource.data.isCustom == true
+        && request.resource.data.name is string
+        && request.resource.data.name.size() > 0
+        && request.resource.data.name.size() <= 200
+        && request.resource.data.category in ['traffic', 'technique', 'attention', 'other']
+        && request.resource.data.severity in ['low', 'medium', 'high']
+        && request.resource.data.description is string
+        && request.resource.data.points is int
+        && request.resource.data.points >= 0
+        && request.resource.data.points <= 10
+        && request.resource.data.createdAt is int;
+      allow update: if isOwner(userId) && isInstructorAccount()
+        && resource.data.instructorId == request.auth.uid
+        && request.resource.data.instructorId == resource.data.instructorId;
+      allow delete: if isOwner(userId) && isInstructorAccount()
+        && resource.data.instructorId == request.auth.uid;
+    }
+
+    match /users/{userId}/errorTemplateUsage/{tid} {
+      allow read, write: if isOwner(userId) && isInstructorAccount();
+    }
+
+    /** Ошибки урока по слоту вождения (инструктор пишет; курсант и админ читают). */
+    match /driveSlotLessonErrors/{slotId} {
+      allow read: if isAdmin()
+        || (isInstructorAccount() && resource.data.instructorId == request.auth.uid)
+        || (isStudentAccount() && resource.data.studentId == request.auth.uid);
+      allow create: if isInstructorAccount()
+        && request.resource.data.instructorId == request.auth.uid
+        && request.resource.data.slotId == slotId
+        && request.resource.data.studentId is string
+        && request.resource.data.errors is list;
+      allow update: if isInstructorAccount()
+        && resource.data.instructorId == request.auth.uid
+        && request.resource.data.instructorId == resource.data.instructorId
+        && request.resource.data.slotId == slotId;
+      allow delete: if isInstructorAccount()
+        && resource.data.instructorId == request.auth.uid;
+    }
+
     /** Учебные автомобили и журнал ТО (только админ). */
     match /cars/{carId} {
       allow read, write: if isAdmin() || isAdminByTokenEmail();

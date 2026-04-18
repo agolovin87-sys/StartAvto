@@ -9,6 +9,7 @@ import { InstructorBookingTab } from "@/pages/dashboards/instructor/InstructorBo
 import { InstructorHistoryTab } from "@/pages/dashboards/instructor/InstructorHistoryTab";
 import { InstructorHomeTab } from "@/pages/dashboards/instructor/InstructorHomeTab";
 import { InstructorTicketsTab } from "@/pages/dashboards/instructor/InstructorTicketsTab";
+import { ErrorTemplates } from "@/pages/instructor/ErrorTemplates";
 import {
   subscribeDriveSlotsForInstructor,
   subscribeFreeDriveWindowsForInstructor,
@@ -29,13 +30,14 @@ import {
 } from "@/lib/instructorHomeDriveNotifications";
 import type { DriveSlot, FreeDriveWindow } from "@/types";
 
-type InstructorNavTab = "home" | "booking" | "chat" | "tickets" | "history" | "settings";
+type InstructorNavTab = "home" | "booking" | "chat" | "tickets" | "templates" | "history" | "settings";
 
 const INSTRUCTOR_DASH_TABS = [
   "home",
   "booking",
   "chat",
   "tickets",
+  "templates",
   "history",
   "settings",
 ] as const satisfies readonly InstructorNavTab[];
@@ -84,6 +86,17 @@ function IconTicketsNav({ className }: { className?: string }) {
   );
 }
 
+function IconTemplatesNav({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" aria-hidden>
+      <path
+        fill="currentColor"
+        d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm4 18H6V4h7v5h5v11zM8 12h8v2H8v-2zm0 4h5v2H8v-2z"
+      />
+    </svg>
+  );
+}
+
 function IconHistory({ className }: { className?: string }) {
   return (
     <svg className={className} viewBox="0 0 24 24" aria-hidden>
@@ -115,6 +128,7 @@ const navItems: {
   { id: "booking", label: "Запись", Icon: IconBooking },
   { id: "chat", label: "Чат", Icon: IconChatNav },
   { id: "tickets", label: "Билеты", Icon: IconTicketsNav },
+  { id: "templates", label: "Ошибки", Icon: IconTemplatesNav },
   { id: "history", label: "История", Icon: IconHistory },
   { id: "settings", label: "Настройки", Icon: IconSettings },
 ];
@@ -325,6 +339,7 @@ export function InstructorDashboard() {
             />
           ) : null}
           {tab === "tickets" ? <InstructorTicketsTab /> : null}
+          {tab === "templates" ? <ErrorTemplates /> : null}
           {tab === "history" ? <InstructorHistoryTab /> : null}
           {tab === "settings" ? <AdminSettingsTab /> : null}
         </div>

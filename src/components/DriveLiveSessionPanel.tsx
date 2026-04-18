@@ -1,5 +1,7 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { ErrorTemplateSelector } from "@/components/instructor/ErrorTemplateSelector";
 import type { DriveSlot } from "@/types";
+import type { ErrorTemplate, LessonDriveError } from "@/types/errorTemplate";
 import { DriveLiveStudentTimerDecor } from "@/components/DriveLiveStudentTimerDecor";
 import {
   instructorCancelLiveDriveSession,
@@ -10,7 +12,13 @@ import { mapFirebaseError } from "@/firebase/errors";
 import { driveLiveEffectiveElapsedMs } from "@/lib/driveLiveElapsed";
 import { DRIVE_LIVE_DURATION_MS } from "@/lib/driveSession";
 import { useDriveTripRecorder } from "@/hooks/useDriveTripRecorder";
+import { useErrorTemplates } from "@/hooks/useErrorTemplates";
 import { useDriveLocationSharingUi } from "@/context/DriveLocationSharingUiContext";
+import {
+  incrementUsage,
+  loadDriveSlotLessonErrors,
+  saveDriveSlotLessonErrors,
+} from "@/services/errorTemplateService";
 
 function IconPause() {
   return (
@@ -92,6 +100,10 @@ export function DriveLiveSessionPanel({
     slot.status === "scheduled";
   const tripRec = useDriveTripRecorder(slot, tripRecordingEnabled);
 
+  const { templates } = useErrorTemplates(slot.instructorId);
+  const [lessonErrors, setLessonErrors] = useState<LessonDriveError[]>([]);
+  const [lessonHydrated, setLessonHydrated] = useState(false);
+
   const serverPauseActive =
     slot.liveStudentAckAt != null &&
     slot.livePausedAt != null &&
@@ -100,6 +112,73 @@ export function DriveLiveSessionPanel({
     serverPauseActive || pauseFreezeRef.current !== null || pauseSticky;
 
   const awaitingStudentAck = slot.liveStudentAckAt == null;
+
+  const onPickTemplate = useCallback(
+    async (template: ErrorTemplate) => {
+      const id =
+        typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
+          ? crypto.randomUUID()
+          : `e_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
+      const row: LessonDriveError = {
+        id,
+        templateId: template.id,
+        name: template.name,
+        points: template.points,
+        timestamp: Date.now(),
+      };
+      setLessonErrors((prev) => [...prev, row]);
+      try {
+        await incrementUsage(slot.instructorId, template.id);
+      } catch {
+        /* офлайн: ошибка остаётся в списке */
+      }
+    },
+    [slot.instructorId]
+  );
+
+  const onAddManualError = useCallback((name: string, points: number) => {
+    const id =
+      typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
+        ? crypto.randomUUID()
+        : `m_${Date.now()}`;
+    setLessonErrors((prev) => [
+      ...prev,
+      {
+        id,
+        templateId: `manual_${Date.now()}`,
+        name: name.trim(),
+        points,
+        timestamp: Date.now(),
+      },
+    ]);
+  }, []);
+
+  const onRemoveError = useCallback((errorId: string) => {
+    setLessonErrors((prev) => prev.filter((e) => e.id !== errorId));
+  }, []);
+
+  useEffect(() => {
+    let dead = false;
+    setLessonHydrated(false);
+    setLessonErrors([]);
+    void loadDriveSlotLessonErrors(slot.id).then((list) => {
+      if (!dead) {
+        setLessonErrors(list);
+        setLessonHydrated(true);
+      }
+    });
+    return () => {
+      dead = true;
+    };
+  }, [slot.id]);
+
+  useEffect(() => {
+    if (!lessonHydrated) return;
+    const t = window.setTimeout(() => {
+      void saveDriveSlotLessonErrors(slot.id, slot.instructorId, slot.studentId, lessonErrors);
+    }, 500);
+    return () => window.clearTimeout(t);
+  }, [lessonErrors, lessonHydrated, slot.id, slot.instructorId, slot.studentId]);
 
   useEffect(() => {
     if (isPaused) return;
@@ -276,6 +355,16 @@ export function DriveLiveSessionPanel({
           </button>
         </div>
       </div>
+
+      {!awaitingStudentAck && slot.liveStudentAckAt != null ? (
+        <ErrorTemplateSelector
+          templates={templates}
+          lessonErrors={lessonErrors}
+          onPickTemplate={(t) => void onPickTemplate(t)}
+          onRemoveError={onRemoveError}
+          onAddManualError={onAddManualError}
+        />
+      ) : null}
 
       {stopConfirmOpen ? (
         <div
