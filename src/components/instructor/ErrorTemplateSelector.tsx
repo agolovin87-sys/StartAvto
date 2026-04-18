@@ -44,6 +44,8 @@ export function ErrorTemplateSelector({
   /** Развёрнутые блоки по баллам (по умолчанию все свёрнуты). */
   const [expandedPointTiers, setExpandedPointTiers] = useState<Set<number>>(() => new Set());
   const [offscaleOpen, setOffscaleOpen] = useState(false);
+  /** Вся панель «Ошибки на уроке» (по умолчанию свёрнута). */
+  const [panelOpen, setPanelOpen] = useState(false);
 
   const pickedTemplateIds = useMemo(
     () => new Set(lessonErrors.map((e) => e.templateId)),
@@ -95,42 +97,100 @@ export function ErrorTemplateSelector({
     });
   }
 
+  const panelBodyId = "instructor-lesson-errors-panel";
+
   return (
     <section className="instructor-error-template-selector" aria-label="Ошибки курсанта на уроке">
-      <h3 className="instructor-error-template-selector__title">Ошибки на уроке</h3>
+      <button
+        type="button"
+        className="instructor-error-template-selector__panel-toggle instructor-home-section-toggle"
+        aria-expanded={panelOpen}
+        aria-controls={panelBodyId}
+        id="instructor-lesson-errors-heading"
+        onClick={() => setPanelOpen((v) => !v)}
+      >
+        <span className="instructor-home-section-toggle-label">Ошибки на уроке</span>
+        {lessonErrors.length > 0 ? (
+          <span className="instructor-home-section-toggle-meta">{lessonErrors.length}</span>
+        ) : null}
+        <span className="instructor-error-template-selector__panel-chevron" aria-hidden>
+          {panelOpen ? "▼" : "▶"}
+        </span>
+      </button>
 
-      {lessonErrors.length > 0 ? (
-        <ul className="instructor-error-template-selector__list">
-          {lessonErrors.map((e) => (
-            <li
-              key={e.id}
-              className="instructor-error-template-selector__chip instructor-error-template-selector__chip--picked"
-            >
-              <span className="instructor-error-template-selector__chip-text">
-                {e.name}
-                <span className="instructor-error-template-selector__chip-points">−{e.points}</span>
-              </span>
-              <button
-                type="button"
-                className="instructor-error-template-selector__chip-remove"
-                aria-label={`Убрать: ${e.name}`}
-                onClick={() => onRemoveError(e.id)}
+      <div
+        id={panelBodyId}
+        className="instructor-error-template-selector__panel-body"
+        hidden={!panelOpen}
+        role="region"
+        aria-labelledby="instructor-lesson-errors-heading"
+      >
+        <label className="field instructor-error-template-selector__search">
+          <span className="field-label">Найти шаблон</span>
+          <input
+            className="input"
+            type="search"
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+            placeholder="Начните вводить текст пункта…"
+            autoComplete="off"
+          />
+        </label>
+
+        {suggestions.length > 0 ? (
+          <ul className="instructor-error-template-selector__suggest" role="listbox">
+            {suggestions.map((t) => (
+              <li key={t.id}>
+                <button
+                  type="button"
+                  className={`instructor-error-template-selector__suggest-item${pickedTemplateIds.has(t.id) ? " instructor-error-template-selector__suggest-item--picked" : ""}`}
+                  onClick={() => {
+                    void onPickTemplate(t);
+                    setQ("");
+                  }}
+                >
+                  <span>{t.name}</span>
+                  <span className="instructor-error-template-selector__suggest-meta">
+                    {categoryLabel(t.category)} · {t.points} б.
+                  </span>
+                </button>
+              </li>
+            ))}
+          </ul>
+        ) : null}
+
+        {lessonErrors.length > 0 ? (
+          <ul className="instructor-error-template-selector__list">
+            {lessonErrors.map((e) => (
+              <li
+                key={e.id}
+                className="instructor-error-template-selector__chip instructor-error-template-selector__chip--picked"
               >
-                ×
-              </button>
-            </li>
-          ))}
-        </ul>
-      ) : (
-        <p className="instructor-error-template-selector__empty">Пока нет отмеченных ошибок.</p>
-      )}
+                <span className="instructor-error-template-selector__chip-text">
+                  {e.name}
+                  <span className="instructor-error-template-selector__chip-points">−{e.points}</span>
+                </span>
+                <button
+                  type="button"
+                  className="instructor-error-template-selector__chip-remove"
+                  aria-label={`Убрать: ${e.name}`}
+                  onClick={() => onRemoveError(e.id)}
+                >
+                  ×
+                </button>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="instructor-error-template-selector__empty">Пока нет отмеченных ошибок.</p>
+        )}
 
-      <p className="instructor-error-template-selector__exam-hint field-hint">
-        Те же формулировки и штрафные баллы, что в экзаменационном листе. Сначала 7, затем 5, 4, 3, 2, 1
-        балл.
-      </p>
+        <p className="instructor-error-template-selector__exam-hint field-hint">
+          Те же формулировки и штрафные баллы, что в экзаменационном листе. Сначала 7, затем 5, 4, 3, 2, 1
+          балл.
+        </p>
 
-      <div className="instructor-error-template-selector__tiers">
+        <div className="instructor-error-template-selector__tiers">
         {templatesByTier.map(({ pts, list }) => {
           const open = expandedPointTiers.has(pts);
           return (
@@ -210,41 +270,7 @@ export function ErrorTemplateSelector({
         </div>
       ) : null}
 
-      <label className="field instructor-error-template-selector__search">
-        <span className="field-label">Найти шаблон</span>
-        <input
-          className="input"
-          type="search"
-          value={q}
-          onChange={(e) => setQ(e.target.value)}
-          placeholder="Начните вводить текст пункта…"
-          autoComplete="off"
-        />
-      </label>
-
-      {suggestions.length > 0 ? (
-        <ul className="instructor-error-template-selector__suggest" role="listbox">
-          {suggestions.map((t) => (
-            <li key={t.id}>
-              <button
-                type="button"
-                className={`instructor-error-template-selector__suggest-item${pickedTemplateIds.has(t.id) ? " instructor-error-template-selector__suggest-item--picked" : ""}`}
-                onClick={() => {
-                  void onPickTemplate(t);
-                  setQ("");
-                }}
-              >
-                <span>{t.name}</span>
-                <span className="instructor-error-template-selector__suggest-meta">
-                  {categoryLabel(t.category)} · {t.points} б.
-                </span>
-              </button>
-            </li>
-          ))}
-        </ul>
-      ) : null}
-
-      <div className="instructor-error-template-selector__manual">
+        <div className="instructor-error-template-selector__manual">
         <button
           type="button"
           className="btn btn-ghost btn-sm"
@@ -291,6 +317,7 @@ export function ErrorTemplateSelector({
             </div>
           </div>
         ) : null}
+        </div>
       </div>
     </section>
   );

@@ -11584,10 +11584,26 @@ html[data-theme="purple"] .instr-side-btn:hover {
   background: rgba(0, 0, 0, 0.12);
 }
 
-.instructor-error-template-selector__title {
-  margin: 0 0 0.65rem;
-  font-size: 0.95rem;
-  font-weight: 600;
+.instructor-error-template-selector__panel-toggle {
+  width: 100%;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.instructor-error-template-selector__panel-chevron {
+  flex: 0 0 auto;
+  font-size: 0.7rem;
+  opacity: 0.85;
+  margin-left: 0.25rem;
+}
+
+.instructor-error-template-selector__panel-body {
+  margin-top: 0.65rem;
+  padding-top: 0.15rem;
+}
+
+.instructor-error-template-selector__panel-body[hidden] {
+  display: none !important;
 }
 
 .instructor-error-template-selector__list {
@@ -11611,8 +11627,13 @@ html[data-theme="purple"] .instr-side-btn:hover {
 }
 
 .instructor-error-template-selector__chip--picked {
-  background: rgba(254, 202, 202, 0.42);
-  border-color: rgba(248, 113, 113, 0.35);
+  background: #dc2626;
+  border-color: #b91c1c;
+  color: #fff;
+}
+
+.instructor-error-template-selector__chip--picked .instructor-error-template-selector__chip-points {
+  color: rgba(255, 255, 255, 0.92);
 }
 
 .instructor-error-template-selector__chip-points {
@@ -11631,8 +11652,16 @@ html[data-theme="purple"] .instr-side-btn:hover {
   padding: 0 0.15rem;
 }
 
+.instructor-error-template-selector__chip--picked .instructor-error-template-selector__chip-remove {
+  color: rgba(255, 255, 255, 0.88);
+}
+
 .instructor-error-template-selector__chip-remove:hover {
   color: #fecaca;
+}
+
+.instructor-error-template-selector__chip--picked .instructor-error-template-selector__chip-remove:hover {
+  color: #fff;
 }
 
 .instructor-error-template-selector__empty {
@@ -11722,8 +11751,15 @@ html[data-theme="purple"] .instr-side-btn:hover {
 }
 
 .instructor-error-template-selector__tier-btn--picked {
-  background: rgba(254, 202, 202, 0.38) !important;
-  border-color: rgba(248, 113, 113, 0.35) !important;
+  background: #dc2626 !important;
+  border-color: #b91c1c !important;
+  color: #fff !important;
+}
+
+.instructor-error-template-selector__tier--offscale
+  .instructor-error-template-selector__tier-btn--picked
+  .instructor-error-template-selector__tier-btn-meta {
+  color: rgba(255, 255, 255, 0.9);
 }
 
 .instructor-error-template-selector__tier--offscale .instructor-error-template-selector__tier-btn {
@@ -11787,6 +11823,7 @@ html[data-theme="purple"] .instr-side-btn:hover {
 
 .instructor-error-template-selector__search {
   margin-bottom: 0.5rem;
+  margin-top: 0;
 }
 
 .instructor-error-template-selector__suggest {
@@ -11825,11 +11862,16 @@ html[data-theme="purple"] .instr-side-btn:hover {
 }
 
 .instructor-error-template-selector__suggest-item--picked {
-  background: rgba(254, 202, 202, 0.22);
+  background: #dc2626;
+  color: #fff;
+}
+
+.instructor-error-template-selector__suggest-item--picked .instructor-error-template-selector__suggest-meta {
+  color: rgba(255, 255, 255, 0.88);
 }
 
 .instructor-error-template-selector__suggest-item--picked:hover {
-  background: rgba(254, 202, 202, 0.32);
+  background: #b91c1c;
 }
 
 .instructor-error-template-selector__suggest-meta {
@@ -11871,21 +11913,24 @@ html[data-theme="purple"] .instr-side-btn:hover {
 }
 
 html[data-theme="light"] .instructor-error-template-selector__chip--picked {
-  background: #fecaca;
-  border-color: #f87171;
+  background: #dc2626;
+  border-color: #b91c1c;
+  color: #fff;
 }
 
 html[data-theme="light"] .instructor-error-template-selector__tier-btn--picked {
-  background: #fecaca !important;
-  border-color: #fca5a5 !important;
+  background: #dc2626 !important;
+  border-color: #b91c1c !important;
+  color: #fff !important;
 }
 
 html[data-theme="light"] .instructor-error-template-selector__suggest-item--picked {
-  background: #fee2e2;
+  background: #dc2626;
+  color: #fff;
 }
 
 html[data-theme="light"] .instructor-error-template-selector__suggest-item--picked:hover {
-  background: #fecaca;
+  background: #b91c1c;
 }
 
 /* ——— Внутренний экзамен ——— */
