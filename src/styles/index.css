@@ -6007,6 +6007,25 @@ html[data-theme="light"] .instructor-week-schedule-hint-em {
 
 .drive-week-schedule-notice-item .drive-live-session-panel {
   max-width: 100%;
+  width: 100%;
+  margin-left: 0;
+  margin-right: 0;
+  align-self: stretch;
+}
+
+/** Недельный график: полоса HUD на всю ширину колонки (не max-content). */
+.drive-week-schedule-notice-item .drive-live-session-panel__hud {
+  width: 100%;
+  max-width: none;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  box-sizing: border-box;
+}
+
+.drive-week-schedule-notice-item .drive-live-session-panel__toolbar {
+  flex: 0 1 auto;
+  justify-content: flex-end;
 }
 
 /** Общий фон вокруг таймера и кнопок — «стекло» + зелёный акцент (живое вождение) */
