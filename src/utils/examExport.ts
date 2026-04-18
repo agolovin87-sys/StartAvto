@@ -6,7 +6,9 @@ import type { InternalExamSheet } from "@/types/internalExam";
 import {
   INTERNAL_EXAM_ERRORS,
   INTERNAL_EXAM_EXERCISES,
+  INTERNAL_EXAM_ERROR_POINT_ORDER,
   INTERNAL_EXAM_PASS_MAX_POINTS,
+  internalExamErrorSubsectionTitle,
 } from "@/types/internalExam";
 import { exportToPDF as exportHtmlToPdf } from "@/utils/exportUtils";
 
@@ -32,15 +34,26 @@ function downloadBlob(blob: Blob, filename: string): void {
 
 /** Полный HTML документа для печати / Word / PDF. */
 export function generateExamWordHTML(sheet: InternalExamSheet): string {
-  const resultText = sheet.isPassed ? "СДАЛ" : "НЕ СДАЛ";
+  const resultText = sheet.isPassed ? "Сдан" : "Не сдан";
   const exerciseRows = INTERNAL_EXAM_EXERCISES.map(
     (e) =>
       `<tr><td>${escapeHtml(e.label)}</td><td style="text-align:center">${sheet.exercises[e.id] ? "✓" : "—"}</td></tr>`
   ).join("");
 
-  const errorRows = INTERNAL_EXAM_ERRORS.map((e) => {
-    const on = sheet.errors[e.id] === true || sheet.errors[e.id] === 1;
-    return `<tr><td>${escapeHtml(e.label)}</td><td style="text-align:center">${e.points}</td><td style="text-align:center">${on ? "✓" : "—"}</td></tr>`;
+  const errorSections = INTERNAL_EXAM_ERROR_POINT_ORDER.map((pts) => {
+    const items = INTERNAL_EXAM_ERRORS.filter((x) => x.points === pts);
+    if (items.length === 0) return "";
+    const rows = items
+      .map((e) => {
+        const on = sheet.errors[e.id] === true || sheet.errors[e.id] === 1;
+        return `<tr><td>${escapeHtml(e.label)}</td><td style="text-align:center">${e.points}</td><td style="text-align:center">${on ? "✓" : "—"}</td></tr>`;
+      })
+      .join("");
+    return `<h3 style="font-size:11pt;margin:10px 0 4px;">${escapeHtml(internalExamErrorSubsectionTitle(pts))}</h3>
+<table>
+<thead><tr><th>Нарушение</th><th style="width:52px">Баллы</th><th style="width:72px">Отметка</th></tr></thead>
+<tbody>${rows}</tbody>
+</table>`;
   }).join("");
 
   return `<!DOCTYPE html>
@@ -55,7 +68,9 @@ export function generateExamWordHTML(sheet: InternalExamSheet): string {
     table { border-collapse: collapse; width: 100%; margin: 10px 0; }
     th, td { border: 1px solid #333; padding: 6px 8px; vertical-align: top; }
     th { background: #f0f0f0; font-weight: 600; }
-    .result { font-size: 13pt; font-weight: bold; margin: 12px 0; }
+    .result { font-size: 13pt; font-weight: bold; margin: 12px 0; padding: 8px 10px; border-radius: 4px; }
+    .result.pass { background: #e8f5e9; color: #1b5e20; border: 1px solid #a5d6a7; }
+    .result.fail { background: #ffebee; color: #b71c1c; border: 1px solid #ef9a9a; }
     .sign { margin-top: 24px; display: flex; justify-content: space-between; gap: 24px; }
     .hint { font-size: 10pt; color: #444; margin-top: 8px; }
   </style>
@@ -72,14 +87,11 @@ export function generateExamWordHTML(sheet: InternalExamSheet): string {
     <thead><tr><th>Упражнение</th><th style="width:80px">Выполнено</th></tr></thead>
     <tbody>${exerciseRows}</tbody>
   </table>
-  <h2 style="font-size:12pt;">Штрафные баллы</h2>
-  <table>
-    <thead><tr><th>Нарушение</th><th style="width:60px">Баллы</th><th style="width:80px">Отметка</th></tr></thead>
-    <tbody>${errorRows}</tbody>
-  </table>
-  <div class="result">
-    Сумма штрафных баллов: ${sheet.totalPoints} (зачёт при сумме не более ${INTERNAL_EXAM_PASS_MAX_POINTS})<br/>
-    Результат: ${resultText}
+  <h2 style="font-size:12pt;">Ошибки и нарушения, допущенные в процессе экзамена</h2>
+  ${errorSections}
+  <div class="result ${sheet.isPassed ? "pass" : "fail"}">
+    Итого баллов: ${sheet.totalPoints} (зачёт при сумме не более ${INTERNAL_EXAM_PASS_MAX_POINTS})<br/>
+    Статус: ${resultText}
   </div>
   <div><strong>Комментарий экзаменатора:</strong></div>
   <div style="border:1px solid #999; min-height:48px; padding:8px; white-space:pre-wrap;">${escapeHtml(sheet.examinerComment || "—")}</div>

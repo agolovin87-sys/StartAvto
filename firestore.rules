@@ -1043,14 +1043,18 @@ service cloud.firestore {
           isStudentAccount()
           && request.auth.uid in resource.data.get('studentIds', [])
         );
-      allow create: if isInstructorAccount()
-        && request.resource.data.instructorId == request.auth.uid
-        && request.resource.data.groupId is string
-        && request.resource.data.groupName is string
-        && request.resource.data.examDate is string
-        && request.resource.data.examTime is string
-        && request.resource.data.students is list
-        && request.resource.data.studentIds is list;
+      allow create: if isAdmin()
+        || (
+          isInstructorAccount()
+          && request.resource.data.instructorId == request.auth.uid
+          && request.resource.data.groupId is string
+          && request.resource.data.groupName is string
+          && request.resource.data.examDate is string
+          && request.resource.data.examTime is string
+          && request.resource.data.instructorName is string
+          && request.resource.data.students is list
+          && request.resource.data.studentIds is list
+        );
       allow update: if isAdmin()
         || (
           isInstructorAccount()
@@ -1069,8 +1073,11 @@ service cloud.firestore {
           isStudentAccount()
           && resource.data.studentId == request.auth.uid
         );
-      allow create: if isInstructorAccount()
-        && request.resource.data.instructorId == request.auth.uid;
+      allow create: if isAdmin()
+        || (
+          isInstructorAccount()
+          && request.resource.data.instructorId == request.auth.uid
+        );
       allow update: if isAdmin()
         || (
           isInstructorAccount()

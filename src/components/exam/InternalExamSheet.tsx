@@ -3,9 +3,11 @@ import type { InternalExamSheet as SheetModel } from "@/types/internalExam";
 import {
   INTERNAL_EXAM_ERRORS,
   INTERNAL_EXAM_EXERCISES,
+  INTERNAL_EXAM_ERROR_POINT_ORDER,
   INTERNAL_EXAM_PASS_MAX_POINTS,
   emptyErrorState,
   emptyExerciseState,
+  internalExamErrorSubsectionTitle,
   isInternalExamPassed,
   sumInternalExamPenaltyPoints,
 } from "@/types/internalExam";
@@ -22,7 +24,7 @@ type InternalExamSheetProps = {
 };
 
 /**
- * Форма экзаменационного листа (упражнения, штрафы, зачёт ≤7 баллов).
+ * Форма экзаменационного листа: упражнения, штрафы по подразделам, итог и статус.
  */
 export function InternalExamSheet({
   sessionId,
@@ -160,33 +162,49 @@ export function InternalExamSheet({
         </ul>
       </section>
 
-      {(["coarse", "medium", "minor"] as const).map((tier) => (
-        <section key={tier} className="internal-exam-sheet__section" aria-labelledby={`tier-${tier}`}>
-          <h3 id={`tier-${tier}`} className="internal-exam-sheet__h3">
-            {tier === "coarse" ? "Грубые ошибки — 5 баллов" : tier === "medium" ? "Средние ошибки — 3 балла" : "Мелкие ошибки — 1 балл"}
-          </h3>
-          <ul className="internal-exam-sheet__checks">
-            {INTERNAL_EXAM_ERRORS.filter((x) => x.tier === tier).map((e) => (
-              <li key={e.id}>
-                <label className="internal-exam-sheet__check">
-                  <input type="checkbox" checked={!!errors[e.id]} onChange={() => toggleError(e.id)} />
-                  <span>
-                    {e.label} ({e.points} б.)
-                  </span>
-                </label>
-              </li>
-            ))}
-          </ul>
-        </section>
-      ))}
+      <section className="internal-exam-sheet__section" aria-labelledby="ex-err-head">
+        <h3 id="ex-err-head" className="internal-exam-sheet__h3 internal-exam-sheet__h3--major">
+          Ошибки и нарушения, допущенные в процессе экзамена
+        </h3>
+        {INTERNAL_EXAM_ERROR_POINT_ORDER.map((pts) => {
+          const list = INTERNAL_EXAM_ERRORS.filter((x) => x.points === pts);
+          if (list.length === 0) return null;
+          return (
+            <div key={pts} className="internal-exam-sheet__subsection">
+              <h4 className="internal-exam-sheet__h4">{internalExamErrorSubsectionTitle(pts)}</h4>
+              <ul className="internal-exam-sheet__checks">
+                {list.map((e) => (
+                  <li key={e.id}>
+                    <label className="internal-exam-sheet__check">
+                      <input type="checkbox" checked={!!errors[e.id]} onChange={() => toggleError(e.id)} />
+                      <span>
+                        {e.label} ({e.points} б.)
+                      </span>
+                    </label>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          );
+        })}
+      </section>
 
       <div
         className={`internal-exam-sheet__total ${passed ? "internal-exam-sheet__total--pass" : "internal-exam-sheet__total--fail"}`}
         role="status"
       >
-        <strong>Штрафные баллы: {totalPoints}</strong>
-        <span> (зачёт при сумме не более {INTERNAL_EXAM_PASS_MAX_POINTS})</span>
-        <div className="internal-exam-sheet__verdict">{passed ? "Сдан" : "Не сдан"}</div>
+        <div className="internal-exam-sheet__total-line">
+          <strong>Итого баллов: {totalPoints}</strong>
+          <span className="internal-exam-sheet__total-hint">
+            {" "}
+            (суммируется по отмеченным пунктам; зачёт при сумме не более {INTERNAL_EXAM_PASS_MAX_POINTS})
+          </span>
+        </div>
+        <div
+          className={`internal-exam-sheet__verdict ${passed ? "internal-exam-sheet__verdict--pass" : "internal-exam-sheet__verdict--fail"}`}
+        >
+          Статус: {passed ? "Сдан" : "Не сдан"}
+        </div>
       </div>
 
       <label className="field">
@@ -196,7 +214,7 @@ export function InternalExamSheet({
           rows={4}
           value={comment}
           onChange={(e) => setComment(e.target.value)}
-          placeholder="Замечания по технике, маршруту…"
+          placeholder="Можно оставить пустым"
         />
       </label>
 
@@ -219,6 +237,10 @@ export function InternalExamSheet({
           {busy ? "Завершение…" : "Завершить экзамен"}
         </button>
       </div>
+      <p className="internal-exam-sheet__footnote">
+        После «Завершить экзамен» формируется отчёт (PDF); данные сохраняются в системе — доступны вам, курсанту и
+        администратору.
+      </p>
     </div>
   );
 }

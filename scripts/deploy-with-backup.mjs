@@ -62,7 +62,7 @@ function buildDeployMessage({ now, iso, hasStagedChanges }) {
     `Дата и время сохранения (локально): ${localLine}`,
     `Дата и время (UTC, ISO): ${iso}`,
     "",
-    "Действие: сборка (npm run build) и публикация на Firebase Hosting.",
+    "Действие: сборка (npm run build), публикация на Firebase Hosting и выкат Firestore (правила и индексы).",
     "",
   ];
 
@@ -86,7 +86,7 @@ function buildDeployMessage({ now, iso, hasStagedChanges }) {
   if (!hasStagedChanges) {
     lines.push(
       "Изменений в отслеживаемых файлах нет — это повторный деплой той же версии исходников",
-      "(пустой коммит только для отметки момента публикации на хостинге).",
+      "(пустой коммит только для отметки момента публикации на хостинге и Firestore).",
       ""
     );
   }
@@ -113,8 +113,10 @@ if (!projectId) {
   process.exit(1);
 }
 
-console.log("\n▶ Firebase Hosting deploy\n");
-run(`npx --yes firebase-tools@latest deploy --only hosting --project ${projectId}`);
+console.log("\n▶ Firebase: Hosting + Firestore (rules, indexes)\n");
+run(
+  `npx --yes firebase-tools@latest deploy --only hosting,firestore:rules,firestore:indexes --project ${projectId}`
+);
 
 const now = new Date();
 const iso = now.toISOString();
