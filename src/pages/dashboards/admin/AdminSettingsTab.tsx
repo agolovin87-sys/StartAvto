@@ -1,7 +1,5 @@
 import { type ReactNode, useCallback, useEffect, useRef, useState } from "react";
-import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { useAuth } from "@/context/AuthContext";
-import { usePasskey } from "@/hooks/usePasskey";
 import {
   getBadgingDiagnostics,
   isBadgePreferenceEnabled,
@@ -89,9 +87,9 @@ function currentIncomingSoundLabel(s: NotificationSettings): string {
 
 const OTHER_SECTIONS: { id: string; title: string; description: string }[] = [
   {
-    id: "settings-security-passkey",
+    id: "settings-security",
     title: "Безопасность",
-    description: "Пароль, биометрический вход",
+    description: "Пароль, восстановление доступа",
   },
   {
     id: "settings-theme",
@@ -206,7 +204,7 @@ function IconSectionOffline({ className }: { className?: string }) {
 
 function otherSectionIcon(id: string): ReactNode {
   switch (id) {
-    case "settings-security-passkey":
+    case "settings-security":
       return <IconSectionSecurity className="admin-settings-section-trigger-icon-svg" />;
     case "settings-theme":
       return <IconSectionTheme className="admin-settings-section-trigger-icon-svg" />;
@@ -298,110 +296,6 @@ function IconAddPhoto({ className }: { className?: string }) {
         d="M3 4V1h2v3h3v2H5v3H3V6H0V4h3zm3 6V7h3V4h7l1.83 2H21c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H5c-1.1 0-2-.9-2-2V10h3zm7 9c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-3.2-5c0 1.77 1.43 3.2 3.2 3.2s3.2-1.43 3.2-3.2-1.43-3.2-3.2-3.2-3.2 1.43-3.2 3.2z"
       />
     </svg>
-  );
-}
-
-function PasskeySettingsSection({ uid, email }: { uid: string; email: string }) {
-  const { register, delete: deletePasskey, isAvailable, hasRegisteredPasskey, registeredAt } =
-    usePasskey({ userId: uid, email });
-  const [busy, setBusy] = useState(false);
-  const [err, setErr] = useState<string | null>(null);
-  const [confirmOpen, setConfirmOpen] = useState(false);
-
-  async function onRegister() {
-    setErr(null);
-    setBusy(true);
-    try {
-      await register();
-    } catch (e) {
-      setErr(e instanceof Error ? e.message : "Не удалось подключить биометрию");
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  async function onConfirmDelete() {
-    setConfirmOpen(false);
-    setErr(null);
-    setBusy(true);
-    try {
-      await deletePasskey();
-    } catch (e) {
-      setErr(e instanceof Error ? e.message : "Не удалось отключить");
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  if (!uid) {
-    return <p className="admin-settings-section-desc">Войдите в аккаунт.</p>;
-  }
-
-  return (
-    <div className="admin-settings-passkey-panel">
-      <h3 className="admin-settings-subtitle">Биометрический вход</h3>
-      <p className="admin-settings-section-desc">
-        Passkey (WebAuthn): вход по Face ID, Touch ID или ключу безопасности на этом устройстве. В
-        демо-режиме привязка хранится только в браузере; для продакшена нужна серверная верификация.
-      </p>
-      {!isAvailable ? (
-        <p className="form-error" role="status">
-          Недоступно: откройте сайт по HTTPS в поддерживаемом браузере.
-        </p>
-      ) : null}
-      {err ? (
-        <p className="form-error" role="alert">
-          {err}
-        </p>
-      ) : null}
-      <div className="admin-settings-passkey-status">
-        <div>
-          <strong>Статус:</strong> {hasRegisteredPasskey ? "активен" : "не подключён"}
-        </div>
-        {registeredAt ? (
-          <div>
-            <strong>Дата регистрации:</strong>{" "}
-            {new Date(registeredAt).toLocaleString("ru-RU", {
-              day: "2-digit",
-              month: "2-digit",
-              year: "numeric",
-              hour: "2-digit",
-              minute: "2-digit",
-            })}
-          </div>
-        ) : null}
-      </div>
-      <div className="admin-settings-passkey-actions">
-        {!hasRegisteredPasskey ? (
-          <button
-            type="button"
-            className="btn btn-primary btn-sm"
-            disabled={busy || !isAvailable || !email}
-            onClick={() => void onRegister()}
-          >
-            {busy ? "Подключение…" : "Подключить биометрию"}
-          </button>
-        ) : (
-          <button
-            type="button"
-            className="btn btn-danger btn-sm"
-            disabled={busy}
-            onClick={() => setConfirmOpen(true)}
-          >
-            Отключить
-          </button>
-        )}
-      </div>
-      <ConfirmDialog
-        open={confirmOpen}
-        title="Отключить биометрию?"
-        message="Привязка на этом устройстве будет удалена из локального хранилища. Вход по email и паролю останется."
-        confirmLabel="Отключить"
-        cancelLabel="Отмена"
-        onConfirm={() => void onConfirmDelete()}
-        onCancel={() => setConfirmOpen(false)}
-      />
-    </div>
   );
 }
 
@@ -1743,14 +1637,10 @@ export function AdminSettingsTab() {
             onToggle={() => toggleSettingsSection(id)}
             icon={otherSectionIcon(id)}
           >
-            {id === "settings-security-passkey" ? (
+            {id === "settings-security" ? (
               <>
                 <PasswordRecoverySection />
                 <div className="admin-settings-security-sep" aria-hidden />
-                <PasskeySettingsSection
-                  uid={uid}
-                  email={user?.email?.trim() ?? profile?.email?.trim() ?? ""}
-                />
                 <AppIconBadgeSettingsSection />
               </>
             ) : id === "settings-theme" ? (
