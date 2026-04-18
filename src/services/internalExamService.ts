@@ -460,6 +460,8 @@ export async function saveExamSheetDraft(
 
 /**
  * Удалить сессию экзамена и все связанные листы (только автор-создатель инструктор).
+ * Листы удаляются по `examSheetId` в документе сессии — без запроса `where(examSessionId)`,
+ * иначе Firestore отклоняет list-запрос: правила не гарантируют, что все совпадения принадлежат инструктору.
  */
 export async function deleteInstructorExamSession(sessionId: string): Promise<void> {
   const { db, auth } = getFirebase();
@@ -469,16 +471,18 @@ export async function deleteInstructorExamSession(sessionId: string): Promise<vo
   const sref = doc(db, SESSIONS, sessionId);
   const sessionSnap = await getDoc(sref);
   if (!sessionSnap.exists()) throw new Error("Сессия не найдена");
-  const data = sessionSnap.data() as Record<string, unknown>;
-  if (data.instructorId !== uid) throw new Error("Нет доступа к этой сессии");
+  const session = normalizeInternalExamSession(sessionSnap.id, sessionSnap.data() as Record<string, unknown>);
+  if (session.instructorId !== uid) throw new Error("Нет доступа к этой сессии");
 
-  const sheetsQ = query(collection(db, SHEETS), where("examSessionId", "==", sessionId));
-  const sheetsSnap = await getDocs(sheetsQ);
+  const sheetIds = new Set<string>();
+  for (const st of session.students) {
+    if (st.examSheetId) sheetIds.add(st.examSheetId);
+  }
 
   const batch = writeBatch(db);
-  batch.delete(sref);
-  for (const d of sheetsSnap.docs) {
-    batch.delete(d.ref);
+  for (const sheetId of sheetIds) {
+    batch.delete(doc(db, SHEETS, sheetId));
   }
+  batch.delete(sref);
   await batch.commit();
 }
