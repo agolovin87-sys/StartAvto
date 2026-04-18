@@ -348,6 +348,10 @@ export interface InternalExamSession {
   instructorArchivedAt?: number;
   /** Скрыто из основной таблицы у админа (раздел «Архив» внизу). */
   adminArchivedAt?: number;
+  /** Админ убрал сессию из своего списка архива (документ не удаляется). */
+  adminArchiveDismissedAt?: number;
+  /** Инструктор убрал сессию из своего архива (у курсанта без изменений). */
+  instructorArchiveDismissedAt?: number;
 }
 
 export interface InternalExamSheet {

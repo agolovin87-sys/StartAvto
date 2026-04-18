@@ -4,6 +4,7 @@ import { useAdminExam } from "@/hooks/useAdminExam";
 import type { InternalExamSession, InternalExamSheet } from "@/types/internalExam";
 import { getInternalExamSheet } from "@/services/internalExamService";
 import { exportExamSheetPDF as exportExamSheetPdfFromSheet } from "@/services/examExportService";
+import { ConfirmDialog } from "@/components/ConfirmDialog";
 
 function statusRu(s: InternalExamSession["students"][0]): { label: string; cls: string } {
   if (s.status === "pending") return { label: "Не начат", cls: "admin-internal-exam-status--pending" };
@@ -31,6 +32,17 @@ function IconChevron({ open }: { open: boolean }) {
 /**
  * Раздел «Внутренний экзамен» на вкладке «График» администратора (по умолчанию свёрнут).
  */
+function formatAdminArchiveExamDate(iso: string): string {
+  const [y, m, d] = iso.split("-").map(Number);
+  if (!y || !m || !d) return iso;
+  return new Date(y, m - 1, d).toLocaleDateString("ru-RU", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  });
+}
+
 function buildExamRows(
   sessionsSlice: InternalExamSession[],
   sheets: InternalExamSheet[]
@@ -63,6 +75,7 @@ export function AdminInternalExamSection() {
     batchExportToZip,
     exportSummaryVedomost,
     archiveAllSessionsForGroup,
+    dismissAdminArchive,
   } = useAdminExam();
 
   const [open, setOpen] = useState(false);
@@ -72,6 +85,8 @@ export function AdminInternalExamSection() {
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const [archiveAllBusy, setArchiveAllBusy] = useState(false);
+  const [adminDismissTargetId, setAdminDismissTargetId] = useState<string | null>(null);
+  const [adminDismissBusy, setAdminDismissBusy] = useState(false);
 
   const groupName = useMemo(
     () => groups.find((g) => g.id === groupId)?.name ?? "",
@@ -107,15 +122,27 @@ export function AdminInternalExamSection() {
     [sessions]
   );
   const archivedSessions = useMemo(
-    () => sessions.filter((s) => s.adminArchivedAt != null),
+    () =>
+      sessions.filter(
+        (s) => s.adminArchivedAt != null && s.adminArchiveDismissedAt == null
+      ),
     [sessions]
   );
 
+  const archivedSessionsByExamDate = useMemo(() => {
+    const m = new Map<string, InternalExamSession[]>();
+    for (const s of archivedSessions) {
+      const arr = m.get(s.examDate) ?? [];
+      arr.push(s);
+      m.set(s.examDate, arr);
+    }
+    for (const arr of m.values()) {
+      arr.sort((a, b) => b.createdAt - a.createdAt);
+    }
+    return [...m.entries()].sort((a, b) => b[0].localeCompare(a[0]));
+  }, [archivedSessions]);
+
   const rowsFlat = useMemo(() => buildExamRows(activeSessions, sheets), [activeSessions, sheets]);
-  const rowsArchivedFlat = useMemo(
-    () => buildExamRows(archivedSessions, sheets),
-    [archivedSessions, sheets]
-  );
   const rowsAllFlat = useMemo(() => buildExamRows(sessions, sheets), [sessions, sheets]);
 
   function exportOne(sheetId: string, base: string) {
@@ -166,6 +193,26 @@ export function AdminInternalExamSection() {
       setErr(e instanceof Error ? e.message : "Не удалось перенести в архив");
     } finally {
       setArchiveAllBusy(false);
+    }
+  }
+
+  const adminDismissTargetSession = useMemo(
+    () => (adminDismissTargetId ? sessions.find((s) => s.id === adminDismissTargetId) ?? null : null),
+    [sessions, adminDismissTargetId]
+  );
+
+  async function onConfirmAdminDismissArchive() {
+    if (!adminDismissTargetId) return;
+    setAdminDismissBusy(true);
+    setErr(null);
+    try {
+      await dismissAdminArchive(adminDismissTargetId);
+      setAdminDismissTargetId(null);
+      await reload();
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : "Не удалось убрать из архива");
+    } finally {
+      setAdminDismissBusy(false);
     }
   }
 
@@ -307,72 +354,101 @@ export function AdminInternalExamSection() {
                     </tbody>
                   </table>
                 </div>
-                {rowsArchivedFlat.length > 0 ? (
+                {archivedSessionsByExamDate.length > 0 ? (
                   <>
                     <h3 className="admin-internal-exam-archive-title">Архив</h3>
                     <p className="admin-internal-exam-archive-desc">
-                      Сессии и листы сохраняются; здесь только отфильтрованный список для администратора.
+                      Сессии и листы сохраняются; сгруппировано по дате экзамена. «Удалить из архива» убирает
+                      запись только из вашего списка.
                     </p>
-                    <div className="admin-schedule-table-wrap admin-internal-exam-table-wrap">
-                      <table className="admin-schedule-table">
-                        <thead>
-                          <tr>
-                            <th>ФИО</th>
-                            <th>Статус</th>
-                            <th>Дата / время</th>
-                            <th>Баллы</th>
-                            <th>Действия</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {rowsArchivedFlat.map(({ session, student, sheet }) => {
-                            const st = statusRu(student);
-                            const done = student.status === "passed" || student.status === "failed";
-                            const sid = student.examSheetId;
-                            const base = `Экзамен_${student.studentName}_${session.examDate}`.replace(
-                              /\s+/g,
-                              "_"
-                            );
-                            return (
-                              <tr key={`arch-${session.id}-${student.studentId}`}>
-                                <td>{formatShortFio(student.studentName)}</td>
-                                <td>
-                                  <span className={`admin-internal-exam-status ${st.cls}`}>
-                                    {st.label}
-                                  </span>
-                                </td>
-                                <td>
-                                  {session.examDate} {session.examTime}
-                                </td>
-                                <td>
-                                  {sheet?.totalPoints ?? student.totalPoints ?? "—"}
-                                </td>
-                                <td>
-                                  <div className="admin-internal-exam-row-actions">
-                                    <button
-                                      type="button"
-                                      className="btn btn-ghost btn-sm"
-                                      disabled={!done || !sid}
-                                      onClick={() => sid && exportWordOne(sid, base)}
-                                    >
-                                      Word
-                                    </button>
-                                    <button
-                                      type="button"
-                                      className="btn btn-primary btn-sm"
-                                      disabled={!done || !sid}
-                                      onClick={() => sid && exportOne(sid, base)}
-                                    >
-                                      PDF
-                                    </button>
-                                  </div>
-                                </td>
-                              </tr>
-                            );
-                          })}
-                        </tbody>
-                      </table>
-                    </div>
+                    {archivedSessionsByExamDate.map(([examDate, sessList]) => (
+                      <div key={examDate} className="admin-internal-exam-archive-date-block">
+                        <h4 className="admin-internal-exam-archive-date-heading">
+                          {formatAdminArchiveExamDate(examDate)}
+                        </h4>
+                        {sessList.map((session) => (
+                          <div key={session.id} className="admin-internal-exam-archive-session">
+                            <div className="admin-internal-exam-archive-session-bar">
+                              <span className="admin-internal-exam-archive-session-meta">
+                                {session.groupName} · {session.examTime}
+                              </span>
+                              <button
+                                type="button"
+                                className="btn btn-danger btn-sm"
+                                disabled={adminDismissBusy}
+                                onClick={() => setAdminDismissTargetId(session.id)}
+                              >
+                                Удалить из архива
+                              </button>
+                            </div>
+                            <div className="admin-schedule-table-wrap admin-internal-exam-table-wrap">
+                              <table className="admin-schedule-table">
+                                <thead>
+                                  <tr>
+                                    <th>ФИО</th>
+                                    <th>Статус</th>
+                                    <th>Дата / время</th>
+                                    <th>Баллы</th>
+                                    <th>Действия</th>
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  {session.students.map((student) => {
+                                    const sheet = sheets.find(
+                                      (sh) =>
+                                        sh.examSessionId === session.id && sh.studentId === student.studentId
+                                    );
+                                    const st = statusRu(student);
+                                    const done = student.status === "passed" || student.status === "failed";
+                                    const sid = student.examSheetId;
+                                    const base = `Экзамен_${student.studentName}_${session.examDate}`.replace(
+                                      /\s+/g,
+                                      "_"
+                                    );
+                                    return (
+                                      <tr key={`arch-${session.id}-${student.studentId}`}>
+                                        <td>{formatShortFio(student.studentName)}</td>
+                                        <td>
+                                          <span className={`admin-internal-exam-status ${st.cls}`}>
+                                            {st.label}
+                                          </span>
+                                        </td>
+                                        <td>
+                                          {session.examDate} {session.examTime}
+                                        </td>
+                                        <td>
+                                          {sheet?.totalPoints ?? student.totalPoints ?? "—"}
+                                        </td>
+                                        <td>
+                                          <div className="admin-internal-exam-row-actions">
+                                            <button
+                                              type="button"
+                                              className="btn btn-ghost btn-sm"
+                                              disabled={!done || !sid}
+                                              onClick={() => sid && exportWordOne(sid, base)}
+                                            >
+                                              Word
+                                            </button>
+                                            <button
+                                              type="button"
+                                              className="btn btn-primary btn-sm"
+                                              disabled={!done || !sid}
+                                              onClick={() => sid && exportOne(sid, base)}
+                                            >
+                                              PDF
+                                            </button>
+                                          </div>
+                                        </td>
+                                      </tr>
+                                    );
+                                  })}
+                                </tbody>
+                              </table>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ))}
                   </>
                 ) : null}
               </>
@@ -382,6 +458,25 @@ export function AdminInternalExamSection() {
           </>
         )}
       </div>
+
+      <ConfirmDialog
+        open={adminDismissTargetId != null}
+        title="Убрать сессию из архива администратора?"
+        message={
+          adminDismissTargetSession
+            ? `«${adminDismissTargetSession.groupName}» · ${adminDismissTargetSession.examDate} ${adminDismissTargetSession.examTime}. Запись исчезнет только из вашего архива; у курсантов и инструктора данные не изменятся. Продолжить?`
+            : "Запись исчезнет только из вашего архива. Продолжить?"
+        }
+        confirmLabel="Удалить"
+        cancelLabel="Отмена"
+        onConfirm={() => {
+          if (adminDismissBusy) return;
+          void onConfirmAdminDismissArchive();
+        }}
+        onCancel={() => {
+          if (!adminDismissBusy) setAdminDismissTargetId(null);
+        }}
+      />
     </section>
   );
 }

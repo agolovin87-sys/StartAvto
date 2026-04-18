@@ -4,6 +4,7 @@ import {
   completeStudentExam as completeStudentExamApi,
   createInternalExamSession,
   archiveInstructorExamSession as archiveInstructorExamSessionApi,
+  dismissInstructorArchiveSession as dismissInstructorArchiveSessionApi,
   getInternalExamSession,
   type CreateSessionInput,
   type CompleteExamInput,
@@ -72,6 +73,10 @@ export function useInternalExam(instructorId: string | undefined) {
     await archiveInstructorExamSessionApi(sessionId);
   }, []);
 
+  const dismissInstructorArchive = useCallback(async (sessionId: string) => {
+    await dismissInstructorArchiveSessionApi(sessionId);
+  }, []);
+
   return {
     sessions,
     loading,
@@ -82,5 +87,6 @@ export function useInternalExam(instructorId: string | undefined) {
     getExamStudentsBySession,
     saveExamDraft,
     archiveExamSession,
+    dismissInstructorArchive,
   };
 }

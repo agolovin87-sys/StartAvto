@@ -59,8 +59,14 @@ export function InstructorInternalExamPanel({
   attachedStudents,
   placement = "default",
 }: InstructorInternalExamPanelProps) {
-  const { sessions, loading, createExamSession, completeStudentExam: completeExamApi, archiveExamSession } =
-    useInternalExam(instructorUid);
+  const {
+    sessions,
+    loading,
+    createExamSession,
+    completeStudentExam: completeExamApi,
+    archiveExamSession,
+    dismissInstructorArchive,
+  } = useInternalExam(instructorUid);
 
   const [panelOpen, setPanelOpen] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
@@ -85,9 +91,16 @@ export function InstructorInternalExamPanel({
     [sessions]
   );
   const archivedSessions = useMemo(
-    () => sessions.filter((s) => s.instructorArchivedAt != null),
+    () =>
+      sessions.filter(
+        (s) => s.instructorArchivedAt != null && s.instructorArchiveDismissedAt == null
+      ),
     [sessions]
   );
+
+  const [expandedArchiveSessionId, setExpandedArchiveSessionId] = useState<string | null>(null);
+  const [dismissArchiveTargetId, setDismissArchiveTargetId] = useState<string | null>(null);
+  const [dismissArchiveBusy, setDismissArchiveBusy] = useState(false);
 
   useEffect(() => {
     if (sessions.length === 0) {
@@ -234,6 +247,27 @@ export function InstructorInternalExamPanel({
     () => (archiveTargetId ? sessions.find((s) => s.id === archiveTargetId) ?? null : null),
     [sessions, archiveTargetId]
   );
+
+  const dismissArchiveTargetSession = useMemo(
+    () => (dismissArchiveTargetId ? sessions.find((s) => s.id === dismissArchiveTargetId) ?? null : null),
+    [sessions, dismissArchiveTargetId]
+  );
+
+  async function onConfirmDismissInstructorArchive() {
+    if (!dismissArchiveTargetId) return;
+    const sid = dismissArchiveTargetId;
+    setDismissArchiveBusy(true);
+    setErr(null);
+    try {
+      await dismissInstructorArchive(sid);
+      if (expandedArchiveSessionId === sid) setExpandedArchiveSessionId(null);
+      setDismissArchiveTargetId(null);
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : "Не удалось убрать из архива");
+    } finally {
+      setDismissArchiveBusy(false);
+    }
+  }
 
   async function onConfirmArchiveSession() {
     if (!archiveTargetId) return;
@@ -423,13 +457,55 @@ export function InstructorInternalExamPanel({
                 Сессии остаются у курсантов и в админке; здесь только ваш список для справки.
               </p>
               <ul className="instructor-internal-exam__archive-list" aria-label="Архив сессий">
-                {archivedSessions.map((s) => (
-                  <li key={s.id} className="instructor-internal-exam__archive-row">
-                    <span className="instructor-internal-exam__archive-text">
-                      {s.groupName} · {s.examDate} {s.examTime}
-                    </span>
-                  </li>
-                ))}
+                {archivedSessions.map((s) => {
+                  const expanded = expandedArchiveSessionId === s.id;
+                  return (
+                    <li key={s.id} className="instructor-internal-exam__archive-item">
+                      <div className="instructor-internal-exam__archive-item-head">
+                        <button
+                          type="button"
+                          className="instructor-internal-exam__archive-toggle"
+                          aria-expanded={expanded}
+                          onClick={() => setExpandedArchiveSessionId(expanded ? null : s.id)}
+                        >
+                          <span className="instructor-internal-exam__archive-text">
+                            {s.groupName} · {s.examDate} {s.examTime}
+                          </span>
+                          <span className="instructor-internal-exam__archive-chevron" aria-hidden>
+                            {expanded ? "▼" : "▶"}
+                          </span>
+                        </button>
+                        <button
+                          type="button"
+                          className="btn btn-danger btn-sm"
+                          disabled={dismissArchiveBusy}
+                          onClick={() => setDismissArchiveTargetId(s.id)}
+                        >
+                          Удалить
+                        </button>
+                      </div>
+                      {expanded ? (
+                        <div className="instructor-internal-exam__archive-detail">
+                          <p className="instructor-internal-exam__archive-detail-hint">
+                            Просмотр листов (PDF). У курсанта экзамен не меняется.
+                          </p>
+                          <ul className="instructor-internal-exam__cards">
+                            {s.students.map((st) => (
+                              <li key={st.studentId}>
+                                <ExamStudentCard
+                                  student={st}
+                                  readOnlyArchive
+                                  onStartExam={() => {}}
+                                  onViewSheet={() => void downloadExamSheetPdf(st.examSheetId)}
+                                />
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      ) : null}
+                    </li>
+                  );
+                })}
               </ul>
             </div>
           ) : null}
@@ -539,6 +615,25 @@ export function InstructorInternalExamPanel({
           </div>
         </div>
       ) : null}
+
+      <ConfirmDialog
+        open={dismissArchiveTargetId != null}
+        title="Убрать сессию из вашего архива?"
+        message={
+          dismissArchiveTargetSession
+            ? `«${dismissArchiveTargetSession.groupName}» · ${dismissArchiveTargetSession.examDate} ${dismissArchiveTargetSession.examTime}. Запись исчезнет только у вас; у курсанта и в админке экзамен останется. Продолжить?`
+            : "Запись исчезнет только у вас; у курсанта и в админке экзамен останется. Продолжить?"
+        }
+        confirmLabel="Удалить"
+        cancelLabel="Отмена"
+        onConfirm={() => {
+          if (dismissArchiveBusy) return;
+          void onConfirmDismissInstructorArchive();
+        }}
+        onCancel={() => {
+          if (!dismissArchiveBusy) setDismissArchiveTargetId(null);
+        }}
+      />
 
       <ConfirmDialog
         open={archiveTargetId != null}

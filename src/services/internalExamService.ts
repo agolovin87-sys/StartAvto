@@ -131,6 +131,12 @@ export function normalizeInternalExamSession(
     instructorArchivedAt:
       data.instructorArchivedAt == null ? undefined : toMillis(data.instructorArchivedAt),
     adminArchivedAt: data.adminArchivedAt == null ? undefined : toMillis(data.adminArchivedAt),
+    adminArchiveDismissedAt:
+      data.adminArchiveDismissedAt == null ? undefined : toMillis(data.adminArchiveDismissedAt),
+    instructorArchiveDismissedAt:
+      data.instructorArchiveDismissedAt == null
+        ? undefined
+        : toMillis(data.instructorArchiveDismissedAt),
   };
 }
 
@@ -490,4 +496,24 @@ export async function archiveAdminExamSessionsForGroup(groupId: string): Promise
     batch.update(doc(db, SESSIONS, s.id), { adminArchivedAt: serverTimestamp() });
   }
   await batch.commit();
+}
+
+/** Убрать сессию из архива администратора (данные у курсанта и инструктора не меняются). */
+export async function dismissAdminArchiveSession(sessionId: string): Promise<void> {
+  if (!isFirebaseConfigured) return;
+  const { db } = getFirebase();
+  await updateDoc(doc(db, SESSIONS, sessionId), { adminArchiveDismissedAt: serverTimestamp() });
+}
+
+/** Убрать сессию из архива инструктора — только для этого инструктора, курсанты не затрагиваются. */
+export async function dismissInstructorArchiveSession(sessionId: string): Promise<void> {
+  const { db, auth } = getFirebase();
+  const uid = auth.currentUser?.uid;
+  if (!uid) throw new Error("Не выполнен вход");
+  const sref = doc(db, SESSIONS, sessionId);
+  const sessionSnap = await getDoc(sref);
+  if (!sessionSnap.exists()) throw new Error("Сессия не найдена");
+  const session = normalizeInternalExamSession(sessionSnap.id, sessionSnap.data() as Record<string, unknown>);
+  if (session.instructorId !== uid) throw new Error("Нет доступа к этой сессии");
+  await updateDoc(sref, { instructorArchiveDismissedAt: serverTimestamp() });
 }

@@ -4,6 +4,7 @@ import type { TrainingGroup } from "@/types";
 import { subscribeTrainingGroups } from "@/firebase/admin";
 import {
   archiveAdminExamSessionsForGroup,
+  dismissAdminArchiveSession,
   fetchExamSessionsByGroup,
   fetchExamSheetsForSessionIds,
   getInternalExamSheet,
@@ -90,6 +91,10 @@ export function useAdminExam() {
     await archiveAdminExamSessionsForGroup(groupId);
   }, []);
 
+  const dismissAdminArchive = useCallback(async (sessionId: string) => {
+    await dismissAdminArchiveSession(sessionId);
+  }, []);
+
   return {
     groups,
     groupsLoading,
@@ -100,5 +105,6 @@ export function useAdminExam() {
     batchExportToZip: batchExportToZipFn,
     exportSummaryVedomost,
     archiveAllSessionsForGroup,
+    dismissAdminArchive,
   };
 }

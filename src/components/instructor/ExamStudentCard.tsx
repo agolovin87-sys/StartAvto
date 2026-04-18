@@ -42,6 +42,8 @@ type ExamStudentCardProps = {
   onStartExam: () => void;
   onViewSheet: () => void;
   startBusy?: boolean;
+  /** Просмотр архивной сессии: без старта экзамена, только лист для завершённых. */
+  readOnlyArchive?: boolean;
 };
 
 /**
@@ -52,6 +54,7 @@ export function ExamStudentCard({
   onStartExam,
   onViewSheet,
   startBusy,
+  readOnlyArchive,
 }: ExamStudentCardProps) {
   const statusLabel =
     student.status === "pending"
@@ -87,28 +90,34 @@ export function ExamStudentCard({
       </div>
       <div className="exam-student-card__actions">
         {!done ? (
-          <>
-            <button
-              type="button"
-              className="btn btn-primary btn-sm exam-student-card__btn exam-student-card__btn--start"
-              disabled={startBusy}
-              onClick={onStartExam}
-            >
-              {student.status === "in_progress" ? (
-                <IconContinueExam className="exam-student-card__btn-ico" />
-              ) : (
-                <IconPlay className="exam-student-card__btn-ico" />
-              )}
-              <span>
-                {student.status === "in_progress" ? "Продолжить экзамен" : "Начать экзамен"}
-              </span>
-            </button>
-            {student.examStartedAt != null ? (
-              <span className="exam-student-card__started" title="Время нажатия «Начать экзамен»">
-                Начало: {formatExamStartedAt(student.examStartedAt)}
-              </span>
-            ) : null}
-          </>
+          readOnlyArchive ? (
+            <span className="exam-student-card__archive-ro-hint">
+              В архиве начать или продолжить экзамен нельзя.
+            </span>
+          ) : (
+            <>
+              <button
+                type="button"
+                className="btn btn-primary btn-sm exam-student-card__btn exam-student-card__btn--start"
+                disabled={startBusy}
+                onClick={onStartExam}
+              >
+                {student.status === "in_progress" ? (
+                  <IconContinueExam className="exam-student-card__btn-ico" />
+                ) : (
+                  <IconPlay className="exam-student-card__btn-ico" />
+                )}
+                <span>
+                  {student.status === "in_progress" ? "Продолжить экзамен" : "Начать экзамен"}
+                </span>
+              </button>
+              {student.examStartedAt != null ? (
+                <span className="exam-student-card__started" title="Время нажатия «Начать экзамен»">
+                  Начало: {formatExamStartedAt(student.examStartedAt)}
+                </span>
+              ) : null}
+            </>
+          )
         ) : (
           <>
             <button
