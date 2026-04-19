@@ -234,8 +234,14 @@ export function subscribeTemplates(
 function normalizeLessonError(raw: unknown): LessonDriveError | null {
   if (!raw || typeof raw !== "object") return null;
   const o = raw as Record<string, unknown>;
-  const id = typeof o.id === "string" ? o.id : "";
-  const templateId = typeof o.templateId === "string" ? o.templateId : "";
+  const id =
+    typeof o.id === "string" ? o.id : typeof o.id === "number" && Number.isFinite(o.id) ? String(o.id) : "";
+  const templateId =
+    typeof o.templateId === "string"
+      ? o.templateId
+      : typeof o.templateId === "number" && Number.isFinite(o.templateId)
+        ? String(o.templateId)
+        : "";
   const name = typeof o.name === "string" ? o.name : "";
   if (!id || !templateId) return null;
   const points =

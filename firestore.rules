@@ -1027,8 +1027,9 @@ service cloud.firestore {
       function lessonErrorsDriveSlotData() {
         return get(/databases/$(database)/documents/driveSlots/$(slotId)).data;
       }
-      function studentMayListenLessonErrorsBeforeDoc() {
-        return isStudentAccount()
+      /** Не только isStudentAccount: при role null/другом значении курсант всё равно должен видеть свои ошибки. */
+      function lessonErrorsBelongsToSignedStudent() {
+        return isSignedIn()
           && lessonErrorsDriveSlotExists()
           && lessonErrorsDriveSlotData().studentId == request.auth.uid;
       }
@@ -1040,8 +1041,8 @@ service cloud.firestore {
 
       allow read: if isAdmin()
         || (resource != null && isInstructorAccount() && resource.data.instructorId == request.auth.uid)
-        || (resource != null && isStudentAccount() && resource.data.studentId == request.auth.uid)
-        || (resource == null && studentMayListenLessonErrorsBeforeDoc())
+        || (resource != null && isSignedIn() && resource.data.studentId == request.auth.uid)
+        || (resource == null && lessonErrorsBelongsToSignedStudent())
         || (resource == null && instructorMayListenLessonErrorsBeforeDoc());
       allow create: if isInstructorAccount()
         && request.resource.data.instructorId == request.auth.uid

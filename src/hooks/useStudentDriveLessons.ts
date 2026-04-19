@@ -10,7 +10,10 @@ import {
   buildDrivingLesson,
   fetchTripForSlot,
 } from "@/services/studentCabinetService";
-import { subscribeDriveSlotLessonErrors } from "@/services/errorTemplateService";
+import {
+  loadDriveSlotLessonErrors,
+  subscribeDriveSlotLessonErrors,
+} from "@/services/errorTemplateService";
 import type { Trip } from "@/types/tripHistory";
 
 /**
@@ -76,20 +79,9 @@ export function useStudentDriveLessons(studentId: string | undefined) {
 
     for (const sid of want) {
       if (errorsSubsRef.current.has(sid)) continue;
-      const unsub = subscribeDriveSlotLessonErrors(
-        sid,
-        (list) => {
-          setErrorsBySlot((prev) => ({ ...prev, [sid]: list }));
-        },
-        () => {
-          setErrorsBySlot((prev) => {
-            if (!(sid in prev)) return prev;
-            const next = { ...prev };
-            delete next[sid];
-            return next;
-          });
-        }
-      );
+      const unsub = subscribeDriveSlotLessonErrors(sid, (list) => {
+        setErrorsBySlot((prev) => ({ ...prev, [sid]: list }));
+      });
       errorsSubsRef.current.set(sid, unsub);
     }
 
@@ -136,6 +128,35 @@ export function useStudentDriveLessons(studentId: string | undefined) {
       if (debounceRef.current) clearTimeout(debounceRef.current);
     };
   }, [completedIds]);
+
+  /** Подстраховка: если snapshot ошибок не успел, подгружаем завершённые уроки одним get. */
+  useEffect(() => {
+    if (!uid || !isFirebaseConfigured) return;
+    const ids = completedIds.split(",").filter(Boolean);
+    if (ids.length === 0) return;
+    let cancelled = false;
+    const t = window.setTimeout(() => {
+      void (async () => {
+        for (const id of ids) {
+          if (cancelled) break;
+          try {
+            const rows = await loadDriveSlotLessonErrors(id);
+            if (cancelled || rows.length === 0) continue;
+            setErrorsBySlot((prev) => {
+              if ((prev[id]?.length ?? 0) > 0) return prev;
+              return { ...prev, [id]: rows };
+            });
+          } catch {
+            /* офлайн / правила */
+          }
+        }
+      })();
+    }, 700);
+    return () => {
+      cancelled = true;
+      window.clearTimeout(t);
+    };
+  }, [completedIds, uid]);
 
   const instructorIdsKey = useMemo(
     () => [...new Set(slots.map((s) => s.instructorId).filter(Boolean))].sort().join("|"),
