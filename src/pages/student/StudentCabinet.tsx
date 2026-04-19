@@ -2,6 +2,7 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 import { StudentCabinetTalonBalance } from "@/components/student/StudentCabinetTalonBalance";
 import { StudentCabinetDrivingProgress } from "@/components/student/StudentCabinetDrivingProgress";
+import { StudentCabinetDrivingHistory } from "@/components/student/StudentCabinetDrivingHistory";
 
 /**
  * Личный кабинет курсанта — отдельный маршрут `/app/student/cabinet` (без нижней навигации).
@@ -19,7 +20,6 @@ export function StudentCabinet() {
             <h1 className="dashboard-title student-cabinet-title">Личный кабинет курсанта</h1>
           </div>
           <div className="student-cabinet-header-actions">
-            <span className="student-cabinet-user-name">{displayName}</span>
             <button
               type="button"
               className="student-cab-back-ico-btn"
@@ -34,12 +34,14 @@ export function StudentCabinet() {
                 />
               </svg>
             </button>
+            <span className="student-cabinet-user-name">{displayName}</span>
           </div>
         </header>
 
         <div className="student-cabinet-blocks">
           <StudentCabinetTalonBalance />
           <StudentCabinetDrivingProgress />
+          <StudentCabinetDrivingHistory />
         </div>
       </div>
     </div>
