@@ -13576,11 +13576,22 @@ html[data-theme="light"] .student-cab-back-ico-btn:hover {
   stroke: rgba(255, 255, 255, 0.12);
 }
 
+.student-cab-drive-ring-scale {
+  stroke-linecap: butt;
+  pointer-events: none;
+}
+
 .student-cab-drive-ring-fg {
   stroke-linecap: round;
-  transition:
-    stroke-dasharray 0.55s ease,
-    stroke 0.55s ease;
+  transition: stroke-dasharray 0.55s ease;
+}
+
+.student-cab-drive-ring-progress {
+  stroke: rgba(248, 250, 252, 0.92);
+}
+
+html[data-theme="light"] .student-cab-drive-ring-progress {
+  stroke: rgba(15, 23, 42, 0.92);
 }
 
 .student-cab-drive-ring-center {
