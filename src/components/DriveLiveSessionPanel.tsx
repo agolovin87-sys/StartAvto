@@ -103,6 +103,21 @@ export function DriveLiveSessionPanel({
   const { templates } = useErrorTemplates(slot.instructorId);
   const [lessonErrors, setLessonErrors] = useState<LessonDriveError[]>([]);
   const [lessonHydrated, setLessonHydrated] = useState(false);
+  /** Актуальный список для сохранения без гонки с debounce при завершении вождения. */
+  const lessonErrorsRef = useRef<LessonDriveError[]>([]);
+  useEffect(() => {
+    lessonErrorsRef.current = lessonErrors;
+  }, [lessonErrors]);
+
+  const flushLessonErrorsNow = useCallback(async () => {
+    if (!lessonHydrated) return;
+    await saveDriveSlotLessonErrors(
+      slot.id,
+      slot.instructorId,
+      slot.studentId,
+      lessonErrorsRef.current
+    );
+  }, [lessonHydrated, slot.id, slot.instructorId, slot.studentId]);
 
   const serverPauseActive =
     slot.liveStudentAckAt != null &&
@@ -212,13 +227,25 @@ export function DriveLiveSessionPanel({
     autoCompleteFiredRef.current = true;
     void (async () => {
       try {
+        await flushLessonErrorsNow();
+      } catch {
+        /* офлайн: всё равно завершаем урок */
+      }
+      try {
         await tripRec.finalizeAndUpload();
       } catch {
         /* завершаем слот даже при сбое сохранения трека */
       }
       await onCompleteLive();
     })();
-  }, [isPaused, awaitingStudentAck, effectiveElapsedMs, onCompleteLive, tripRec.finalizeAndUpload]);
+  }, [
+    isPaused,
+    awaitingStudentAck,
+    effectiveElapsedMs,
+    flushLessonErrorsNow,
+    onCompleteLive,
+    tripRec.finalizeAndUpload,
+  ]);
 
   const remainingMin = Math.max(0, Math.ceil((DRIVE_LIVE_DURATION_MS - effectiveElapsedMs) / 60000));
 
@@ -226,6 +253,11 @@ export function DriveLiveSessionPanel({
     setStopBusy(true);
     onActionError("");
     try {
+      try {
+        await flushLessonErrorsNow();
+      } catch {
+        /* офлайн: продолжаем завершение */
+      }
       await tripRec.finalizeAndUpload();
       await onCompleteLive();
       setStopConfirmOpen(false);
