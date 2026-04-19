@@ -1016,9 +1016,33 @@ service cloud.firestore {
 
     /** Ошибки урока по слоту вождения (инструктор пишет; курсант и админ читают). */
     match /driveSlotLessonErrors/{slotId} {
+      /**
+       * Пока документа нет, `resource == null` — подписка onSnapshot иначе получает permission-denied
+       * и не «просыпается» после первого setDoc. Разрешаем читать «пустой» путь, если слот в driveSlots
+       * назначен этому курсанту / инструктору.
+       */
+      function lessonErrorsDriveSlotExists() {
+        return exists(/databases/$(database)/documents/driveSlots/$(slotId));
+      }
+      function lessonErrorsDriveSlotData() {
+        return get(/databases/$(database)/documents/driveSlots/$(slotId)).data;
+      }
+      function studentMayListenLessonErrorsBeforeDoc() {
+        return isStudentAccount()
+          && lessonErrorsDriveSlotExists()
+          && lessonErrorsDriveSlotData().studentId == request.auth.uid;
+      }
+      function instructorMayListenLessonErrorsBeforeDoc() {
+        return isInstructorAccount()
+          && lessonErrorsDriveSlotExists()
+          && lessonErrorsDriveSlotData().instructorId == request.auth.uid;
+      }
+
       allow read: if isAdmin()
-        || (isInstructorAccount() && resource.data.instructorId == request.auth.uid)
-        || (isStudentAccount() && resource.data.studentId == request.auth.uid);
+        || (resource != null && isInstructorAccount() && resource.data.instructorId == request.auth.uid)
+        || (resource != null && isStudentAccount() && resource.data.studentId == request.auth.uid)
+        || (resource == null && studentMayListenLessonErrorsBeforeDoc())
+        || (resource == null && instructorMayListenLessonErrorsBeforeDoc());
       allow create: if isInstructorAccount()
         && request.resource.data.instructorId == request.auth.uid
         && request.resource.data.slotId == slotId

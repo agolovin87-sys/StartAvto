@@ -13,6 +13,7 @@ import {
   Timestamp,
   updateDoc,
   where,
+  writeBatch,
 } from "firebase/firestore";
 import type {
   DriveCancelledBy,
@@ -22,7 +23,11 @@ import type {
   FreeDriveWindowStatus,
 } from "@/types";
 import { addMinutesToDateKeyAndTime } from "@/lib/driveSlotTime";
-import { DRIVE_TIME_OCCUPIED_MSG, hasDriveTimeOverlapOnInstructorDay } from "@/lib/driveTimeConflict";
+import {
+  DRIVE_TIME_OCCUPIED_MSG,
+  hasDriveTimeOverlapOnInstructorDay,
+  listOverlappingOpenFreeWindowIds,
+} from "@/lib/driveTimeConflict";
 import { getFirebase } from "./config";
 import { getUserProfile, normalizeTalonsValue, normalizeUserProfile } from "./users";
 
@@ -351,11 +356,19 @@ export async function instructorConfirmFreeDriveWindowReservation(windowId: stri
       preWin.startTime,
       slots,
       windows,
-      windowId
+      windowId,
+      undefined,
+      true
     )
   ) {
     throw new Error(DRIVE_TIME_OCCUPIED_MSG);
   }
+  const openOverlapIds = listOverlappingOpenFreeWindowIds(
+    preWin.instructorId,
+    preWin.dateKey,
+    preWin.startTime,
+    windows
+  );
   await runTransaction(db, async (tx) => {
     const winSnap = await tx.get(winRef);
     if (!winSnap.exists()) throw new Error("Окно не найдено");
@@ -382,6 +395,10 @@ export async function instructorConfirmFreeDriveWindowReservation(windowId: stri
       createdAt: serverTimestamp(),
     });
     tx.delete(winRef);
+    for (const wid of openOverlapIds) {
+      if (wid === windowId) continue;
+      tx.delete(doc(db, FREE_WINDOWS, wid));
+    }
   });
 }
 
@@ -407,10 +424,24 @@ export async function addDriveSlot(input: {
   }
   const slots = await fetchDriveSlotsForInstructorDate(input.instructorId, dk);
   const windows = await fetchFreeDriveWindowsForInstructorDate(input.instructorId, dk);
-  if (hasDriveTimeOverlapOnInstructorDay(input.instructorId, dk, st, slots, windows)) {
+  if (
+    hasDriveTimeOverlapOnInstructorDay(
+      input.instructorId,
+      dk,
+      st,
+      slots,
+      windows,
+      undefined,
+      undefined,
+      true
+    )
+  ) {
     throw new Error(DRIVE_TIME_OCCUPIED_MSG);
   }
-  const ref = await addDoc(collection(db, DRIVES), {
+  const openOverlapIds = listOverlappingOpenFreeWindowIds(input.instructorId, dk, st, windows);
+  const slotRef = doc(collection(db, DRIVES));
+  const batch = writeBatch(db);
+  batch.set(slotRef, {
     instructorId: input.instructorId,
     dateKey: dk,
     startTime: st,
@@ -421,7 +452,11 @@ export async function addDriveSlot(input: {
     cancelReason: (input.cancelReason ?? "").trim(),
     createdAt: serverTimestamp(),
   });
-  return ref.id;
+  for (const wid of openOverlapIds) {
+    batch.delete(doc(db, FREE_WINDOWS, wid));
+  }
+  await batch.commit();
+  return slotRef.id;
 }
 
 /** Запись курсанта инструктором — ждёт подтверждения курсантом. */
@@ -561,16 +596,28 @@ export async function instructorApplyRunningLateShift(
       slotsNewDay,
       windowsNewDay,
       undefined,
-      slotId
+      slotId,
+      true
     )
   ) {
     throw new Error(DRIVE_TIME_OCCUPIED_MSG);
   }
-  await updateDoc(slotRef, {
+  const openOverlapIds = listOverlappingOpenFreeWindowIds(
+    slot.instructorId,
+    next.dateKey,
+    next.startTime,
+    windowsNewDay
+  );
+  const batch = writeBatch(db);
+  batch.update(slotRef, {
     dateKey: next.dateKey,
     startTime: next.startTime,
     instructorLateShiftMin: shiftMin,
   });
+  for (const wid of openOverlapIds) {
+    batch.delete(doc(db, FREE_WINDOWS, wid));
+  }
+  await batch.commit();
 }
 
 /** Инструктор нажимает «Начать вождение»; таймер запустится после подтверждения курсантом. */

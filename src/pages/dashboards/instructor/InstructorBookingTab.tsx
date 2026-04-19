@@ -217,7 +217,16 @@ export function InstructorBookingTab({ freeWindows }: { freeWindows: FreeDriveWi
         return;
       }
       if (
-        hasDriveTimeOverlapOnInstructorDay(instructorUid, dateKey, startTime, slots, freeWindows)
+        hasDriveTimeOverlapOnInstructorDay(
+          instructorUid,
+          dateKey,
+          startTime,
+          slots,
+          freeWindows,
+          undefined,
+          undefined,
+          true
+        )
       ) {
         setDriveTimeOccupiedOpen(true);
         return;
