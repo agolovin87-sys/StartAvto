@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { formatShortFio } from "@/admin/formatShortFio";
 import {
   driveHistoryTableDateCell,
@@ -61,10 +61,13 @@ type StudentHistoryTabProps = {
   /** Подсветка строки поездки после перехода из ЛК (кнопка «Трек»). */
   focusSlotId?: string | null;
   onFocusConsumed?: () => void;
+  /** Раскрыть блок «Баланс талонов» и прокрутить к нему (ссылка «Подробнее» из ЛК). */
+  focusBalanceSection?: boolean;
+  onBalanceFocusConsumed?: () => void;
 };
 
 export function StudentHistoryTab(props: StudentHistoryTabProps = {}) {
-  const { focusSlotId, onFocusConsumed } = props;
+  const { focusSlotId, onFocusConsumed, focusBalanceSection, onBalanceFocusConsumed } = props;
   const { user, profile } = useAuth();
   const studentUid = (user?.uid ?? profile?.uid ?? "").trim();
   const {
@@ -77,6 +80,7 @@ export function StudentHistoryTab(props: StudentHistoryTabProps = {}) {
   } = useStudentHistoryData(studentUid);
 
   const [driveSectionOpen, setDriveSectionOpen] = useState(false);
+  const [balanceExpandNonce, setBalanceExpandNonce] = useState(0);
 
   const studentDisplayName = profile?.displayName?.trim() ?? "";
 
@@ -93,6 +97,15 @@ export function StudentHistoryTab(props: StudentHistoryTabProps = {}) {
     }, 120);
     return () => window.clearTimeout(t);
   }, [focusSlotId, onFocusConsumed]);
+
+  useEffect(() => {
+    if (!focusBalanceSection) return;
+    setBalanceExpandNonce((n) => n + 1);
+  }, [focusBalanceSection]);
+
+  const handleTalonExpandHandled = useCallback(() => {
+    onBalanceFocusConsumed?.();
+  }, [onBalanceFocusConsumed]);
 
   return (
     <div className="admin-tab instructor-history-tab">
@@ -114,6 +127,8 @@ export function StudentHistoryTab(props: StudentHistoryTabProps = {}) {
         entries={entries}
         driveSlots={driveSlots}
         instructorNameById={instructorNameById}
+        talonExpandNonce={balanceExpandNonce}
+        onTalonExpandHandled={handleTalonExpandHandled}
       />
 
       <section

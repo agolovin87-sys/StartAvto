@@ -612,10 +612,16 @@ function StudentDashboardShell() {
     driveLocUi.ready && driveLocUi.studentsEnabled && meetingGeoEnabled;
   const [tab, setTab] = useState<StudentNavTab>("home");
   const [historyFocusSlotId, setHistoryFocusSlotId] = useState<string | null>(null);
+  const [historyFocusBalance, setHistoryFocusBalance] = useState(false);
+  const clearHistoryBalanceFocus = useCallback(() => setHistoryFocusBalance(false), []);
   useDashboardTabHistory(tab, setTab, STUDENT_DASH_TABS);
 
   useEffect(() => {
-    const s = location.state as { studentTab?: StudentNavTab; focusDriveSlotId?: string } | null;
+    const s = location.state as {
+      studentTab?: StudentNavTab;
+      focusDriveSlotId?: string;
+      focusHistoryBalance?: boolean;
+    } | null;
     if (!s || typeof s !== "object") return;
     const keys = Object.keys(s);
     if (keys.length === 0) return;
@@ -624,6 +630,7 @@ function StudentDashboardShell() {
     }
     const slot = s.focusDriveSlotId?.trim();
     if (slot) setHistoryFocusSlotId(slot);
+    if (s.focusHistoryBalance) setHistoryFocusBalance(true);
     navigate(".", { replace: true, state: {} });
   }, [location.state, navigate]);
   const [chatThreadOpen, setChatThreadOpen] = useState(false);
@@ -1390,6 +1397,8 @@ function StudentDashboardShell() {
             <StudentHistoryTab
               focusSlotId={historyFocusSlotId}
               onFocusConsumed={() => setHistoryFocusSlotId(null)}
+              focusBalanceSection={historyFocusBalance}
+              onBalanceFocusConsumed={clearHistoryBalanceFocus}
             />
           ) : null}
           {tab === "settings" ? <AdminSettingsTab /> : null}

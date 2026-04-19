@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { formatShortFio } from "@/admin/formatShortFio";
 import type { TalonHistoryEntry } from "@/firebase/history";
 import type { DriveSlot, UserRole } from "@/types";
@@ -93,6 +93,9 @@ type StudentTalonBalanceSectionProps = {
   entries: TalonHistoryEntry[];
   driveSlots: DriveSlot[];
   instructorNameById: Record<string, string>;
+  /** Увеличивается при переходе из ЛК — раскрыть блок и прокрутить к якорю. */
+  talonExpandNonce?: number;
+  onTalonExpandHandled?: () => void;
 };
 
 export function StudentTalonBalanceSection({
@@ -101,8 +104,23 @@ export function StudentTalonBalanceSection({
   entries,
   driveSlots,
   instructorNameById,
+  talonExpandNonce = 0,
+  onTalonExpandHandled,
 }: StudentTalonBalanceSectionProps) {
   const [talonSectionOpen, setTalonSectionOpen] = useState(false);
+
+  useEffect(() => {
+    if (talonExpandNonce < 1) return;
+    setTalonSectionOpen(true);
+    const t = window.setTimeout(() => {
+      document.getElementById("student-history-balance-anchor")?.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
+      onTalonExpandHandled?.();
+    }, 160);
+    return () => window.clearTimeout(t);
+  }, [talonExpandNonce, onTalonExpandHandled]);
 
   const completedDrives = useMemo(
     () => driveSlots.filter((s) => s.status === "completed"),
@@ -186,6 +204,7 @@ export function StudentTalonBalanceSection({
 
   return (
     <section
+      id="student-history-balance-anchor"
       className="admin-history-section instructor-history-talon-section"
       aria-labelledby="student-history-talon-heading"
     >
