@@ -13582,16 +13582,68 @@ html[data-theme="light"] .student-cab-back-ico-btn:hover {
 }
 
 .student-cab-drive-ring-fg {
-  stroke-linecap: round;
-  transition: stroke-dasharray 0.55s ease;
+  stroke-linecap: butt;
+  transition:
+    stroke-dasharray 0.55s ease,
+    stroke-dashoffset 0.55s ease;
 }
 
-.student-cab-drive-ring-progress {
-  stroke: rgba(248, 250, 252, 0.92);
+.student-cab-drive-ring-progress-past {
+  stroke: rgba(248, 250, 252, 0.44);
 }
 
-html[data-theme="light"] .student-cab-drive-ring-progress {
+.student-cab-drive-ring-progress-current {
+  stroke: rgba(248, 250, 252, 0.95);
+}
+
+html[data-theme="light"] .student-cab-drive-ring-progress-past {
+  stroke: rgba(15, 23, 42, 0.32);
+}
+
+html[data-theme="light"] .student-cab-drive-ring-progress-current {
   stroke: rgba(15, 23, 42, 0.92);
+}
+
+.student-cab-drive-split-hint {
+  margin: 0 0 0.45rem;
+  font-size: 0.62rem;
+  line-height: 1.45;
+  color: var(--theme-muted);
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.2rem 0.35rem;
+}
+
+.student-cab-drive-split-hint-part {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+}
+
+.student-cab-drive-split-past,
+.student-cab-drive-split-current {
+  display: inline-block;
+  width: 0.72rem;
+  height: 3px;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+
+.student-cab-drive-split-past {
+  background: rgba(248, 250, 252, 0.44);
+}
+
+.student-cab-drive-split-current {
+  background: rgba(248, 250, 252, 0.95);
+}
+
+html[data-theme="light"] .student-cab-drive-split-past {
+  background: rgba(15, 23, 42, 0.32);
+}
+
+html[data-theme="light"] .student-cab-drive-split-current {
+  background: rgba(15, 23, 42, 0.92);
 }
 
 .student-cab-drive-ring-center {

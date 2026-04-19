@@ -43,10 +43,16 @@ function tierForCompletedCount(n: number): DriveTier {
   return { id: "expert", label: "Эксперт", badgeClass: "student-cab-drive-badge--expert" };
 }
 
-/** Кольцо: цветная шкала по диапазонам 0–7 / 8–15 / 16–23 / 24–29, сверху — дуга прогресса. */
+/** Кольцо: цветная шкала; сверху — прошлый прогресс (до n−1) и текущий шаг (последнее занятие). */
 function DrivesRing({ completed, total }: { completed: number; total: number }) {
-  const frac = total <= 0 ? 0 : Math.max(0, Math.min(1, completed / total));
-  const progressDash = `${frac * RING_DASH_UNITS} ${RING_DASH_UNITS - frac * RING_DASH_UNITS}`;
+  const u = RING_DASH_UNITS;
+  const pastCompleted = Math.max(0, completed - 1);
+  const pastFrac = total <= 0 ? 0 : Math.min(1, pastCompleted / total);
+  const totalFrac = total <= 0 ? 0 : Math.min(1, completed / total);
+  const sliceFrac = Math.max(0, totalFrac - pastFrac);
+  const pastDash = `${pastFrac * u} ${u - pastFrac * u}`;
+  const currentDash = `${sliceFrac * u} ${u - sliceFrac * u}`;
+  const currentOffset = -pastFrac * u;
   const bandOffsets: number[] = [];
   let run = 0;
   for (const b of DRIVE_SCALE_BANDS) {
@@ -76,17 +82,32 @@ function DrivesRing({ completed, total }: { completed: number; total: number }) 
             />
           );
         })}
-        <circle
-          className="student-cab-drive-ring-fg student-cab-drive-ring-progress"
-          cx="18"
-          cy="18"
-          r="15.915"
-          fill="none"
-          strokeWidth="3"
-          strokeDasharray={progressDash}
-          strokeLinecap="round"
-          transform="rotate(-90 18 18)"
-        />
+        {pastFrac > 0 ? (
+          <circle
+            className="student-cab-drive-ring-fg student-cab-drive-ring-progress-past"
+            cx="18"
+            cy="18"
+            r="15.915"
+            fill="none"
+            strokeWidth="3"
+            strokeDasharray={pastDash}
+            transform="rotate(-90 18 18)"
+          />
+        ) : null}
+        {completed > 0 && sliceFrac > 0 ? (
+          <circle
+            className="student-cab-drive-ring-fg student-cab-drive-ring-progress-current"
+            cx="18"
+            cy="18"
+            r="15.915"
+            fill="none"
+            strokeWidth="3"
+            strokeDasharray={currentDash}
+            strokeDashoffset={currentOffset}
+            strokeLinecap="round"
+            transform="rotate(-90 18 18)"
+          />
+        ) : null}
       </svg>
       <div className="student-cab-drive-ring-center">
         <span className="student-cab-drive-ring-count">{completed}</span>
@@ -114,6 +135,17 @@ export function StudentCabinetDrivingProgress() {
         <div className="student-cab-drive-side">
           <p className="student-cab-drive-role-label">Текущий уровень</p>
           <p className={`student-cab-drive-badge ${tier.badgeClass}`}>{tier.label}</p>
+          {completed > 0 ? (
+            <p className="student-cab-drive-split-hint">
+              <span className="student-cab-drive-split-hint-part">
+                <span className="student-cab-drive-split-past" aria-hidden /> прошлый прогресс
+              </span>
+              <span aria-hidden>·</span>
+              <span className="student-cab-drive-split-hint-part">
+                <span className="student-cab-drive-split-current" aria-hidden /> текущий (последнее вождение)
+              </span>
+            </p>
+          ) : null}
           <ul className="student-cab-drive-legend">
             <li>
               <span className="student-cab-drive-dot student-cab-drive-dot--novice" /> 0–7 — новичок
