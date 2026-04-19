@@ -13463,13 +13463,29 @@ html[data-theme="light"] .student-cab-back-ico-btn:hover {
     0 0 26px rgba(239, 68, 68, 0.35);
 }
 
-.student-cabinet-talon-table-title {
-  margin: 0 0 0.3rem;
-  font-size: 0.78rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  color: var(--theme-muted);
+.student-cab-collapse-toggle {
+  width: 100%;
+  margin-top: 0.35rem;
+  justify-content: space-between;
+  text-align: left;
+}
+
+.student-cab-collapse-toggle--talon-ops {
+  margin-bottom: 0;
+}
+
+.student-cab-collapse-panel {
+  margin-top: 0.35rem;
+}
+
+.student-cab-collapse-panel .student-cabinet-text-link {
+  display: inline-block;
+  margin-top: 0.45rem;
+}
+
+.student-cab-collapse-loading,
+.student-cab-collapse-err {
+  margin: 0.35rem 0 0;
 }
 
 .student-cabinet-talon-table-wrap {

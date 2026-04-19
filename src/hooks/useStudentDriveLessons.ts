@@ -123,5 +123,5 @@ export function useStudentDriveLessons(studentId: string | undefined) {
     [slots, errorsBySlot, tripsBySlot, instructorNameById]
   );
 
-  return { lessons, loading, err };
+  return { lessons, errorsBySlot, loading, err };
 }

@@ -5,6 +5,14 @@ import { useAuth } from "@/context/AuthContext";
 import { subscribeTalonHistoryForUser, type TalonHistoryEntry } from "@/firebase/history";
 import type { UserRole } from "@/types";
 
+function IconChevron({ open }: { open: boolean }) {
+  return (
+    <svg className={`instr-chevron${open ? " is-open" : ""}`} viewBox="0 0 24 24" aria-hidden>
+      <path fill="currentColor" d="M7 10l5 5 5-5z" />
+    </svg>
+  );
+}
+
 const roleLabel: Record<UserRole, string> = {
   admin: "Администратор",
   instructor: "Инструктор",
@@ -39,7 +47,7 @@ function whoCell(e: TalonHistoryEntry): string {
 }
 
 /**
- * Компактный блок баланса талонов в ЛК: заголовок + значение и круг, таблица из 3 операций, ссылка в «Историю».
+ * Компактный блок баланса талонов в ЛК: заголовок + круг; «Последние операции» по умолчанию свёрнуты.
  */
 export function StudentCabinetTalonBalance() {
   const navigate = useNavigate();
@@ -47,6 +55,7 @@ export function StudentCabinetTalonBalance() {
   const uid = (user?.uid ?? profile?.uid ?? "").trim();
   const balance = profile?.talons ?? 0;
   const [entries, setEntries] = useState<TalonHistoryEntry[]>([]);
+  const [opsOpen, setOpsOpen] = useState(false);
 
   useEffect(() => {
     if (!uid) {
@@ -80,49 +89,60 @@ export function StudentCabinetTalonBalance() {
         </div>
       </div>
 
-      <h3 className="student-cabinet-talon-table-title">Последние операции</h3>
-      <div className="student-cabinet-talon-table-wrap">
-        <table className="student-cabinet-talon-table">
-          <thead>
-            <tr>
-              <th>Дата</th>
-              <th>Время</th>
-              <th>Операция</th>
-              <th>Кем</th>
-            </tr>
-          </thead>
-          <tbody>
-            {lastThree.length === 0 ? (
-              <tr>
-                <td colSpan={4} className="student-cabinet-talon-table-empty">
-                  Нет записей в журнале
-                </td>
-              </tr>
-            ) : (
-              lastThree.map((e) => (
-                <tr key={e.id}>
-                  <td>{formatRuDate(e.at)}</td>
-                  <td>{formatRuTime(e.at)}</td>
-                  <td
-                    className={
-                      e.delta > 0
-                        ? "student-cabinet-talon-table-op student-cabinet-talon-table-op--in"
-                        : "student-cabinet-talon-table-op student-cabinet-talon-table-op--out"
-                    }
-                  >
-                    {operationLabel(e)}
-                  </td>
-                  <td className="student-cabinet-talon-table-who">{whoCell(e)}</td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-      </div>
-
-      <button type="button" className="student-cabinet-text-link" onClick={goHistoryBalance}>
-        Подробнее
+      <button
+        type="button"
+        className="instructor-home-section-toggle glossy-panel student-cab-collapse-toggle student-cab-collapse-toggle--talon-ops"
+        aria-expanded={opsOpen}
+        aria-controls="cabinet-talon-ops-panel"
+        onClick={() => setOpsOpen((v) => !v)}
+      >
+        <span className="instructor-home-section-toggle-label">Последние операции</span>
+        <span className="instructor-home-section-toggle-meta">{lastThree.length}</span>
+        <IconChevron open={opsOpen} />
       </button>
+      <div id="cabinet-talon-ops-panel" className="student-cab-collapse-panel" hidden={!opsOpen}>
+        <div className="student-cabinet-talon-table-wrap">
+          <table className="student-cabinet-talon-table">
+            <thead>
+              <tr>
+                <th>Дата</th>
+                <th>Время</th>
+                <th>Операция</th>
+                <th>Кем</th>
+              </tr>
+            </thead>
+            <tbody>
+              {lastThree.length === 0 ? (
+                <tr>
+                  <td colSpan={4} className="student-cabinet-talon-table-empty">
+                    Нет записей в журнале
+                  </td>
+                </tr>
+              ) : (
+                lastThree.map((e) => (
+                  <tr key={e.id}>
+                    <td>{formatRuDate(e.at)}</td>
+                    <td>{formatRuTime(e.at)}</td>
+                    <td
+                      className={
+                        e.delta > 0
+                          ? "student-cabinet-talon-table-op student-cabinet-talon-table-op--in"
+                          : "student-cabinet-talon-table-op student-cabinet-talon-table-op--out"
+                      }
+                    >
+                      {operationLabel(e)}
+                    </td>
+                    <td className="student-cabinet-talon-table-who">{whoCell(e)}</td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+        <button type="button" className="student-cabinet-text-link" onClick={goHistoryBalance}>
+          Подробнее
+        </button>
+      </div>
     </section>
   );
 }
