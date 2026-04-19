@@ -48,8 +48,8 @@ export function StudentCabinetDrivingHistory() {
     errors: LessonDriveError[];
   } | null>(null);
 
-  /** Хронология: первое вождение — № 1. */
-  const rows = useMemo(() => [...lessons].sort((a, b) => a.date - b.date), [lessons]);
+  /** Сверху последнее вождение, снизу первое; № п/п: снизу 1, сверху N. */
+  const rows = useMemo(() => [...lessons].sort((a, b) => b.date - a.date), [lessons]);
 
   return (
     <section className="student-cabinet-card student-cab-drive-history-card" aria-labelledby="cabinet-drive-history-title">
@@ -145,9 +145,10 @@ export function StudentCabinetDrivingHistory() {
                   const { date, time } = formatDateTime(lesson.date);
                   const shortIns = lesson.instructorName ? formatShortFio(lesson.instructorName) : "—";
                   const errRows = sortedLessonErrors(lesson.id, errorsBySlot);
+                  const seqNum = rows.length - idx;
                   return (
                     <tr key={lesson.id}>
-                      <td className="student-cab-drive-history-td-num">{idx + 1}</td>
+                      <td className="student-cab-drive-history-td-num">{seqNum}</td>
                       <td>{date}</td>
                       <td>{time}</td>
                       <td className="student-cab-drive-history-td-ins">{shortIns}</td>
