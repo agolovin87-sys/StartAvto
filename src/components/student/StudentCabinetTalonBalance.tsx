@@ -16,15 +16,30 @@ function partyFromRoleLabel(role: UserRole): string {
   return roleLabel[role];
 }
 
-function formatRuDateTime(ms: number): string {
+function formatRuDate(ms: number): string {
   const d = new Date(ms);
-  const date = `${String(d.getDate()).padStart(2, "0")}.${String(d.getMonth() + 1).padStart(2, "0")}.${d.getFullYear()}`;
-  const time = `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
-  return `${date}, ${time}`;
+  return `${String(d.getDate()).padStart(2, "0")}.${String(d.getMonth() + 1).padStart(2, "0")}.${d.getFullYear()}`;
+}
+
+function formatRuTime(ms: number): string {
+  const d = new Date(ms);
+  return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+}
+
+function operationLabel(e: TalonHistoryEntry): string {
+  const credited = e.delta > 0;
+  const amount = Math.abs(e.delta);
+  return credited ? `Зачислено: ${amount}` : `Списано: ${amount}`;
+}
+
+function whoCell(e: TalonHistoryEntry): string {
+  const hasFrom = Boolean(e.fromUid && e.fromRole);
+  if (!hasFrom) return "—";
+  return `${partyFromRoleLabel(e.fromRole!)} · ${formatShortFio(e.fromDisplayName ?? "")}`;
 }
 
 /**
- * Краткий блок баланса талонов в ЛК: текущий остаток, три последние операции из журнала, ссылка в «Историю».
+ * Компактный блок баланса талонов в ЛК: заголовок + значение и круг, таблица из 3 операций, ссылка в «Историю».
  */
 export function StudentCabinetTalonBalance() {
   const navigate = useNavigate();
@@ -51,40 +66,57 @@ export function StudentCabinetTalonBalance() {
 
   return (
     <section className="student-cabinet-card student-cabinet-talon-brief" aria-labelledby="cabinet-talon-title">
-      <h2 id="cabinet-talon-title" className="student-cabinet-card__title">
-        Баланс талонов
-      </h2>
-      <p className="student-cabinet-talon-balance-big" aria-live="polite">
-        {balance}
-      </p>
-      <p className="field-hint student-cabinet-talon-balance-caption">Талонов на счёте</p>
+      <div className="student-cabinet-talon-head">
+        <h2 id="cabinet-talon-title" className="student-cabinet-talon-head-title">
+          Баланс талонов
+        </h2>
+        <div className="student-cabinet-talon-head-values" aria-label={`Талонов на счёте: ${balance}`}>
+          <span className="student-cabinet-talon-head-num">{balance}</span>
+          <span className="student-cabinet-talon-disc" aria-hidden>
+            {balance}
+          </span>
+        </div>
+      </div>
 
-      <h3 className="student-cabinet-subtitle">Последние операции</h3>
-      {lastThree.length === 0 ? (
-        <p className="field-hint">В журнале пока нет записей — движения появятся при изменении баланса.</p>
-      ) : (
-        <ul className="student-cabinet-talon-ops">
-          {lastThree.map((e) => {
-            const credited = e.delta > 0;
-            const amount = Math.abs(e.delta);
-            const hasFrom = Boolean(e.fromUid && e.fromRole);
-            const fromLine = hasFrom
-              ? `${partyFromRoleLabel(e.fromRole!)} · ${formatShortFio(e.fromDisplayName ?? "")}`
-              : "—";
-            return (
-              <li key={e.id} className="student-cabinet-talon-op">
-                <span className="student-cabinet-talon-op-date">{formatRuDateTime(e.at)}</span>
-                <span className="student-cabinet-talon-op-main">
-                  <span className={credited ? "student-cabinet-talon--credit" : "student-cabinet-talon--debit"}>
-                    {credited ? "Зачислено" : "Списано"}: {amount}
-                  </span>
-                  <span className="student-cabinet-talon-op-from">{fromLine}</span>
-                </span>
-              </li>
-            );
-          })}
-        </ul>
-      )}
+      <h3 className="student-cabinet-talon-table-title">Последние операции</h3>
+      <div className="student-cabinet-talon-table-wrap">
+        <table className="student-cabinet-talon-table">
+          <thead>
+            <tr>
+              <th>Дата</th>
+              <th>Время</th>
+              <th>Операция</th>
+              <th>Кем</th>
+            </tr>
+          </thead>
+          <tbody>
+            {lastThree.length === 0 ? (
+              <tr>
+                <td colSpan={4} className="student-cabinet-talon-table-empty">
+                  Нет записей в журнале
+                </td>
+              </tr>
+            ) : (
+              lastThree.map((e) => (
+                <tr key={e.id}>
+                  <td>{formatRuDate(e.at)}</td>
+                  <td>{formatRuTime(e.at)}</td>
+                  <td
+                    className={
+                      e.delta > 0
+                        ? "student-cabinet-talon-table-op student-cabinet-talon-table-op--in"
+                        : "student-cabinet-talon-table-op student-cabinet-talon-table-op--out"
+                    }
+                  >
+                    {operationLabel(e)}
+                  </td>
+                  <td className="student-cabinet-talon-table-who">{whoCell(e)}</td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+      </div>
 
       <button type="button" className="student-cabinet-text-link" onClick={goHistoryBalance}>
         Подробнее

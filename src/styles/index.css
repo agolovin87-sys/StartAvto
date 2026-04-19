@@ -13329,67 +13329,307 @@ html[data-theme="light"] .student-exam-card--failed .student-exam-card__result {
   max-width: min(520px, calc(100vw - 2rem));
 }
 
-/* ЛК курсанта: краткий блок баланса талонов */
-.student-cabinet-talon-brief {
-  max-width: 28rem;
-}
-
-.student-cabinet-talon-balance-big {
-  margin: 0.15rem 0 0;
-  font-size: 2.25rem;
-  font-weight: 800;
-  font-variant-numeric: tabular-nums;
-  line-height: 1.1;
-  color: #86efac;
-}
-
-.student-cabinet-talon-balance-caption {
-  margin: 0 0 0.5rem;
-}
-
-.student-cabinet-talon-ops {
-  list-style: none;
-  margin: 0 0 0.75rem;
-  padding: 0;
-}
-
-.student-cabinet-talon-op {
+/* ЛК курсанта: блоки под шапкой */
+.student-cabinet-blocks {
   display: flex;
   flex-direction: column;
-  gap: 0.15rem;
-  padding: 0.45rem 0;
-  border-bottom: 1px solid var(--theme-line-subtle, var(--theme-line));
-  font-size: 0.86rem;
+  gap: 0.85rem;
+  max-width: 26rem;
 }
 
-.student-cabinet-talon-op:last-child {
-  border-bottom: none;
+/* Баланс талонов — компактная шапка + таблица */
+.student-cabinet-talon-brief {
+  padding: 0.65rem 0.75rem 0.7rem;
 }
 
-.student-cabinet-talon-op-date {
+.student-cabinet-talon-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.45rem;
+  padding-bottom: 0.45rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.student-cabinet-talon-head-title {
+  margin: 0;
+  font-size: 0.98rem;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.student-cabinet-talon-head-values {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  flex-shrink: 0;
+}
+
+.student-cabinet-talon-head-num {
+  font-size: 1.35rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  color: #bbf7d0;
+  line-height: 1;
+}
+
+.student-cabinet-talon-disc {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 2.35rem;
+  min-height: 2.35rem;
+  padding: 0 0.25rem;
+  border-radius: 50%;
+  font-size: 1rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  color: #ecfdf5;
+  background: linear-gradient(145deg, rgba(34, 197, 94, 0.45) 0%, rgba(21, 128, 61, 0.55) 100%);
+  border: 2px solid rgba(134, 239, 172, 0.65);
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.15);
+}
+
+.student-cabinet-talon-table-title {
+  margin: 0 0 0.3rem;
   font-size: 0.78rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
   color: var(--theme-muted);
 }
 
-.student-cabinet-talon-op-main {
-  display: flex;
-  flex-direction: column;
-  gap: 0.1rem;
+.student-cabinet-talon-table-wrap {
+  overflow-x: auto;
+  margin-bottom: 0.45rem;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(0, 0, 0, 0.12);
 }
 
-.student-cabinet-talon-op-from {
-  font-size: 0.8rem;
+.student-cabinet-talon-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.74rem;
+}
+
+.student-cabinet-talon-table th,
+.student-cabinet-talon-table td {
+  padding: 0.35rem 0.45rem;
+  text-align: left;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  vertical-align: top;
+}
+
+.student-cabinet-talon-table th {
+  font-weight: 600;
+  color: var(--theme-muted);
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.student-cabinet-talon-table tr:last-child td {
+  border-bottom: none;
+}
+
+.student-cabinet-talon-table-empty {
+  color: var(--theme-muted);
+  text-align: center;
+  padding: 0.5rem !important;
+}
+
+.student-cabinet-talon-table-op {
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.student-cabinet-talon-table-op--in {
+  color: #86efac;
+}
+
+.student-cabinet-talon-table-op--out {
+  color: #fca5a5;
+}
+
+.student-cabinet-talon-table-who {
+  color: var(--theme-soft);
+  line-height: 1.35;
+  word-break: break-word;
+}
+
+/* Прогресс вождений */
+.student-cab-drive-card {
+  padding: 0.65rem 0.75rem 0.75rem;
+}
+
+.student-cab-drive-intro {
+  margin: 0 0 0.55rem;
+  font-size: 0.78rem;
+  line-height: 1.4;
+  color: var(--theme-muted);
+}
+
+.student-cab-drive-body {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 1rem;
+}
+
+.student-cab-drive-ring-wrap {
+  position: relative;
+  width: 108px;
+  height: 108px;
+  flex-shrink: 0;
+}
+
+.student-cab-drive-ring-svg {
+  width: 108px;
+  height: 108px;
+  display: block;
+}
+
+.student-cab-drive-ring-bg {
+  stroke: rgba(255, 255, 255, 0.12);
+}
+
+.student-cab-drive-ring-fg {
+  stroke-linecap: round;
+  transition: stroke-dasharray 0.35s ease;
+}
+
+.student-cab-drive-ring--novice .student-cab-drive-ring-fg {
+  stroke: #94a3b8;
+}
+
+.student-cab-drive-ring--amateur .student-cab-drive-ring-fg {
+  stroke: #22d3ee;
+}
+
+.student-cab-drive-ring--pro .student-cab-drive-ring-fg {
+  stroke: #c084fc;
+}
+
+.student-cab-drive-ring--expert .student-cab-drive-ring-fg {
+  stroke: #fbbf24;
+}
+
+.student-cab-drive-ring-center {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.student-cab-drive-ring-count {
+  font-size: 1.65rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+  color: #f8fafc;
+}
+
+.student-cab-drive-ring-hint {
+  font-size: 0.62rem;
+  color: var(--theme-muted);
+  margin-top: 0.12rem;
+}
+
+.student-cab-drive-side {
+  flex: 1;
+  min-width: 0;
+}
+
+.student-cab-drive-role-label {
+  margin: 0 0 0.2rem;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--theme-muted);
+}
+
+.student-cab-drive-badge {
+  display: inline-block;
+  margin: 0 0 0.5rem;
+  padding: 0.28rem 0.55rem;
+  border-radius: 999px;
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.student-cab-drive-badge--novice {
+  color: #e2e8f0;
+  background: rgba(100, 116, 139, 0.35);
+  border: 1px solid rgba(148, 163, 184, 0.45);
+}
+
+.student-cab-drive-badge--amateur {
+  color: #ecfeff;
+  background: rgba(6, 182, 212, 0.28);
+  border: 1px solid rgba(34, 211, 238, 0.45);
+}
+
+.student-cab-drive-badge--pro {
+  color: #faf5ff;
+  background: rgba(168, 85, 247, 0.28);
+  border: 1px solid rgba(192, 132, 252, 0.5);
+}
+
+.student-cab-drive-badge--expert {
+  color: #451a03;
+  background: linear-gradient(135deg, #fde68a 0%, #fbbf24 100%);
+  border: 1px solid rgba(251, 191, 36, 0.85);
+}
+
+.student-cab-drive-legend {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 0.68rem;
+  line-height: 1.55;
   color: var(--theme-soft);
 }
 
-.student-cabinet-talon--credit {
-  color: #86efac;
-  font-weight: 600;
+.student-cab-drive-legend li {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
 }
 
-.student-cabinet-talon--debit {
-  color: #fca5a5;
-  font-weight: 600;
+.student-cab-drive-dot {
+  width: 0.45rem;
+  height: 0.45rem;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.student-cab-drive-dot--novice {
+  background: #94a3b8;
+}
+
+.student-cab-drive-dot--amateur {
+  background: #22d3ee;
+}
+
+.student-cab-drive-dot--pro {
+  background: #c084fc;
+}
+
+.student-cab-drive-dot--expert {
+  background: #fbbf24;
+}
+
+html[data-theme="light"] .student-cab-drive-badge--expert {
+  color: #78350f;
+}
+
+html[data-theme="light"] .student-cab-drive-ring-count {
+  color: #0f172a;
 }
 
 .student-cabinet-text-link {
