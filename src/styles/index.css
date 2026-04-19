@@ -13550,6 +13550,13 @@ html[data-theme="light"] .student-cab-back-ico-btn:hover {
 /* Прогресс вождений */
 .student-cab-drive-card {
   padding: 0.65rem 0.75rem 0.75rem;
+  /** Сегмент шкалы до достижения порога уровня — «белый» трек */
+  --student-cab-drive-scale-inactive: rgba(255, 255, 255, 0.55);
+}
+
+/* На светлой подложке чистый белый не виден — почти белый серый как «не достигнут уровень». */
+html[data-theme="light"] .student-cab-drive-card {
+  --student-cab-drive-scale-inactive: #f1f5f9;
 }
 
 .student-cab-drive-body {
@@ -13579,6 +13586,7 @@ html[data-theme="light"] .student-cab-back-ico-btn:hover {
 .student-cab-drive-ring-scale {
   stroke-linecap: butt;
   pointer-events: none;
+  transition: stroke 0.35s ease;
 }
 
 .student-cab-drive-ring-fg {
@@ -13687,27 +13695,27 @@ html[data-theme="light"] .student-cab-drive-split-current {
 }
 
 .student-cab-drive-badge--novice {
-  color: #e2e8f0;
-  background: rgba(100, 116, 139, 0.35);
-  border: 1px solid rgba(148, 163, 184, 0.45);
+  color: #422006;
+  background: rgba(250, 204, 21, 0.35);
+  border: 1px solid rgba(250, 204, 21, 0.55);
 }
 
 .student-cab-drive-badge--amateur {
-  color: #ecfeff;
-  background: rgba(6, 182, 212, 0.28);
-  border: 1px solid rgba(34, 211, 238, 0.45);
+  color: #052e16;
+  background: rgba(34, 197, 94, 0.28);
+  border: 1px solid rgba(34, 197, 94, 0.5);
 }
 
 .student-cab-drive-badge--pro {
   color: #faf5ff;
-  background: rgba(168, 85, 247, 0.28);
-  border: 1px solid rgba(192, 132, 252, 0.5);
+  background: rgba(168, 85, 247, 0.32);
+  border: 1px solid rgba(168, 85, 247, 0.55);
 }
 
 .student-cab-drive-badge--expert {
-  color: #451a03;
-  background: linear-gradient(135deg, #fde68a 0%, #fbbf24 100%);
-  border: 1px solid rgba(251, 191, 36, 0.85);
+  color: #eff6ff;
+  background: rgba(59, 130, 246, 0.35);
+  border: 1px solid rgba(59, 130, 246, 0.65);
 }
 
 .student-cab-drive-legend {
@@ -13733,23 +13741,31 @@ html[data-theme="light"] .student-cab-drive-split-current {
 }
 
 .student-cab-drive-dot--novice {
-  background: #94a3b8;
+  background: #facc15;
 }
 
 .student-cab-drive-dot--amateur {
-  background: #22d3ee;
+  background: #22c55e;
 }
 
 .student-cab-drive-dot--pro {
-  background: #c084fc;
+  background: #a855f7;
 }
 
 .student-cab-drive-dot--expert {
-  background: #fbbf24;
+  background: #3b82f6;
+}
+
+html[data-theme="light"] .student-cab-drive-badge--novice {
+  color: #713f12;
+}
+
+html[data-theme="light"] .student-cab-drive-badge--amateur {
+  color: #14532d;
 }
 
 html[data-theme="light"] .student-cab-drive-badge--expert {
-  color: #78350f;
+  color: #1e3a8a;
 }
 
 html[data-theme="light"] .student-cab-drive-ring-count {

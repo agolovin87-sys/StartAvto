@@ -7,8 +7,11 @@ export const STUDENT_CABINET_REQUIRED_DRIVES = 29;
 /** Длина окружности в единицах stroke-dasharray (как у дуги прогресса). */
 const RING_DASH_UNITS = 100;
 
-/** Доли шкалы: 0–7, 8–15, 16–23, 24–28 (последний сегмент 5/29 до норматива 29). */
-const DRIVE_SCALE_BANDS: readonly { lenUnits: number; color: string }[] = (() => {
+/**
+ * Доли шкалы: 0–7 жёлтый, 8–15 зелёный, 16–23 фиолетовый, 24–29 синий.
+ * Пока не достигнут порог уровня — сегмент рисуется цветом «неактивно» (белый в теме).
+ */
+const DRIVE_SCALE_BANDS: readonly { lenUnits: number; activeColor: string; minCompleted: number }[] = (() => {
   const d1 = 8;
   const d2 = 8;
   const d3 = 8;
@@ -16,10 +19,10 @@ const DRIVE_SCALE_BANDS: readonly { lenUnits: number; color: string }[] = (() =>
   const u = RING_DASH_UNITS;
   const toUnits = (d: number) => (d / STUDENT_CABINET_REQUIRED_DRIVES) * u;
   return [
-    { lenUnits: toUnits(d1), color: "#94a3b8" },
-    { lenUnits: toUnits(d2), color: "#22d3ee" },
-    { lenUnits: toUnits(d3), color: "#c084fc" },
-    { lenUnits: toUnits(d4), color: "#fbbf24" },
+    { lenUnits: toUnits(d1), activeColor: "#facc15", minCompleted: 1 },
+    { lenUnits: toUnits(d2), activeColor: "#22c55e", minCompleted: 8 },
+    { lenUnits: toUnits(d3), activeColor: "#a855f7", minCompleted: 16 },
+    { lenUnits: toUnits(d4), activeColor: "#3b82f6", minCompleted: 24 },
   ];
 })();
 
@@ -66,6 +69,7 @@ function DrivesRing({ completed, total }: { completed: number; total: number }) 
         {DRIVE_SCALE_BANDS.map((band, i) => {
           const len = band.lenUnits;
           const gap = RING_DASH_UNITS - len;
+          const reached = completed >= band.minCompleted;
           return (
             <circle
               key={i}
@@ -75,7 +79,7 @@ function DrivesRing({ completed, total }: { completed: number; total: number }) 
               r="15.915"
               fill="none"
               strokeWidth="3"
-              stroke={band.color}
+              stroke={reached ? band.activeColor : "var(--student-cab-drive-scale-inactive)"}
               strokeDasharray={`${len} ${gap}`}
               strokeDashoffset={-(bandOffsets[i] ?? 0)}
               transform="rotate(-90 18 18)"
