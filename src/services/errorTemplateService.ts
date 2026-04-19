@@ -275,3 +275,37 @@ export async function loadDriveSlotLessonErrors(slotId: string): Promise<LessonD
   if (!Array.isArray(arr)) return [];
   return arr.map(normalizeLessonError).filter((x): x is LessonDriveError => x != null);
 }
+
+/**
+ * Подписка на документ ошибок урока (инструктор обновляет во время вождения — курсант видит сразу в ЛК).
+ */
+export function subscribeDriveSlotLessonErrors(
+  slotId: string,
+  onUpdate: (errors: LessonDriveError[]) => void,
+  onError?: (e: Error) => void
+): Unsubscribe {
+  const id = slotId.trim();
+  if (!id || !isFirebaseConfigured) {
+    onUpdate([]);
+    return () => {};
+  }
+  const { db } = getFirebase();
+  const ref = doc(db, DRIVE_SLOT_LESSON_ERRORS, id);
+  return onSnapshot(
+    ref,
+    (snap) => {
+      if (!snap.exists()) {
+        onUpdate([]);
+        return;
+      }
+      const data = snap.data() as Record<string, unknown>;
+      const arr = data.errors;
+      if (!Array.isArray(arr)) {
+        onUpdate([]);
+        return;
+      }
+      onUpdate(arr.map(normalizeLessonError).filter((x): x is LessonDriveError => x != null));
+    },
+    (e) => onError?.(e as Error)
+  );
+}

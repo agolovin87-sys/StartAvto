@@ -1,29 +1,31 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { subscribeDriveSlotsForStudent } from "@/firebase/drives";
+import { isFirebaseConfigured } from "@/firebase/config";
 import { getUserProfile } from "@/firebase/users";
 import type { DriveSlot } from "@/types";
 import type { DrivingLesson } from "@/types/studentCabinet";
+import type { LessonDriveError } from "@/types/errorTemplate";
 import {
   assembleDrivingLessons,
-  loadLessonErrorsForSlots,
+  buildDrivingLesson,
   fetchTripForSlot,
 } from "@/services/studentCabinetService";
+import { subscribeDriveSlotLessonErrors } from "@/services/errorTemplateService";
 import type { Trip } from "@/types/tripHistory";
 
 /**
- * Завершённые вождения курсанта с ошибками урока (для ЛК / истории без журнала талонов).
+ * Слоты курсанта, треки завершённых уроков и ошибки урока в реальном времени (Firestore `driveSlotLessonErrors`).
  */
 export function useStudentDriveLessons(studentId: string | undefined) {
   const [slots, setSlots] = useState<DriveSlot[]>([]);
   const [instructorNameById, setInstructorNameById] = useState<Record<string, string>>({});
-  const [errorsBySlot, setErrorsBySlot] = useState<Record<string, import("@/types/errorTemplate").LessonDriveError[]>>(
-    {}
-  );
+  const [errorsBySlot, setErrorsBySlot] = useState<Record<string, LessonDriveError[]>>({});
   const [tripsBySlot, setTripsBySlot] = useState<Record<string, Trip | null>>({});
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState<string | null>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const loadedInstructorsRef = useRef<Set<string>>(new Set());
+  const errorsSubsRef = useRef<Map<string, () => void>>(new Map());
 
   const uid = studentId?.trim() ?? "";
 
@@ -48,6 +50,55 @@ export function useStudentDriveLessons(studentId: string | undefined) {
     );
   }, [uid]);
 
+  /** Подписка на ошибки по каждому неотменённому слоту — обновления сразу после выбора инструктором. */
+  useEffect(() => {
+    if (!uid || !isFirebaseConfigured) {
+      for (const unsub of errorsSubsRef.current.values()) unsub();
+      errorsSubsRef.current.clear();
+      setErrorsBySlot({});
+      return;
+    }
+
+    const want = new Set(slots.filter((s) => s.status !== "cancelled").map((s) => s.id));
+
+    for (const [sid, unsub] of [...errorsSubsRef.current.entries()]) {
+      if (!want.has(sid)) {
+        unsub();
+        errorsSubsRef.current.delete(sid);
+        setErrorsBySlot((prev) => {
+          if (!(sid in prev)) return prev;
+          const next = { ...prev };
+          delete next[sid];
+          return next;
+        });
+      }
+    }
+
+    for (const sid of want) {
+      if (errorsSubsRef.current.has(sid)) continue;
+      const unsub = subscribeDriveSlotLessonErrors(
+        sid,
+        (list) => {
+          setErrorsBySlot((prev) => ({ ...prev, [sid]: list }));
+        },
+        () => {
+          setErrorsBySlot((prev) => {
+            if (!(sid in prev)) return prev;
+            const next = { ...prev };
+            delete next[sid];
+            return next;
+          });
+        }
+      );
+      errorsSubsRef.current.set(sid, unsub);
+    }
+
+    return () => {
+      for (const unsub of errorsSubsRef.current.values()) unsub();
+      errorsSubsRef.current.clear();
+    };
+  }, [slots, uid]);
+
   const completedIds = useMemo(
     () =>
       slots
@@ -60,7 +111,6 @@ export function useStudentDriveLessons(studentId: string | undefined) {
 
   useEffect(() => {
     if (!completedIds) {
-      setErrorsBySlot({});
       setTripsBySlot({});
       return;
     }
@@ -69,8 +119,6 @@ export function useStudentDriveLessons(studentId: string | undefined) {
     debounceRef.current = setTimeout(() => {
       void (async () => {
         try {
-          const errMap = await loadLessonErrorsForSlots(ids);
-          setErrorsBySlot(errMap);
           const tripMap: Record<string, Trip | null> = {};
           let i = 0;
           for (const id of ids) {
@@ -118,10 +166,37 @@ export function useStudentDriveLessons(studentId: string | undefined) {
     };
   }, [instructorIdsKey]);
 
-  const lessons: DrivingLesson[] = useMemo(
+  const completedLessons: DrivingLesson[] = useMemo(
     () => assembleDrivingLessons(slots, errorsBySlot, tripsBySlot, instructorNameById),
     [slots, errorsBySlot, tripsBySlot, instructorNameById]
   );
+
+  /** Незавершённый урок с уже отмеченными ошибками — показываем в «Истории» сразу. */
+  const previewLessons: DrivingLesson[] = useMemo(() => {
+    return slots
+      .filter((s) => s.status !== "cancelled" && s.status !== "completed")
+      .filter((s) => (errorsBySlot[s.id]?.length ?? 0) > 0)
+      .map((s) =>
+        buildDrivingLesson(
+          s,
+          instructorNameById[s.instructorId] ?? "",
+          errorsBySlot[s.id] ?? [],
+          tripsBySlot[s.id] ?? null
+        )
+      );
+  }, [slots, errorsBySlot, tripsBySlot, instructorNameById]);
+
+  const lessons: DrivingLesson[] = useMemo(() => {
+    const merged = [...previewLessons, ...completedLessons];
+    const seen = new Set<string>();
+    const out: DrivingLesson[] = [];
+    for (const l of merged) {
+      if (seen.has(l.id)) continue;
+      seen.add(l.id);
+      out.push(l);
+    }
+    return out.sort((a, b) => a.date - b.date);
+  }, [previewLessons, completedLessons]);
 
   return { lessons, errorsBySlot, loading, err };
 }
