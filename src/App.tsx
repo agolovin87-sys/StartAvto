@@ -147,7 +147,7 @@ export default function App() {
           }
         />
         <Route
-          path="/app/student"
+          path="/app/student/*"
           element={
             <StudentOnboardingProvider>
               <ProtectedApp role="student" />

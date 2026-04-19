@@ -1,4 +1,6 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { Route, Routes, useLocation, useNavigate } from "react-router-dom";
+import { StudentCabinet } from "@/pages/student/StudentCabinet";
 import { initialsFromFullName, avatarHueFromUid } from "@/admin/instructorAvatar";
 import { formatShortFio } from "@/admin/formatShortFio";
 import {
@@ -332,7 +334,13 @@ function IconPlayFill() {
   );
 }
 
-function StudentSelfCard({ profile }: { profile: UserProfile }) {
+function StudentSelfCard({
+  profile,
+  onOpenCabinet,
+}: {
+  profile: UserProfile;
+  onOpenCabinet: () => void;
+}) {
   const hue = avatarHueFromUid(profile.uid);
   const initials = initialsFromFullName(profile.displayName);
   const presenceOnline = isPresenceEffectivelyOnline(profile.presence);
@@ -341,7 +349,12 @@ function StudentSelfCard({ profile }: { profile: UserProfile }) {
   return (
     <div className="instructor-card instructor-card--student instructor-home-self-card">
       <div className="instructor-preview-bar">
-        <div className="instructor-card-preview instructor-card-preview--tint glossy-panel instructor-home-self-preview">
+        <button
+          type="button"
+          className="instructor-card-preview instructor-card-preview--tint glossy-panel instructor-home-self-preview instructor-home-self-cabinet-btn"
+          onClick={onOpenCabinet}
+          aria-label="Открыть личный кабинет курсанта"
+        >
           <div className="instructor-home-self-main">
             <span className="instructor-avatar-wrap">
               <span
@@ -406,7 +419,7 @@ function StudentSelfCard({ profile }: { profile: UserProfile }) {
               {profile.talons}
             </span>
           </div>
-        </div>
+        </button>
       </div>
     </div>
   );
@@ -587,7 +600,9 @@ const navItems: {
   { id: "settings", label: "Настройки", Icon: IconSettings },
 ];
 
-export function StudentDashboard() {
+function StudentDashboardShell() {
+  const location = useLocation();
+  const navigate = useNavigate();
   const { profile, user } = useAuth();
   const meetingGeoEnabled = useMeetingGeolocationEnabled(
     (user?.uid ?? profile?.uid ?? "").trim()
@@ -596,7 +611,21 @@ export function StudentDashboard() {
   const showStudentDriveLocationShare =
     driveLocUi.ready && driveLocUi.studentsEnabled && meetingGeoEnabled;
   const [tab, setTab] = useState<StudentNavTab>("home");
+  const [historyFocusSlotId, setHistoryFocusSlotId] = useState<string | null>(null);
   useDashboardTabHistory(tab, setTab, STUDENT_DASH_TABS);
+
+  useEffect(() => {
+    const s = location.state as { studentTab?: StudentNavTab; focusDriveSlotId?: string } | null;
+    if (!s || typeof s !== "object") return;
+    const keys = Object.keys(s);
+    if (keys.length === 0) return;
+    if (s.studentTab && (STUDENT_DASH_TABS as readonly string[]).includes(s.studentTab)) {
+      setTab(s.studentTab);
+    }
+    const slot = s.focusDriveSlotId?.trim();
+    if (slot) setHistoryFocusSlotId(slot);
+    navigate(".", { replace: true, state: {} });
+  }, [location.state, navigate]);
   const [chatThreadOpen, setChatThreadOpen] = useState(false);
   const { setShellHeaderHidden } = useChatThreadShell();
   const { reportDashboardTab, totalUnread } = useChatUnread();
@@ -977,7 +1006,10 @@ export function StudentDashboard() {
                     <span>Курсант</span>
                   </span>
                 </h2>
-                <StudentSelfCard profile={profile} />
+                <StudentSelfCard
+                  profile={profile}
+                  onOpenCabinet={() => navigate("cabinet")}
+                />
               </section>
               <section
                 className="instructor-home-section student-home-section--instructor"
@@ -1354,7 +1386,12 @@ export function StudentDashboard() {
               }}
             />
           ) : null}
-          {tab === "history" ? <StudentHistoryTab /> : null}
+          {tab === "history" ? (
+            <StudentHistoryTab
+              focusSlotId={historyFocusSlotId}
+              onFocusConsumed={() => setHistoryFocusSlotId(null)}
+            />
+          ) : null}
           {tab === "settings" ? <AdminSettingsTab /> : null}
         </div>
 
@@ -1419,5 +1456,15 @@ export function StudentDashboard() {
         />
       </div>
     </ChatNavContext.Provider>
+  );
+}
+
+/** Маршруты курсанта: основной дашборд с нижним меню и отдельный экран личного кабинета. */
+export function StudentDashboard() {
+  return (
+    <Routes>
+      <Route index element={<StudentDashboardShell />} />
+      <Route path="cabinet" element={<StudentCabinet />} />
+    </Routes>
   );
 }

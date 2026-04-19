@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { formatShortFio } from "@/admin/formatShortFio";
 import {
   driveHistoryTableDateCell,
@@ -57,7 +57,14 @@ function driveHistoryStatusLines(slot: DriveSlot): { lines: string[] } {
   return { lines: ["—"] };
 }
 
-export function StudentHistoryTab() {
+type StudentHistoryTabProps = {
+  /** Подсветка строки поездки после перехода из ЛК (кнопка «Трек»). */
+  focusSlotId?: string | null;
+  onFocusConsumed?: () => void;
+};
+
+export function StudentHistoryTab(props: StudentHistoryTabProps = {}) {
+  const { focusSlotId, onFocusConsumed } = props;
   const { user, profile } = useAuth();
   const studentUid = (user?.uid ?? profile?.uid ?? "").trim();
   const {
@@ -72,6 +79,20 @@ export function StudentHistoryTab() {
   const [driveSectionOpen, setDriveSectionOpen] = useState(false);
 
   const studentDisplayName = profile?.displayName?.trim() ?? "";
+
+  useEffect(() => {
+    const id = focusSlotId?.trim();
+    if (!id) return;
+    setDriveSectionOpen(true);
+    const t = window.setTimeout(() => {
+      document.querySelector(`[data-student-history-slot="${id}"]`)?.scrollIntoView({
+        behavior: "smooth",
+        block: "center",
+      });
+      onFocusConsumed?.();
+    }, 120);
+    return () => window.clearTimeout(t);
+  }, [focusSlotId, onFocusConsumed]);
 
   return (
     <div className="admin-tab instructor-history-tab">
@@ -151,7 +172,7 @@ export function StudentHistoryTab() {
                     const instructorCell = rawName ? formatShortFio(rawName) : "—";
                     const { lines } = driveHistoryStatusLines(slot);
                     return (
-                      <tr key={slot.id}>
+                      <tr key={slot.id} data-student-history-slot={slot.id}>
                         <td>{driveHistoryTableDateCell(slot)}</td>
                         <td>
                           {isDriveStartedBeforeScheduled(slot) && slot.liveStartedAt != null ? (

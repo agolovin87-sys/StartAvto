@@ -12940,3 +12940,389 @@ html[data-theme="light"] .student-exam-card--failed .student-exam-card__result {
   margin: 0;
   padding: 0;
 }
+
+/* Кнопка-карточка «курсант» → личный кабинет */
+.instructor-home-self-cabinet-btn {
+  display: block;
+  width: 100%;
+  border: none;
+  margin: 0;
+  padding: 0;
+  text-align: inherit;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  border-radius: inherit;
+  background: transparent;
+  appearance: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.instructor-home-self-cabinet-btn:focus-visible {
+  outline: 2px solid rgba(56, 189, 248, 0.85);
+  outline-offset: 2px;
+}
+
+/* Личный кабинет курсанта (отдельный маршрут) */
+.student-cabinet-page {
+  padding-bottom: 1.5rem;
+}
+
+.student-cabinet-content {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 0 1rem 1.25rem;
+}
+
+.student-cabinet-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.student-cabinet-title {
+  margin-bottom: 0.25rem;
+}
+
+.student-cabinet-hint {
+  margin: 0;
+  max-width: 36rem;
+}
+
+.student-cabinet-header-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.student-cabinet-user-name {
+  font-weight: 600;
+  font-size: 0.95rem;
+  color: var(--theme-muted);
+}
+
+.student-cabinet-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  align-items: start;
+}
+
+@media (max-width: 840px) {
+  .student-cabinet-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.student-cabinet-col {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.student-cabinet-full-width {
+  margin-top: 1rem;
+}
+
+.student-cabinet-card {
+  border-radius: 12px;
+  border: 1px solid var(--theme-line);
+  background: var(--theme-bg-soft);
+  padding: 1rem 1.05rem;
+}
+
+.student-cabinet-card__title {
+  margin: 0 0 0.75rem;
+  font-size: 1.02rem;
+}
+
+.student-cabinet-subtitle {
+  margin: 0.75rem 0 0.4rem;
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--theme-muted);
+}
+
+.student-cabinet-tickets-hero {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.student-cabinet-tickets-hero-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.student-cabinet-tickets-big {
+  margin: 0 0 0.25rem;
+  font-size: 1.35rem;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.student-cabinet-tickets-sub {
+  margin: 0.15rem 0 0;
+  font-size: 0.88rem;
+  color: var(--theme-muted);
+}
+
+.student-cabinet-alert {
+  margin: 0.65rem 0 0;
+  padding: 0.5rem 0.6rem;
+  border-radius: 8px;
+  background: rgba(251, 191, 36, 0.15);
+  border: 1px solid rgba(251, 191, 36, 0.35);
+  font-size: 0.86rem;
+}
+
+.student-cabinet-btn {
+  margin-top: 0.65rem;
+}
+
+.student-cabinet-ring {
+  width: 56px;
+  height: 56px;
+  flex-shrink: 0;
+  color: #38bdf8;
+}
+
+.student-cabinet-ring--lg {
+  width: 72px;
+  height: 72px;
+}
+
+.student-cabinet-ring-bg {
+  stroke: var(--theme-line);
+}
+
+.student-cabinet-ring-fg {
+  stroke: currentColor;
+  stroke-linecap: round;
+}
+
+.student-cabinet-ring-fg--accent {
+  color: #a78bfa;
+}
+
+.student-cabinet-table-wrap {
+  overflow-x: auto;
+  margin-top: 0.35rem;
+}
+
+.student-cabinet-table th,
+.student-cabinet-table td {
+  font-size: 0.82rem;
+}
+
+.student-cabinet-row-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  justify-content: flex-end;
+}
+
+.student-cabinet-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  margin-top: 0.65rem;
+}
+
+.student-cabinet-page-meta {
+  font-size: 0.85rem;
+  color: var(--theme-muted);
+}
+
+.student-cabinet-progress-head {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  margin-bottom: 0.65rem;
+}
+
+.student-cabinet-bar-block {
+  margin-bottom: 0.55rem;
+}
+
+.student-cabinet-bar-label {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.82rem;
+  color: var(--theme-muted);
+  margin-bottom: 0.2rem;
+}
+
+.student-cabinet-bar {
+  height: 8px;
+  border-radius: 6px;
+  background: var(--theme-line);
+  overflow: hidden;
+}
+
+.student-cabinet-bar-fill {
+  display: block;
+  height: 100%;
+  border-radius: 6px;
+  background: linear-gradient(90deg, #38bdf8, #0ea5e9);
+}
+
+.student-cabinet-bar-fill--drive {
+  background: linear-gradient(90deg, #a78bfa, #7c3aed);
+}
+
+.student-cabinet-bar-meta {
+  font-size: 0.78rem;
+  color: var(--theme-soft);
+  margin-top: 0.15rem;
+}
+
+.student-cabinet-exam-list {
+  list-style: none;
+  margin: 0.5rem 0 0;
+  padding: 0;
+  font-size: 0.88rem;
+}
+
+.student-cabinet-exam-list li {
+  margin-bottom: 0.35rem;
+  display: flex;
+  gap: 0.35rem;
+  align-items: baseline;
+}
+
+.student-cabinet-error-bars {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.student-cabinet-error-bar-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 2fr) auto;
+  gap: 0.35rem;
+  align-items: center;
+  margin-bottom: 0.45rem;
+  font-size: 0.82rem;
+}
+
+.student-cabinet-error-bar-name {
+  min-width: 0;
+}
+
+.student-cabinet-error-bar-track {
+  height: 8px;
+  border-radius: 6px;
+  background: var(--theme-line);
+  overflow: hidden;
+}
+
+.student-cabinet-error-bar-fill {
+  display: block;
+  height: 100%;
+  border-radius: 6px;
+  background: linear-gradient(90deg, #f97316, #fb923c);
+}
+
+.student-cabinet-error-bar-count {
+  font-variant-numeric: tabular-nums;
+  font-size: 0.8rem;
+  color: var(--theme-muted);
+}
+
+.student-cabinet-cat-list {
+  margin: 0;
+  padding-left: 1.1rem;
+  font-size: 0.85rem;
+  color: var(--theme-muted);
+}
+
+.student-cabinet-recommend {
+  margin: 0.65rem 0 0;
+  font-size: 0.86rem;
+  line-height: 1.45;
+}
+
+.student-cabinet-trend {
+  margin-top: 0.65rem;
+}
+
+.student-cabinet-trend-hint {
+  margin: 0 0 0.35rem;
+}
+
+.student-cabinet-trend-svg {
+  display: block;
+  color: #38bdf8;
+  opacity: 0.95;
+}
+
+.student-cabinet-up {
+  color: #4ade80;
+  font-weight: 600;
+}
+
+.student-cabinet-down {
+  color: #f87171;
+  font-weight: 600;
+}
+
+.student-cabinet-recent-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.student-cabinet-recent-item {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem 0.65rem;
+  padding: 0.35rem 0;
+  border-bottom: 1px solid var(--theme-line-subtle, var(--theme-line));
+  font-size: 0.88rem;
+}
+
+.student-cabinet-recent-ins {
+  flex: 1;
+  min-width: 0;
+  color: var(--theme-muted);
+}
+
+.student-cabinet-link-all {
+  margin-top: 0.5rem;
+}
+
+.student-cabinet-quote {
+  margin: 0.5rem 0;
+  padding: 0.5rem 0.65rem;
+  border-left: 3px solid #38bdf8;
+  background: var(--theme-fill-hover);
+  border-radius: 0 8px 8px 0;
+  font-size: 0.88rem;
+}
+
+.student-cabinet-detail-errors {
+  margin: 0;
+  padding-left: 1.1rem;
+  font-size: 0.86rem;
+}
+
+.student-cabinet-speed-chart {
+  margin-top: 0.65rem;
+}
+
+.student-cabinet-speed-svg {
+  display: block;
+  color: #a78bfa;
+  margin-top: 0.25rem;
+}
+
+.student-cabinet-modal--wide {
+  max-width: min(520px, calc(100vw - 2rem));
+}
