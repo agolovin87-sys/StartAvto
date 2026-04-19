@@ -21,13 +21,16 @@ function formatDateTime(ms: number): { date: string; time: string } {
 }
 
 /** Ошибки в порядке отметок инструктора во время вождения (как в журнале урока). */
-function errorsFromProcess(slotId: string, errorsBySlot: Record<string, LessonDriveError[]>): string {
+function sortedLessonErrors(
+  slotId: string,
+  errorsBySlot: Record<string, LessonDriveError[]>
+): LessonDriveError[] {
   const rows = errorsBySlot[slotId] ?? [];
-  if (!rows.length) return "—";
-  const sorted = [...rows].sort((a, b) => a.timestamp - b.timestamp);
-  return sorted
-    .map((e) => (e.points > 0 ? `${e.name} (${e.points} б.)` : e.name))
-    .join("; ");
+  return [...rows].sort((a, b) => a.timestamp - b.timestamp);
+}
+
+function formatErrorLine(e: LessonDriveError): string {
+  return e.points > 0 ? `${e.name} (${e.points} б.)` : e.name;
 }
 
 /**
@@ -38,12 +41,56 @@ export function StudentCabinetDrivingHistory() {
   const uid = (user?.uid ?? profile?.uid ?? "").trim();
   const { lessons, errorsBySlot, loading, err } = useStudentDriveLessons(uid || undefined);
   const [open, setOpen] = useState(false);
+  const [errorsModal, setErrorsModal] = useState<{
+    date: string;
+    time: string;
+    instructorShort: string;
+    errors: LessonDriveError[];
+  } | null>(null);
 
   /** Хронология: первое вождение — № 1. */
   const rows = useMemo(() => [...lessons].sort((a, b) => a.date - b.date), [lessons]);
 
   return (
     <section className="student-cabinet-card student-cab-drive-history-card" aria-labelledby="cabinet-drive-history-title">
+      {errorsModal ? (
+        <div
+          className="confirm-dialog-backdrop"
+          role="presentation"
+          onClick={() => setErrorsModal(null)}
+          onKeyDown={(e) => {
+            if (e.key === "Escape") setErrorsModal(null);
+          }}
+        >
+          <div
+            className="confirm-dialog student-cab-drive-errors-dialog"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="student-drive-errors-dialog-title"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h2 id="student-drive-errors-dialog-title" className="confirm-dialog-title">
+              Ошибки на уроке
+            </h2>
+            <p className="student-cab-drive-errors-dialog-meta">
+              {errorsModal.date}, {errorsModal.time}
+              {errorsModal.instructorShort !== "—" ? ` · ${errorsModal.instructorShort}` : ""}
+            </p>
+            <ol className="student-cab-drive-errors-dialog-list">
+              {errorsModal.errors.map((e) => (
+                <li key={e.id} className="student-cab-drive-errors-dialog-item">
+                  {formatErrorLine(e)}
+                </li>
+              ))}
+            </ol>
+            <div className="confirm-dialog-actions">
+              <button type="button" className="btn btn-primary btn-sm" onClick={() => setErrorsModal(null)}>
+                Закрыть
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
       <button
         type="button"
         id="cabinet-drive-history-title"
@@ -97,6 +144,7 @@ export function StudentCabinetDrivingHistory() {
                 rows.map((lesson: DrivingLesson, idx) => {
                   const { date, time } = formatDateTime(lesson.date);
                   const shortIns = lesson.instructorName ? formatShortFio(lesson.instructorName) : "—";
+                  const errRows = sortedLessonErrors(lesson.id, errorsBySlot);
                   return (
                     <tr key={lesson.id}>
                       <td className="student-cab-drive-history-td-num">{idx + 1}</td>
@@ -104,7 +152,24 @@ export function StudentCabinetDrivingHistory() {
                       <td>{time}</td>
                       <td className="student-cab-drive-history-td-ins">{shortIns}</td>
                       <td className="student-cab-drive-history-td-err">
-                        {errorsFromProcess(lesson.id, errorsBySlot)}
+                        {errRows.length === 0 ? (
+                          "—"
+                        ) : (
+                          <button
+                            type="button"
+                            className="student-cabinet-text-link student-cab-drive-history-err-link"
+                            onClick={() =>
+                              setErrorsModal({
+                                date,
+                                time,
+                                instructorShort: shortIns,
+                                errors: errRows,
+                              })
+                            }
+                          >
+                            Посмотреть
+                          </button>
+                        )}
                       </td>
                       <td className="student-cab-drive-history-td-rating">
                         <span className="student-cab-drive-history-dev">В разработке</span>

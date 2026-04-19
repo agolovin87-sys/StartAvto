@@ -13801,3 +13801,41 @@ html[data-theme="light"] .student-cab-drive-ring-count {
   outline-offset: 2px;
   border-radius: 4px;
 }
+
+.student-cab-drive-history-err-link {
+  font-size: 0.72rem;
+}
+
+.student-cab-drive-errors-dialog {
+  max-width: min(92vw, 26rem);
+  max-height: min(78vh, 28rem);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.student-cab-drive-errors-dialog-meta {
+  margin: 0 0 0.65rem;
+  font-size: 0.78rem;
+  color: var(--theme-muted);
+  line-height: 1.35;
+}
+
+.student-cab-drive-errors-dialog-list {
+  margin: 0 0 0.75rem;
+  padding: 0 0 0 1.15rem;
+  overflow-y: auto;
+  flex: 1;
+  min-height: 0;
+  font-size: 0.82rem;
+  line-height: 1.45;
+  color: var(--theme-soft);
+}
+
+.student-cab-drive-errors-dialog-item {
+  margin-bottom: 0.45rem;
+}
+
+.student-cab-drive-errors-dialog-item:last-child {
+  margin-bottom: 0;
+}
