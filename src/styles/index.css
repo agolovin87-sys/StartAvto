@@ -13007,6 +13007,59 @@ html[data-theme="light"] .student-exam-card--failed .student-exam-card__result {
   color: var(--theme-muted);
 }
 
+.student-cab-back-ico-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  margin: 0;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: linear-gradient(165deg, rgba(51, 65, 85, 0.55) 0%, rgba(30, 41, 59, 0.85) 100%);
+  color: #e2e8f0;
+  cursor: pointer;
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.06) inset;
+  transition:
+    background 0.2s ease,
+    color 0.2s ease,
+    border-color 0.2s ease,
+    transform 0.15s ease;
+}
+
+.student-cab-back-ico-btn:hover {
+  color: #fff;
+  border-color: rgba(56, 189, 248, 0.45);
+  background: linear-gradient(165deg, rgba(56, 189, 248, 0.2) 0%, rgba(30, 41, 59, 0.9) 100%);
+}
+
+.student-cab-back-ico-btn:active {
+  transform: scale(0.96);
+}
+
+.student-cab-back-ico-btn:focus-visible {
+  outline: 2px solid rgba(56, 189, 248, 0.85);
+  outline-offset: 2px;
+}
+
+.student-cab-back-ico {
+  width: 22px;
+  height: 22px;
+  display: block;
+}
+
+html[data-theme="light"] .student-cab-back-ico-btn {
+  background: linear-gradient(165deg, #f1f5f9 0%, #e2e8f0 100%);
+  color: #0f172a;
+  border-color: rgba(15, 23, 42, 0.12);
+}
+
+html[data-theme="light"] .student-cab-back-ico-btn:hover {
+  border-color: rgba(14, 165, 233, 0.5);
+  color: #0369a1;
+}
+
 .student-cabinet-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -13366,14 +13419,6 @@ html[data-theme="light"] .student-exam-card--failed .student-exam-card__result {
   flex-shrink: 0;
 }
 
-.student-cabinet-talon-head-num {
-  font-size: 1.35rem;
-  font-weight: 800;
-  font-variant-numeric: tabular-nums;
-  color: #bbf7d0;
-  line-height: 1;
-}
-
 .student-cabinet-talon-disc {
   display: inline-flex;
   align-items: center;
@@ -13389,6 +13434,28 @@ html[data-theme="light"] .student-exam-card--failed .student-exam-card__result {
   background: linear-gradient(145deg, rgba(34, 197, 94, 0.45) 0%, rgba(21, 128, 61, 0.55) 100%);
   border: 2px solid rgba(134, 239, 172, 0.65);
   box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.15);
+  transition:
+    box-shadow 0.35s ease,
+    border-color 0.35s ease,
+    background 0.35s ease;
+}
+
+.student-cabinet-talon-disc.is-positive {
+  box-shadow:
+    0 0 0 1px rgba(0, 0, 0, 0.12),
+    0 0 14px rgba(74, 222, 128, 0.55),
+    0 0 28px rgba(34, 197, 94, 0.35);
+  border-color: rgba(134, 239, 172, 0.9);
+}
+
+.student-cabinet-talon-disc.is-zero {
+  color: #fecaca;
+  background: linear-gradient(145deg, rgba(127, 29, 29, 0.55) 0%, rgba(69, 10, 10, 0.65) 100%);
+  border-color: rgba(248, 113, 113, 0.75);
+  box-shadow:
+    0 0 0 1px rgba(0, 0, 0, 0.15),
+    0 0 14px rgba(248, 113, 113, 0.5),
+    0 0 26px rgba(239, 68, 68, 0.35);
 }
 
 .student-cabinet-talon-table-title {
@@ -13464,13 +13531,6 @@ html[data-theme="light"] .student-exam-card--failed .student-exam-card__result {
   padding: 0.65rem 0.75rem 0.75rem;
 }
 
-.student-cab-drive-intro {
-  margin: 0 0 0.55rem;
-  font-size: 0.78rem;
-  line-height: 1.4;
-  color: var(--theme-muted);
-}
-
 .student-cab-drive-body {
   display: flex;
   flex-wrap: wrap;
@@ -13497,23 +13557,9 @@ html[data-theme="light"] .student-exam-card--failed .student-exam-card__result {
 
 .student-cab-drive-ring-fg {
   stroke-linecap: round;
-  transition: stroke-dasharray 0.35s ease;
-}
-
-.student-cab-drive-ring--novice .student-cab-drive-ring-fg {
-  stroke: #94a3b8;
-}
-
-.student-cab-drive-ring--amateur .student-cab-drive-ring-fg {
-  stroke: #22d3ee;
-}
-
-.student-cab-drive-ring--pro .student-cab-drive-ring-fg {
-  stroke: #c084fc;
-}
-
-.student-cab-drive-ring--expert .student-cab-drive-ring-fg {
-  stroke: #fbbf24;
+  transition:
+    stroke-dasharray 0.55s ease,
+    stroke 0.55s ease;
 }
 
 .student-cab-drive-ring-center {
@@ -13532,12 +13578,6 @@ html[data-theme="light"] .student-exam-card--failed .student-exam-card__result {
   font-variant-numeric: tabular-nums;
   line-height: 1;
   color: #f8fafc;
-}
-
-.student-cab-drive-ring-hint {
-  font-size: 0.62rem;
-  color: var(--theme-muted);
-  margin-top: 0.12rem;
 }
 
 .student-cab-drive-side {

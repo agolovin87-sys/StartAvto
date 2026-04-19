@@ -71,8 +71,10 @@ export function StudentCabinetTalonBalance() {
           Баланс талонов
         </h2>
         <div className="student-cabinet-talon-head-values" aria-label={`Талонов на счёте: ${balance}`}>
-          <span className="student-cabinet-talon-head-num">{balance}</span>
-          <span className="student-cabinet-talon-disc" aria-hidden>
+          <span
+            className={`student-cabinet-talon-disc${balance > 0 ? " is-positive" : balance < 1 ? " is-zero" : ""}`}
+            aria-hidden
+          >
             {balance}
           </span>
         </div>
