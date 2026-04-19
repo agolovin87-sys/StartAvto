@@ -12941,19 +12941,21 @@ html[data-theme="light"] .student-exam-card--failed .student-exam-card__result {
   padding: 0;
 }
 
-/* Кнопка-карточка «курсант» → личный кабинет */
+/* Кнопка-карточка «курсант» → ЛК: только сброс `<button>`, без ломания flex у `.instructor-card-preview` */
 .instructor-home-self-cabinet-btn {
-  display: block;
-  width: 100%;
+  display: flex;
+  align-items: stretch;
+  justify-content: space-between;
+  flex: 1;
+  min-width: 0;
+  width: auto;
   border: none;
   margin: 0;
-  padding: 0;
   text-align: inherit;
   font: inherit;
   color: inherit;
   cursor: pointer;
   border-radius: inherit;
-  background: transparent;
   appearance: none;
   -webkit-tap-highlight-color: transparent;
 }
