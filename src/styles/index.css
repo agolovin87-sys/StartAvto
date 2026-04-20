@@ -12028,6 +12028,7 @@ html[data-theme="light"] .instructor-error-template-selector__suggest-item--pick
 .admin-internal-exam-toggle {
   width: 100%;
   justify-content: space-between;
+  margin-bottom: 0.75rem;
 }
 
 .admin-internal-exam-drive-heading {
