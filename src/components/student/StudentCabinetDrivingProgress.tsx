@@ -40,14 +40,6 @@ function progressArrowAngleDeg(frac01: number): number {
   return f * 360;
 }
 
-function activeBandColorForCompleted(completed: number): string {
-  for (let i = DRIVE_SCALE_BANDS.length - 1; i >= 0; i -= 1) {
-    const band = DRIVE_SCALE_BANDS[i];
-    if (band && completed >= band.minCompleted) return band.activeColor;
-  }
-  return "#facc15";
-}
-
 type DriveTier = {
   id: "novice" | "amateur" | "pro" | "expert";
   label: string;
@@ -68,17 +60,9 @@ function tierForCompletedCount(n: number): DriveTier {
   return { id: "expert", label: "Эксперт", badgeClass: "student-cab-drive-badge--expert" };
 }
 
-/** Кольцо: цветная шкала; сверху — прошлый прогресс (до n−1) и текущий шаг (последнее занятие). */
+/** Кольцо: цветные сегменты шкалы; положение на круге — стрелка (без белой дуги-ползунка). */
 function DrivesRing({ completed, total }: { completed: number; total: number }) {
-  const u = RING_DASH_UNITS;
-  const pastCompleted = Math.max(0, completed - 1);
-  const pastFrac = total <= 0 ? 0 : Math.min(1, pastCompleted / total);
   const totalFrac = total <= 0 ? 0 : Math.min(1, completed / total);
-  const sliceFrac = Math.max(0, totalFrac - pastFrac);
-  const pastDash = `${pastFrac * u} ${u - pastFrac * u}`;
-  const currentDash = `${sliceFrac * u} ${u - sliceFrac * u}`;
-  const currentOffset = -pastFrac * u;
-  const currentColor = activeBandColorForCompleted(completed);
   const arrowPos =
     completed > 0 && totalFrac > 0 ? progressKnobXY(totalFrac) : null;
   const arrowAngle = progressArrowAngleDeg(totalFrac);
@@ -121,33 +105,6 @@ function DrivesRing({ completed, total }: { completed: number; total: number }) 
             />
           );
         })}
-        {pastFrac > 0 ? (
-          <circle
-            className="student-cab-drive-ring-fg student-cab-drive-ring-progress-past"
-            cx="18"
-            cy="18"
-            r="15.915"
-            fill="none"
-            stroke={currentColor}
-            strokeOpacity={0.42}
-            strokeDasharray={pastDash}
-            transform="rotate(-90 18 18)"
-          />
-        ) : null}
-        {completed > 0 && sliceFrac > 0 ? (
-          <circle
-            className="student-cab-drive-ring-fg student-cab-drive-ring-progress-current"
-            cx="18"
-            cy="18"
-            r="15.915"
-            fill="none"
-            stroke={currentColor}
-            strokeDasharray={currentDash}
-            strokeDashoffset={currentOffset}
-            strokeLinecap="round"
-            transform="rotate(-90 18 18)"
-          />
-        ) : null}
         {arrowPos ? (
           <g transform={`translate(${arrowPos.x} ${arrowPos.y}) rotate(${arrowAngle})`}>
             <polygon className="student-cab-drive-ring-arrow" points="0,-3.6 2.35,2.1 -2.35,2.1" />
