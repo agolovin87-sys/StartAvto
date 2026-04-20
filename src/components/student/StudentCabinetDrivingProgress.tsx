@@ -128,6 +128,8 @@ function DrivesRing({ completed, total }: { completed: number; total: number }) 
             cy="18"
             r="15.915"
             fill="none"
+            stroke={currentColor}
+            strokeOpacity={0.42}
             strokeDasharray={pastDash}
             transform="rotate(-90 18 18)"
           />
