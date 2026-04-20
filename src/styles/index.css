@@ -7475,9 +7475,37 @@ html[data-theme="light"] .drive-live-session-panel__toolbar {
   margin: 0.5rem 0 1rem;
 }
 
+.drive-lesson-rating-grade {
+  min-width: 2.75rem;
+  font-weight: 700;
+  border-width: 2px;
+}
+
+.drive-lesson-rating-grade--3 {
+  background: #dc2626 !important;
+  color: #fff !important;
+  border-color: #b91c1c !important;
+}
+
+.drive-lesson-rating-grade--4 {
+  background: #eab308 !important;
+  color: #422006 !important;
+  border-color: #ca8a04 !important;
+}
+
+.drive-lesson-rating-grade--5 {
+  background: #16a34a !important;
+  color: #fff !important;
+  border-color: #15803d !important;
+}
+
 .drive-lesson-rating-grade.is-selected {
-  box-shadow: 0 0 0 2px rgba(251, 191, 36, 0.75);
-  border-color: #fbbf24;
+  box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.45);
+  transform: scale(1.06);
+}
+
+.drive-lesson-rating-grade:disabled {
+  opacity: 0.75;
 }
 
 .drive-lesson-rating-err {

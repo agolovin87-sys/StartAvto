@@ -88,7 +88,9 @@ export function DriveLessonRatingModal({
               <button
                 key={g}
                 type="button"
-                className={`btn btn-sm drive-lesson-rating-grade${grade === g ? " is-selected" : ""}`}
+                className={`btn btn-sm drive-lesson-rating-grade drive-lesson-rating-grade--${g}${
+                  grade === g ? " is-selected" : ""
+                }`}
                 aria-pressed={grade === g}
                 disabled={busy}
                 onClick={() => setGrade(g)}
