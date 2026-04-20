@@ -1016,7 +1016,7 @@ function StudentDashboardShell() {
                 <h2 id="student-self-heading" className="instructor-subtitle">
                   <span className="student-home-subtitle-row">
                     <IconRole />
-                    <span>Курсант</span>
+                    <span>Карточка курсанта (нажмите для входа)</span>
                   </span>
                 </h2>
                 <StudentSelfCard
