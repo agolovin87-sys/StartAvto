@@ -32,6 +32,43 @@ export const INTERNAL_EXAM_EXERCISES: { id: string; label: string }[] = [
     id: "ex_intersection_regulated",
     label: "Проезд регулируемого перекрестка (при его наличии)",
   },
+  {
+    id: "ex_intersection_unregulated_equal",
+    label: "Проезд нерегулируемого перекрестка равнозначных дорог (при его наличии)",
+  },
+  {
+    id: "ex_intersection_unregulated_unequal",
+    label: "Проезд нерегулируемого перекрестка неравнозначных дорог",
+  },
+  {
+    id: "ex_left_right_turns",
+    label: "Левые и правые повороты",
+  },
+  {
+    id: "ex_railway_crossing",
+    label: "Проезд железнодорожного переезда (при наличии)",
+  },
+  {
+    id: "ex_lane_change_multi_lane",
+    label:
+      "Перестроение на участке дороги, имеющей 2 или более полосы для движения в одном направлении (при наличии)",
+  },
+  {
+    id: "ex_overtake_or_ahead",
+    label: "Обгон или опережение (при наличии такой возможности)",
+  },
+  {
+    id: "ex_max_allowed_speed",
+    label: "Движение с максимальной разрешенной скоростью",
+  },
+  {
+    id: "ex_pedestrian_crossings_and_stops",
+    label: "Проезд пешеходных переходов и мест остановок маршрутных транспортных средств",
+  },
+  {
+    id: "ex_braking_and_stop_various_speeds",
+    label: "Торможение и остановка при движении на различных скоростях",
+  },
 ];
 
 export type InternalExamErrorPoints = 7 | 5 | 4 | 3 | 2 | 1;
