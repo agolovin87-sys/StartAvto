@@ -4,7 +4,6 @@ import {
   deleteDoc,
   doc,
   onSnapshot,
-  orderBy,
   query,
   serverTimestamp,
   where,
@@ -86,11 +85,8 @@ export function subscribeAdminScheduledExamsByGroup(
     return () => {};
   }
   const { db } = getFirebase();
-  const q = query(
-    collection(db, COL),
-    where("groupId", "==", gid),
-    orderBy("createdAt", "desc")
-  );
+  /** Только `where` по `groupId` — без составного индекса с `orderBy` (сортировка на клиенте). */
+  const q = query(collection(db, COL), where("groupId", "==", gid));
   return onSnapshot(
     q,
     (snap) => {
@@ -98,6 +94,7 @@ export function subscribeAdminScheduledExamsByGroup(
       snap.forEach((d) => {
         rows.push(normalizeAdminScheduledExam(d.id, d.data() as Record<string, unknown>));
       });
+      rows.sort((a, b) => b.createdAt - a.createdAt);
       onNext(rows);
     },
     (err) => onError?.(err instanceof Error ? err : new Error(String(err)))

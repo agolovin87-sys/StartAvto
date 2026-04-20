@@ -25,14 +25,6 @@
       ]
     },
     {
-      "collectionGroup": "adminScheduledExams",
-      "queryScope": "COLLECTION",
-      "fields": [
-        { "fieldPath": "groupId", "order": "ASCENDING" },
-        { "fieldPath": "createdAt", "order": "DESCENDING" }
-      ]
-    },
-    {
       "collectionGroup": "studentDriveLocationShares",
       "queryScope": "COLLECTION",
       "fields": [
