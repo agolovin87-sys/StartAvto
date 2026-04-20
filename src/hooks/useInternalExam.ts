@@ -5,6 +5,7 @@ import {
   createInternalExamSession,
   archiveInstructorExamSession as archiveInstructorExamSessionApi,
   dismissInstructorArchiveSession as dismissInstructorArchiveSessionApi,
+  deleteInstructorExamSession as deleteInstructorExamSessionApi,
   getInternalExamSession,
   type CreateSessionInput,
   type CompleteExamInput,
@@ -77,6 +78,10 @@ export function useInternalExam(instructorId: string | undefined) {
     await dismissInstructorArchiveSessionApi(sessionId);
   }, []);
 
+  const deleteExamSession = useCallback(async (sessionId: string) => {
+    await deleteInstructorExamSessionApi(sessionId);
+  }, []);
+
   return {
     sessions,
     loading,
@@ -88,5 +93,6 @@ export function useInternalExam(instructorId: string | undefined) {
     saveExamDraft,
     archiveExamSession,
     dismissInstructorArchive,
+    deleteExamSession,
   };
 }

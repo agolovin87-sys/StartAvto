@@ -12296,6 +12296,33 @@ html[data-theme="light"] .instructor-internal-exam__new-session-btn:hover {
   overflow-wrap: anywhere;
 }
 
+.instructor-internal-exam__session-delete {
+  flex-shrink: 0;
+  align-self: center;
+  width: 2.35rem;
+  min-width: 2.35rem;
+  height: 2.35rem;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #fca5a5;
+  border-color: rgba(248, 113, 113, 0.45);
+  background: rgba(127, 29, 29, 0.2);
+}
+
+.instructor-internal-exam__session-delete:hover:not(:disabled) {
+  color: #fecaca;
+  border-color: rgba(248, 113, 113, 0.65);
+  background: rgba(127, 29, 29, 0.32);
+}
+
+.instructor-internal-exam__session-delete-ico {
+  width: 1.125rem;
+  height: 1.125rem;
+  display: block;
+}
+
 .instructor-internal-exam__session-archive {
   flex-shrink: 0;
   align-self: center;

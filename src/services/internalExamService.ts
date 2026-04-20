@@ -535,3 +535,27 @@ export async function dismissInstructorArchiveSession(sessionId: string): Promis
   if (session.instructorId !== uid) throw new Error("Нет доступа к этой сессии");
   await updateDoc(sref, { instructorArchiveDismissedAt: serverTimestamp() });
 }
+
+/** Полностью удалить сессию и связанные листы экзамена (только инструктор-владелец). */
+export async function deleteInstructorExamSession(sessionId: string): Promise<void> {
+  const { db, auth } = getFirebase();
+  const uid = auth.currentUser?.uid;
+  if (!uid) throw new Error("Не выполнен вход");
+  const sid = sessionId.trim();
+  if (!sid) throw new Error("Не указана сессия");
+
+  const sref = doc(db, SESSIONS, sid);
+  const sessionSnap = await getDoc(sref);
+  if (!sessionSnap.exists()) throw new Error("Сессия не найдена");
+  const session = normalizeInternalExamSession(sessionSnap.id, sessionSnap.data() as Record<string, unknown>);
+  if (session.instructorId !== uid) throw new Error("Нет доступа к этой сессии");
+
+  const sheetsQ = query(collection(db, SHEETS), where("examSessionId", "==", sid));
+  const sheetsSnap = await getDocs(sheetsQ);
+  const batch = writeBatch(db);
+  for (const d of sheetsSnap.docs) {
+    batch.delete(d.ref);
+  }
+  batch.delete(sref);
+  await batch.commit();
+}

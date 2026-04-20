@@ -39,6 +39,17 @@ function IconArchiveSession({ className }: { className?: string }) {
   );
 }
 
+function IconDeleteSession({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" aria-hidden>
+      <path
+        fill="currentColor"
+        d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"
+      />
+    </svg>
+  );
+}
+
 function IconNewSession({ className }: { className?: string }) {
   return (
     <svg className={className} viewBox="0 0 24 24" aria-hidden>
@@ -66,6 +77,7 @@ export function InstructorInternalExamPanel({
     completeStudentExam: completeExamApi,
     archiveExamSession,
     dismissInstructorArchive,
+    deleteExamSession,
   } = useInternalExam(instructorUid);
 
   const [panelOpen, setPanelOpen] = useState(false);
@@ -87,6 +99,8 @@ export function InstructorInternalExamPanel({
   /** id сессии, для которой открыто подтверждение переноса в архив */
   const [archiveTargetId, setArchiveTargetId] = useState<string | null>(null);
   const [archiveBusy, setArchiveBusy] = useState(false);
+  const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null);
+  const [deleteBusy, setDeleteBusy] = useState(false);
 
   const activeSessions = useMemo(
     () => sessions.filter((s) => s.instructorArchivedAt == null),
@@ -255,6 +269,11 @@ export function InstructorInternalExamPanel({
     [sessions, dismissArchiveTargetId]
   );
 
+  const deleteTargetSession = useMemo(
+    () => (deleteTargetId ? sessions.find((s) => s.id === deleteTargetId) ?? null : null),
+    [sessions, deleteTargetId]
+  );
+
   async function onConfirmDismissInstructorArchive() {
     if (!dismissArchiveTargetId) return;
     const sid = dismissArchiveTargetId;
@@ -287,6 +306,26 @@ export function InstructorInternalExamPanel({
       setErr(e instanceof Error ? e.message : "Не удалось перенести сессию в архив");
     } finally {
       setArchiveBusy(false);
+    }
+  }
+
+  async function onConfirmDeleteSession() {
+    if (!deleteTargetId) return;
+    const sid = deleteTargetId;
+    setDeleteBusy(true);
+    setErr(null);
+    try {
+      await deleteExamSession(sid);
+      if (overlaySessionId === sid) {
+        setSheetOverlay(null);
+        setOverlaySessionId(null);
+      }
+      if (sessionId === sid) setSessionId(null);
+      setDeleteTargetId(null);
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : "Не удалось удалить сессию");
+    } finally {
+      setDeleteBusy(false);
     }
   }
 
@@ -371,8 +410,29 @@ export function InstructorInternalExamPanel({
                       </button>
                       <button
                         type="button"
+                        className="btn btn-ghost btn-sm instructor-internal-exam__session-delete"
+                        disabled={archiveBusy || deleteBusy}
+                        title="Удалить сессию"
+                        aria-busy={deleteBusy && deleteTargetId === s.id}
+                        aria-label={
+                          deleteBusy && deleteTargetId === s.id
+                            ? `Удаление: ${s.groupName} ${s.examDate}`
+                            : `Удалить сессию: ${s.groupName} ${s.examDate}`
+                        }
+                        onClick={() => setDeleteTargetId(s.id)}
+                      >
+                        {deleteBusy && deleteTargetId === s.id ? (
+                          <span className="instructor-internal-exam__session-archive-busy" aria-hidden>
+                            …
+                          </span>
+                        ) : (
+                          <IconDeleteSession className="instructor-internal-exam__session-delete-ico" />
+                        )}
+                      </button>
+                      <button
+                        type="button"
                         className="btn btn-ghost btn-sm instructor-internal-exam__session-archive"
-                        disabled={archiveBusy}
+                        disabled={archiveBusy || deleteBusy}
                         title="Перенести сессию в архив"
                         aria-busy={archiveBusy && archiveTargetId === s.id}
                         aria-label={
@@ -646,6 +706,25 @@ export function InstructorInternalExamPanel({
         }}
         onCancel={() => {
           if (!dismissArchiveBusy) setDismissArchiveTargetId(null);
+        }}
+      />
+
+      <ConfirmDialog
+        open={deleteTargetId != null}
+        title="Удалить сессию экзамена?"
+        message={
+          deleteTargetSession
+            ? `«${deleteTargetSession.groupName}» · ${deleteTargetSession.examDate} ${deleteTargetSession.examTime}. Сессия и все листы будут удалены без восстановления; у курсантов и в админке эта запись исчезнет. Продолжить?`
+            : "Сессия и листы будут удалены без восстановления. Продолжить?"
+        }
+        confirmLabel="Удалить"
+        cancelLabel="Отмена"
+        onConfirm={() => {
+          if (deleteBusy) return;
+          void onConfirmDeleteSession();
+        }}
+        onCancel={() => {
+          if (!deleteBusy) setDeleteTargetId(null);
         }}
       />
 
