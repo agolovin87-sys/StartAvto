@@ -13207,16 +13207,21 @@ html[data-theme="light"] .instructor-cab-section-ico {
   --instructor-rating-row-gap: 1.1rem;
   /* Как у .student-cab-title-with-ico: иконка 22px + gap 0.45rem — левый край слова «Рейтинг» */
   --instructor-rating-title-indent: calc(22px + 0.45rem);
+  /* Один отступ между строкой «Рейтинг» и верхом круга (подсказка уходит вправо, круг наезжает на пустой слева блок) */
+  --instructor-rating-title-to-badge: 0.125rem;
+  /* Высота подсказки: 2 строки .field-hint 0.75rem × line-height (подтягиваем ряд на эту величину) */
+  --instructor-rating-lead-lines: 2;
+  --instructor-rating-lead-lh: 1.22;
 }
 
 .instructor-cabinet-rating-section .instructor-cabinet-block-heading {
-  margin-bottom: 0.08rem;
+  margin-bottom: var(--instructor-rating-title-to-badge);
 }
 
 .instructor-cabinet-rating-section .instructor-cabinet-rating-lead {
   margin-top: 0;
-  margin-bottom: 0.06rem;
-  line-height: 1.28;
+  margin-bottom: 0;
+  line-height: var(--instructor-rating-lead-lh);
   padding-left: calc(
     var(--instructor-rating-title-indent) + var(--instructor-rating-badge-size) +
       var(--instructor-rating-row-gap)
@@ -13231,7 +13236,12 @@ html[data-theme="light"] .instructor-cab-section-ico {
   justify-content: flex-start;
   gap: var(--instructor-rating-row-gap);
   flex-wrap: wrap;
-  margin-top: -0.52rem;
+  margin-top: calc(
+    -1 * (
+      var(--instructor-rating-title-to-badge) + var(--instructor-rating-lead-lines) * 0.75rem *
+        var(--instructor-rating-lead-lh)
+    )
+  );
   padding-left: var(--instructor-rating-title-indent);
   box-sizing: border-box;
 }
