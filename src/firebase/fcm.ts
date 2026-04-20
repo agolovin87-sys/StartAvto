@@ -80,7 +80,7 @@ export async function registerWebPushAndSaveToken(uid: string): Promise<boolean>
   }
 }
 
-/** Пуш в foreground: чат обрабатывается отдельно (звук/уведомление в чате), здесь — остальные события. */
+/** Пуш в foreground: чат с превью показывается локально (incomingMessageAlerts), здесь — прочие события. */
 export function subscribeForegroundFcm(
   onNonChatNotification: (title: string, body: string) => void
 ): () => void {

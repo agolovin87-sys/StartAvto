@@ -6,7 +6,9 @@ import {
   subscribeManualGroupChatsForUser,
 } from "@/firebase/chat";
 import type { ChatRoom } from "@/types";
+import { formatShortFio } from "@/admin/formatShortFio";
 import { runIncomingMessageAlerts } from "@/chat/incomingMessageAlerts";
+import { getUserProfile } from "@/firebase/users";
 
 /**
  * Звук/вибрация входящего по всем чатам пользователя, пока открыт кабинет
@@ -85,11 +87,15 @@ export function useGlobalIncomingChatAlerts(viewerUid: string | null): void {
                 ? r.title
                 : "Чат";
 
-            runIncomingMessageAlerts(uid, {
-              message: msg,
-              senderLabel: "Участник",
-              chatTitle,
-              documentHidden,
+            void getUserProfile(msg.senderId).then((p) => {
+              const full = p?.displayName?.trim() ?? "";
+              const senderShort = full ? formatShortFio(full) : "Контакт";
+              runIncomingMessageAlerts(uid, {
+                message: msg,
+                senderLabel: senderShort,
+                chatTitle,
+                documentHidden,
+              });
             });
           },
           () => {}

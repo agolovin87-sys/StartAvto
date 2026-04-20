@@ -9,8 +9,8 @@ import {
 } from "@/firebase/fcm";
 
 /**
- * После входа синхронизирует FCM-токен; в foreground показывает системные уведомления
- * для не-чат событий (чат — через существующую логику звука/уведомлений).
+ * После входа синхронизирует FCM-токен; в foreground — системные уведомления для не-чат событий.
+ * Входящие сообщения: превью в активной вкладке — incomingMessageAlerts; в фоне — FCM (Cloud Function).
  */
 export function FcmRegistrar() {
   const { user } = useAuth();

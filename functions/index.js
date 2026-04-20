@@ -102,7 +102,7 @@ function clientIpFromRequest(raw) {
 function messagePreview(data) {
   const type = typeof data.type === "string" ? data.type : "text";
   const text = typeof data.text === "string" ? data.text.trim().replace(/\s+/g, " ") : "";
-  if (type === "text") return text.length > 100 ? `${text.slice(0, 97)}…` : text || "Сообщение";
+  if (type === "text") return text.length > 160 ? `${text.slice(0, 157)}…` : text || "Сообщение";
   if (type === "voice") return "Голосовое сообщение";
   if (type === "image") return "Фото";
   if (type === "file") {
@@ -315,11 +315,14 @@ exports.onChatMessageCreated = onDocumentCreated(
     const recipients = ids.filter((id) => typeof id === "string" && id.trim() && id.trim() !== senderId);
     if (recipients.length === 0) return;
 
-    const senderLabel = await displayNameForUser(senderId);
+    const senderFullName = await displayNameForUser(senderId);
+    const senderShort = formatShortFioFromFullName(senderFullName);
     const preview = messagePreview(msg);
-    await sendToUsers(recipients, senderLabel, preview, {
+    const title = `Сообщение от ${senderShort}`;
+    await sendToUsers(recipients, title, preview, {
       kind: "chat",
       chatId: event.params.chatId,
+      messageId: event.params.messageId,
     });
   }
 );

@@ -159,12 +159,11 @@ export function runIncomingMessageAlerts(
   if (s.browserNotifyOnlyWhenBackground && !params.documentHidden) return;
 
   /**
-   * При включённом web-push FCM уже шлёт одно системное уведомление; иначе вкладка в фоне даёт дубль
-   * (Firestore + service worker).
+   * Вкладка в фоне: push уже показывает service worker (FCM). В активной вкладке — локальное уведомление с превью.
    */
-  if (s.webPushEnabled !== false && hasFcmVapidConfigured()) return;
+  if (s.webPushEnabled !== false && hasFcmVapidConfigured() && params.documentHidden) return;
 
-  const title = `Новое сообщение от ${params.senderLabel}`;
+  const title = `Сообщение от ${params.senderLabel}`;
   const body = s.browserNotifyShowMessagePreview
     ? formatMessagePreview(params.message)
     : `Чат: ${params.chatTitle}`;
