@@ -13210,11 +13210,13 @@ html[data-theme="light"] .instructor-cab-section-ico {
 }
 
 .instructor-cabinet-rating-section .instructor-cabinet-block-heading {
-  margin-bottom: 0.2rem;
+  margin-bottom: 0.08rem;
 }
 
 .instructor-cabinet-rating-section .instructor-cabinet-rating-lead {
-  margin-bottom: 0.2rem;
+  margin-top: 0;
+  margin-bottom: 0.06rem;
+  line-height: 1.28;
   padding-left: calc(
     var(--instructor-rating-title-indent) + var(--instructor-rating-badge-size) +
       var(--instructor-rating-row-gap)
@@ -13229,7 +13231,7 @@ html[data-theme="light"] .instructor-cab-section-ico {
   justify-content: flex-start;
   gap: var(--instructor-rating-row-gap);
   flex-wrap: wrap;
-  margin-top: -0.28rem;
+  margin-top: -0.52rem;
   padding-left: var(--instructor-rating-title-indent);
   box-sizing: border-box;
 }
