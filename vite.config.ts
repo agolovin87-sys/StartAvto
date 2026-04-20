@@ -121,7 +121,7 @@ messaging.onBackgroundMessage((payload) => {
   const title =
     (typeof d.title === "string" && d.title) ||
     (payload.notification && payload.notification.title) ||
-    "StartAvto";
+    "\u2060";
   const body =
     (typeof d.body === "string" && d.body) ||
     (payload.notification && payload.notification.body) ||

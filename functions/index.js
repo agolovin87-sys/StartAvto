@@ -273,7 +273,7 @@ exports.sendTestPush = onCall(
     }
     await sendToUsers(
       [uid],
-      "StartAvto",
+      "Проверка push",
       "Тестовое push-уведомление. Если вы его видите, доставка работает.",
       { kind: "test_push" }
     );

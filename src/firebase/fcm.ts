@@ -95,7 +95,7 @@ export function subscribeForegroundFcm(
     if (payload.data?.kind === "chat") return;
     const d = payload.data ?? {};
     const title =
-      (typeof d.title === "string" && d.title) || payload.notification?.title || "StartAvto";
+      (typeof d.title === "string" && d.title) || payload.notification?.title || "\u2060";
     const body = (typeof d.body === "string" && d.body) || payload.notification?.body || "";
     onNonChatNotification(title, body);
   });
