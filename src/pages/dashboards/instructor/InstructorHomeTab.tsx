@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { initialsFromFullName, avatarHueFromUid } from "@/admin/instructorAvatar";
 import { formatShortFio } from "@/admin/formatShortFio";
 import { dateKeyToRuDisplay, sortSlotsByTime } from "@/admin/scheduleFormat";
@@ -244,7 +245,13 @@ function IconCloseModal() {
   );
 }
 
-function InstructorSelfCard({ profile }: { profile: UserProfile }) {
+function InstructorSelfCard({
+  profile,
+  onOpenCabinet,
+}: {
+  profile: UserProfile;
+  onOpenCabinet: () => void;
+}) {
   const hue = avatarHueFromUid(profile.uid);
   const initials = initialsFromFullName(profile.displayName);
   const presenceOnline = isPresenceEffectivelyOnline(profile.presence);
@@ -253,7 +260,12 @@ function InstructorSelfCard({ profile }: { profile: UserProfile }) {
   return (
     <div className="instructor-card instructor-card--student instructor-home-self-card">
       <div className="instructor-preview-bar">
-        <div className="instructor-card-preview instructor-card-preview--tint glossy-panel instructor-home-self-preview">
+        <button
+          type="button"
+          className="instructor-card-preview instructor-card-preview--tint glossy-panel instructor-home-self-preview instructor-home-self-cabinet-btn"
+          onClick={onOpenCabinet}
+          aria-label="Открыть личный кабинет инструктора"
+        >
           <div className="instructor-home-self-main">
             <span className="instructor-avatar-wrap">
               <span
@@ -323,7 +335,7 @@ function InstructorSelfCard({ profile }: { profile: UserProfile }) {
               {profile.talons}
             </span>
           </div>
-        </div>
+        </button>
       </div>
     </div>
   );
@@ -428,6 +440,7 @@ function CadetRowCard({ student }: { student: UserProfile }) {
 }
 
 export function InstructorHomeTab() {
+  const navigate = useNavigate();
   const { profile, user, refreshProfile } = useAuth();
   const driveLocUi = useDriveLocationSharingUi();
   const showInstructorDriveLocationShare =
@@ -715,9 +728,9 @@ export function InstructorHomeTab() {
 
       <section className="instructor-home-section" aria-labelledby="instr-self-heading">
         <h2 id="instr-self-heading" className="instructor-subtitle">
-          Инструктор
+          Карточка инструктора (нажмите для входа)
         </h2>
-        <InstructorSelfCard profile={profile} />
+        <InstructorSelfCard profile={profile} onOpenCabinet={() => navigate("cabinet")} />
       </section>
 
       <section className="instructor-home-section" aria-labelledby="my-cadets-heading">

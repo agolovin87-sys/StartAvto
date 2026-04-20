@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { Route, Routes } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 import { useChatUnread } from "@/context/ChatUnreadContext";
 import { ChatNavContext } from "@/context/ChatNavContext";
@@ -9,6 +10,7 @@ import { InstructorBookingTab } from "@/pages/dashboards/instructor/InstructorBo
 import { InstructorHistoryTab } from "@/pages/dashboards/instructor/InstructorHistoryTab";
 import { InstructorHomeTab } from "@/pages/dashboards/instructor/InstructorHomeTab";
 import { InstructorTicketsTab } from "@/pages/dashboards/instructor/InstructorTicketsTab";
+import { InstructorCabinet } from "@/pages/instructor/InstructorCabinet";
 import {
   subscribeDriveSlotsForInstructor,
   subscribeFreeDriveWindowsForInstructor,
@@ -119,7 +121,7 @@ const navItems: {
   { id: "settings", label: "Настройки", Icon: IconSettings },
 ];
 
-export function InstructorDashboard() {
+function InstructorDashboardShell() {
   const { profile, user } = useAuth();
   const instructorUid = (user?.uid ?? profile?.uid ?? "").trim();
   const [tab, setTab] = useState<InstructorNavTab>("home");
@@ -371,5 +373,15 @@ export function InstructorDashboard() {
         </nav>
       </div>
     </ChatNavContext.Provider>
+  );
+}
+
+/** Маршруты инструктора: основной дашборд с нижним меню и экран личного кабинета. */
+export function InstructorDashboard() {
+  return (
+    <Routes>
+      <Route index element={<InstructorDashboardShell />} />
+      <Route path="cabinet" element={<InstructorCabinet />} />
+    </Routes>
   );
 }
