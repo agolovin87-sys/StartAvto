@@ -261,6 +261,7 @@ export function AdminInternalExamSection() {
         ) : (
           <>
             <AdminScheduledExamsSubsection groups={groups} />
+            <h3 className="admin-internal-exam-drive-heading">Внутренний экзамен — Вождение</h3>
             <label className="field admin-internal-exam-field">
               <span className="field-label">Учебная группа</span>
               <select

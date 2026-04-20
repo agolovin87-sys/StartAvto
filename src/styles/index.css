@@ -12030,6 +12030,14 @@ html[data-theme="light"] .instructor-error-template-selector__suggest-item--pick
   justify-content: space-between;
 }
 
+.admin-internal-exam-drive-heading {
+  margin: 0 0 0.5rem;
+  font-size: 0.98rem;
+  font-weight: 700;
+  color: var(--theme-heading);
+  line-height: 1.3;
+}
+
 .admin-internal-exam-field {
   max-width: 24rem;
   margin-bottom: 0.75rem;
