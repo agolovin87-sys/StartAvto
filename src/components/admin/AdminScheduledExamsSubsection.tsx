@@ -34,14 +34,15 @@ export function AdminScheduledExamsSubsection({ groups, groupId }: Props) {
   const [formDate, setFormDate] = useState("");
   const [formTime, setFormTime] = useState("09:00");
 
+  /** Группа в модалке задаётся только в форме — не копируется из верхнего селекта раздела. */
   const openModal = useCallback(() => {
     setErr(null);
-    setFormGroupId(groupId.trim() || (groups[0]?.id ?? ""));
+    setFormGroupId("");
     setFormType("internal_theory");
     setFormDate("");
     setFormTime("09:00");
     setModalOpen(true);
-  }, [groupId, groups]);
+  }, []);
 
   useEffect(() => {
     const gid = groupId.trim();
@@ -112,14 +113,17 @@ export function AdminScheduledExamsSubsection({ groups, groupId }: Props) {
         <button
           type="button"
           className="btn btn-primary btn-sm"
-          disabled={!groupId.trim()}
+          disabled={groups.length === 0}
           onClick={openModal}
         >
           Создать
         </button>
       </div>
       {!groupId.trim() ? (
-        <p className="admin-settings-section-desc">Выберите учебную группу выше, чтобы видеть и создавать записи.</p>
+        <p className="admin-settings-section-desc">
+          Выберите учебную группу в поле выше, чтобы видеть список запланированных экзаменов для неё. Создать запись
+          можно для любой группы — укажите группу в окне «Создать».
+        </p>
       ) : loading ? (
         <p className="admin-settings-section-desc">Загрузка…</p>
       ) : (
