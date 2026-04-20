@@ -100,3 +100,27 @@ export function subscribeAdminScheduledExamsByGroup(
     (err) => onError?.(err instanceof Error ? err : new Error(String(err)))
   );
 }
+
+/** Все записи (для админки); сортировка по дате создания на клиенте. */
+export function subscribeAllAdminScheduledExams(
+  onNext: (rows: AdminScheduledExam[]) => void,
+  onError?: (e: Error) => void
+): Unsubscribe {
+  if (!isFirebaseConfigured) {
+    onNext([]);
+    return () => {};
+  }
+  const { db } = getFirebase();
+  return onSnapshot(
+    collection(db, COL),
+    (snap) => {
+      const rows: AdminScheduledExam[] = [];
+      snap.forEach((d) => {
+        rows.push(normalizeAdminScheduledExam(d.id, d.data() as Record<string, unknown>));
+      });
+      rows.sort((a, b) => b.createdAt - a.createdAt);
+      onNext(rows);
+    },
+    (err) => onError?.(err instanceof Error ? err : new Error(String(err)))
+  );
+}

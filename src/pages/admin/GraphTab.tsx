@@ -506,7 +506,7 @@ export function AdminInternalExamSection() {
                 )
               ) : null}
             </div>
-            <AdminScheduledExamsSubsection groups={groups} groupId={groupId} />
+            <AdminScheduledExamsSubsection groups={groups} />
           </>
         )}
       </div>

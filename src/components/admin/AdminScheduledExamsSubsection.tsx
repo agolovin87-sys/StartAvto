@@ -5,7 +5,7 @@ import { ADMIN_SCHEDULED_EXAM_TYPE_LABEL } from "@/types/scheduledExam";
 import {
   createAdminScheduledExam,
   deleteAdminScheduledExam,
-  subscribeAdminScheduledExamsByGroup,
+  subscribeAllAdminScheduledExams,
 } from "@/services/scheduledExamService";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 
@@ -17,12 +17,11 @@ function formatRuDate(iso: string): string {
 
 type Props = {
   groups: TrainingGroup[];
-  groupId: string;
 };
 
-export function AdminScheduledExamsSubsection({ groups, groupId }: Props) {
+export function AdminScheduledExamsSubsection({ groups }: Props) {
   const [rows, setRows] = useState<AdminScheduledExam[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [err, setErr] = useState<string | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [createBusy, setCreateBusy] = useState(false);
@@ -34,7 +33,6 @@ export function AdminScheduledExamsSubsection({ groups, groupId }: Props) {
   const [formDate, setFormDate] = useState("");
   const [formTime, setFormTime] = useState("09:00");
 
-  /** Группа в модалке задаётся только в форме — не копируется из верхнего селекта раздела. */
   const openModal = useCallback(() => {
     setErr(null);
     setFormGroupId("");
@@ -45,16 +43,9 @@ export function AdminScheduledExamsSubsection({ groups, groupId }: Props) {
   }, []);
 
   useEffect(() => {
-    const gid = groupId.trim();
-    if (!gid) {
-      setRows([]);
-      setLoading(false);
-      return;
-    }
     setLoading(true);
     setErr(null);
-    const unsub = subscribeAdminScheduledExamsByGroup(
-      gid,
+    const unsub = subscribeAllAdminScheduledExams(
       (list) => {
         setRows(list);
         setLoading(false);
@@ -65,7 +56,7 @@ export function AdminScheduledExamsSubsection({ groups, groupId }: Props) {
       }
     );
     return () => unsub();
-  }, [groupId]);
+  }, []);
 
   async function onCreate() {
     const gid = formGroupId.trim();
@@ -106,66 +97,57 @@ export function AdminScheduledExamsSubsection({ groups, groupId }: Props) {
     }
   }
 
+  const showTable = !loading && rows.length > 0;
+
   return (
     <div className="admin-scheduled-exams-sub">
       <div className="admin-scheduled-exams-sub__head">
-        <h3 className="admin-scheduled-exams-sub__title">Экзамены</h3>
         <button
           type="button"
-          className="btn btn-primary btn-sm"
+          className="btn admin-scheduled-exams-create-btn"
           disabled={groups.length === 0}
           onClick={openModal}
         >
-          Создать
+          Создать экзамен
         </button>
       </div>
-      {!groupId.trim() ? (
-        <p className="admin-settings-section-desc">
-          Выберите учебную группу в поле выше, чтобы видеть список запланированных экзаменов для неё. Создать запись
-          можно для любой группы — укажите группу в окне «Создать».
-        </p>
-      ) : loading ? (
-        <p className="admin-settings-section-desc">Загрузка…</p>
-      ) : (
+      {loading ? (
+        <p className="admin-settings-section-desc admin-scheduled-exams-loading">Загрузка…</p>
+      ) : null}
+      {showTable ? (
         <div className="admin-schedule-table-wrap admin-internal-exam-table-wrap">
           <table className="admin-schedule-table">
             <thead>
               <tr>
+                <th>Группа</th>
                 <th>Тип экзамена</th>
                 <th>Дата и время</th>
                 <th style={{ width: "6rem" }} aria-label="Действия" />
               </tr>
             </thead>
             <tbody>
-              {rows.length === 0 ? (
-                <tr>
-                  <td colSpan={3} className="admin-schedule-table-empty">
-                    Нет запланированных экзаменов для этой группы.
+              {rows.map((r) => (
+                <tr key={r.id}>
+                  <td>{r.groupName.trim() || r.groupId || "—"}</td>
+                  <td>{ADMIN_SCHEDULED_EXAM_TYPE_LABEL[r.examType]}</td>
+                  <td>
+                    {formatRuDate(r.examDate)} · {r.examTime}
+                  </td>
+                  <td>
+                    <button
+                      type="button"
+                      className="btn btn-danger btn-sm"
+                      onClick={() => setDeleteId(r.id)}
+                    >
+                      Удалить
+                    </button>
                   </td>
                 </tr>
-              ) : (
-                rows.map((r) => (
-                  <tr key={r.id}>
-                    <td>{ADMIN_SCHEDULED_EXAM_TYPE_LABEL[r.examType]}</td>
-                    <td>
-                      {formatRuDate(r.examDate)} · {r.examTime}
-                    </td>
-                    <td>
-                      <button
-                        type="button"
-                        className="btn btn-danger btn-sm"
-                        onClick={() => setDeleteId(r.id)}
-                      >
-                        Удалить
-                      </button>
-                    </td>
-                  </tr>
-                ))
-              )}
+              ))}
             </tbody>
           </table>
         </div>
-      )}
+      ) : null}
       {err ? (
         <p className="form-error" role="alert">
           {err}
