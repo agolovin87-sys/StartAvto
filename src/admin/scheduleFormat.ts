@@ -1,4 +1,5 @@
-import { driveSlotScheduledStartMs } from "@/lib/driveSession";
+import { driveLiveEffectiveElapsedMs } from "@/lib/driveLiveElapsed";
+import { driveSlotScheduledStartMs, DRIVE_LIVE_DURATION_MS } from "@/lib/driveSession";
 import {
   formatUtcMsAsScheduleHHmm,
   parseDateKeyAndTimeToUtcMs,
@@ -130,4 +131,40 @@ export function formatDriveSlotFactualExport(slot: DriveSlot): string {
   const rawMs = end - start - paused;
   const minutes = Math.max(1, Math.round(rawMs / 60_000));
   return `${formatMsLocalHHmm(start)} – ${formatMsLocalHHmm(end)} (${minutes} мин.)`;
+}
+
+/**
+ * Фактическое время для таблицы графика в админке: начало — нажатие «Начать вождение»;
+ * конец — факт при завершении или расчётное окончание таймера (90 мин с учётом пауз) для активного слота.
+ */
+export function formatDriveSlotFactualAdminTable(slot: DriveSlot, nowMs: number): string {
+  if (slot.status === "cancelled" || slot.status === "pending_confirmation") return FACTUAL_EMPTY;
+
+  if (slot.status === "completed") {
+    const end = slot.liveEndedAt;
+    if (end == null) return FACTUAL_EMPTY;
+    const btnStart = slot.liveStartedAt;
+    if (btnStart == null) {
+      return `${FACTUAL_EMPTY} – ${formatMsLocalHHmm(end)}`;
+    }
+    const paused = slot.liveTotalPausedMs ?? 0;
+    const timerStart = slot.liveStudentAckAt ?? btnStart;
+    const rawMs = end - timerStart - paused;
+    const minutes = Math.max(1, Math.round(rawMs / 60_000));
+    return `${formatMsLocalHHmm(btnStart)} – ${formatMsLocalHHmm(end)} (${minutes} мин.)`;
+  }
+
+  if (slot.status !== "scheduled") return FACTUAL_EMPTY;
+  if (slot.liveStartedAt == null) return FACTUAL_EMPTY;
+
+  const startLabel = formatMsLocalHHmm(slot.liveStartedAt);
+  if (slot.liveStudentAckAt == null) {
+    return `${startLabel} – …`;
+  }
+
+  const elapsed = driveLiveEffectiveElapsedMs(slot, nowMs);
+  const remaining = Math.max(0, DRIVE_LIVE_DURATION_MS - elapsed);
+  const predictedEndMs = nowMs + remaining;
+  const wallMin = Math.max(1, Math.round((predictedEndMs - slot.liveStartedAt) / 60_000));
+  return `${startLabel} – ${formatMsLocalHHmm(predictedEndMs)} (~${wallMin} мин.)`;
 }

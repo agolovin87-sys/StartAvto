@@ -849,10 +849,7 @@ export async function instructorCompleteDriveLiveSession(slotId: string): Promis
 
     transaction.update(slotRef, {
       status: "completed",
-      liveStartedAt: deleteField(),
-      liveStudentAckAt: deleteField(),
       livePausedAt: deleteField(),
-      liveTotalPausedMs: deleteField(),
       liveEndedAt: serverTimestamp(),
       studentDisplayName: student.displayName,
     });

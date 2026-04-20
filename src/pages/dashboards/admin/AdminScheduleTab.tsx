@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import { formatShortFio } from "@/admin/formatShortFio";
 import {
   dateKeyToRuDisplay,
+  formatDriveSlotFactualAdminTable,
   formatDriveSlotStatus,
   localDateKey,
   sortSlotsByTime,
@@ -76,6 +77,21 @@ function ScheduleDayBlock({
   idSuffix: string;
   TitleTag?: ElementType;
 }) {
+  const [nowMs, setNowMs] = useState(() => Date.now());
+  const hasActiveLiveTimer = useMemo(
+    () =>
+      slots.some(
+        (s) => s.status === "scheduled" && s.liveStudentAckAt != null && s.liveStartedAt != null
+      ),
+    [slots]
+  );
+
+  useEffect(() => {
+    if (!hasActiveLiveTimer) return;
+    const id = window.setInterval(() => setNowMs(Date.now()), 1000);
+    return () => window.clearInterval(id);
+  }, [hasActiveLiveTimer]);
+
   const safeSuffix = idSuffix.replace(/[^a-zA-Z0-9_-]/g, "_");
   const titleId = `schedule-day-${safeSuffix}-${dateKey}`;
   const Title = TitleTag;
@@ -90,6 +106,7 @@ function ScheduleDayBlock({
             <tr>
               <th scope="col">№</th>
               <th scope="col">Время</th>
+              <th scope="col">Фактическое время</th>
               <th scope="col">Фамилия И.О. курсанта</th>
               <th scope="col">Статус</th>
               <th scope="col">Адрес</th>
@@ -99,7 +116,7 @@ function ScheduleDayBlock({
           <tbody>
             {slots.length === 0 ? (
               <tr>
-                <td colSpan={6} className="admin-schedule-table-empty">
+                <td colSpan={7} className="admin-schedule-table-empty">
                   Нет записей на эту дату.
                 </td>
               </tr>
@@ -108,6 +125,9 @@ function ScheduleDayBlock({
                 <tr key={slot.id}>
                   <td>{idx + 1}</td>
                   <td>{slot.startTime || "—"}</td>
+                  <td className="admin-schedule-factual-cell">
+                    {formatDriveSlotFactualAdminTable(slot, nowMs)}
+                  </td>
                   <td>
                     {formatShortFio(
                       studentMap.get(slot.studentId)?.displayName ?? ""
