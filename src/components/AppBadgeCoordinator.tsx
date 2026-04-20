@@ -9,7 +9,7 @@ import { BadgeDebug } from "@/components/BadgeDebug";
  */
 export function AppBadgeCoordinator() {
   const { total } = useNotificationCount();
-  const { updateBadge } = useBadging();
+  const { updateBadge, badgeCount } = useBadging();
 
   useEffect(() => {
     const onPref = () => void updateBadge(total);
@@ -24,6 +24,12 @@ export function AppBadgeCoordinator() {
     document.addEventListener("visibilitychange", onVis);
     return () => document.removeEventListener("visibilitychange", onVis);
   }, [total, updateBadge]);
+
+  useEffect(() => {
+    if (badgeCount !== total) {
+      void updateBadge(total);
+    }
+  }, [badgeCount, total, updateBadge]);
 
   return <BadgeDebug computedTotal={total} />;
 }
