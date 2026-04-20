@@ -550,11 +550,16 @@ export async function deleteInstructorExamSession(sessionId: string): Promise<vo
   const session = normalizeInternalExamSession(sessionSnap.id, sessionSnap.data() as Record<string, unknown>);
   if (session.instructorId !== uid) throw new Error("Нет доступа к этой сессии");
 
-  const sheetsQ = query(collection(db, SHEETS), where("examSessionId", "==", sid));
-  const sheetsSnap = await getDocs(sheetsQ);
+  /** Листы удаляем по id из сессии — без list-запроса по коллекции (иначе правила Firestore отклоняют query без instructorId). */
+  const sheetIds = new Set<string>();
+  for (const st of session.students) {
+    const id = st.examSheetId?.trim();
+    if (id) sheetIds.add(id);
+  }
+
   const batch = writeBatch(db);
-  for (const d of sheetsSnap.docs) {
-    batch.delete(d.ref);
+  for (const sheetId of sheetIds) {
+    batch.delete(doc(db, SHEETS, sheetId));
   }
   batch.delete(sref);
   await batch.commit();
