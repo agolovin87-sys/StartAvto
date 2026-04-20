@@ -102,6 +102,22 @@ export function normalizeDriveSlot(
       Number.isFinite(data.instructorLateShiftMin)
         ? Math.max(0, Math.floor(data.instructorLateShiftMin))
         : null,
+    studentRatingInstructor:
+      typeof data.studentRatingInstructor === "number" &&
+      Number.isFinite(data.studentRatingInstructor)
+        ? Math.min(5, Math.max(1, Math.floor(data.studentRatingInstructor)))
+        : data.studentRatingInstructor === null
+          ? null
+          : undefined,
+    instructorRatingStudent:
+      typeof data.instructorRatingStudent === "number" &&
+      Number.isFinite(data.instructorRatingStudent)
+        ? ([3, 4, 5].includes(Math.floor(data.instructorRatingStudent))
+            ? (Math.floor(data.instructorRatingStudent) as 3 | 4 | 5)
+            : undefined)
+        : data.instructorRatingStudent === null
+          ? null
+          : undefined,
   };
 }
 
@@ -900,4 +916,40 @@ export async function instructorCompleteDriveLiveSession(slotId: string): Promis
       /* аудит не критичен */
     }
   });
+}
+
+/** Курсант ставит оценку инструктору (1–5) после завершённого урока; один раз. */
+export async function submitStudentRatingInstructor(slotId: string, stars: number): Promise<void> {
+  const { db, auth } = getFirebase();
+  const uid = auth.currentUser?.uid?.trim();
+  if (!uid) throw new Error("Не выполнен вход");
+  const n = Math.floor(stars);
+  if (n < 1 || n > 5) throw new Error("Выберите оценку от 1 до 5");
+  const slotRef = doc(db, DRIVES, slotId.trim());
+  const snap = await getDoc(slotRef);
+  if (!snap.exists()) throw new Error("Запись не найдена");
+  const slot = normalizeDriveSlot(snap.data() as Record<string, unknown>, slotId.trim());
+  if (slot.studentId !== uid) throw new Error("Нет доступа к этой записи");
+  if (slot.status !== "completed") throw new Error("Урок не завершён");
+  if (slot.studentRatingInstructor != null) throw new Error("Оценка уже сохранена");
+  await updateDoc(slotRef, { studentRatingInstructor: n });
+}
+
+/** Инструктор ставит оценку курсанту (3, 4 или 5) после завершённого урока; один раз. */
+export async function submitInstructorRatingStudent(
+  slotId: string,
+  grade: 3 | 4 | 5
+): Promise<void> {
+  const { db, auth } = getFirebase();
+  const uid = auth.currentUser?.uid?.trim();
+  if (!uid) throw new Error("Не выполнен вход");
+  if (![3, 4, 5].includes(grade)) throw new Error("Выберите оценку 3, 4 или 5");
+  const slotRef = doc(db, DRIVES, slotId.trim());
+  const snap = await getDoc(slotRef);
+  if (!snap.exists()) throw new Error("Запись не найдена");
+  const slot = normalizeDriveSlot(snap.data() as Record<string, unknown>, slotId.trim());
+  if (slot.instructorId !== uid) throw new Error("Нет доступа к этой записи");
+  if (slot.status !== "completed") throw new Error("Урок не завершён");
+  if (slot.instructorRatingStudent != null) throw new Error("Оценка уже сохранена");
+  await updateDoc(slotRef, { instructorRatingStudent: grade });
 }

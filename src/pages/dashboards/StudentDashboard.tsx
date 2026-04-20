@@ -20,6 +20,7 @@ import {
   studentCancelDriveSlot,
   studentCancelScheduledDriveSlot,
   studentConfirmDriveSlot,
+  submitStudentRatingInstructor,
   subscribeFreeDriveWindowsForStudent,
   subscribeDriveSlotsForStudent,
 } from "@/firebase/drives";
@@ -56,6 +57,7 @@ import {
   IconPendingStatus,
 } from "@/components/DrivePendingRowIcons";
 import { AlertDialog } from "@/components/ConfirmDialog";
+import { DriveLessonRatingModal } from "@/components/DriveLessonRatingModal";
 import { DriveLiveStudentTimerDecor } from "@/components/DriveLiveStudentTimerDecor";
 import {
   DriveFinishedDayTable,
@@ -648,7 +650,11 @@ function StudentDashboardShell() {
   const [reserveWindowBusyId, setReserveWindowBusyId] = useState<string | null>(null);
   const [freeWindowsErr, setFreeWindowsErr] = useState<string | null>(null);
   const [driveTimeOccupiedOpen, setDriveTimeOccupiedOpen] = useState(false);
-  const [driveLiveCompletedDialogOpen, setDriveLiveCompletedDialogOpen] = useState(false);
+  const [postDriveFlow, setPostDriveFlow] = useState<
+    null | { slotId: string; step: "done" | "rate" }
+  >(null);
+  const [postDriveRatingBusy, setPostDriveRatingBusy] = useState(false);
+  const [postDriveRatingErr, setPostDriveRatingErr] = useState<string | null>(null);
   const [studentTalonAlert, setStudentTalonAlert] = useState<TalonBookingBlockReason | null>(null);
   const [weekOpen, setWeekOpen] = useState(true);
   /** 0 — текущая календарная неделя; −1 — прошлая; +1 — следующая */
@@ -698,7 +704,7 @@ function StudentDashboardShell() {
         was.liveStudentAckAt != null &&
         was.liveStartedAt != null
       ) {
-        setDriveLiveCompletedDialogOpen(true);
+        setPostDriveFlow({ slotId: sl.id, step: "done" });
         break;
       }
     }
@@ -1459,9 +1465,35 @@ function StudentDashboardShell() {
           onClose={() => setDriveTimeOccupiedOpen(false)}
         />
         <AlertDialog
-          open={driveLiveCompletedDialogOpen}
+          open={postDriveFlow?.step === "done"}
           message="Вождение завершено!"
-          onClose={() => setDriveLiveCompletedDialogOpen(false)}
+          onClose={() =>
+            setPostDriveFlow((f) => (f?.step === "done" ? { slotId: f.slotId, step: "rate" } : f))
+          }
+        />
+        <DriveLessonRatingModal
+          open={postDriveFlow?.step === "rate"}
+          variant="student"
+          busy={postDriveRatingBusy}
+          error={postDriveRatingErr}
+          onClose={() => {
+            setPostDriveFlow(null);
+            setPostDriveRatingErr(null);
+          }}
+          onSubmit={async (value) => {
+            const sid = postDriveFlow?.step === "rate" ? postDriveFlow.slotId : null;
+            if (!sid) return;
+            setPostDriveRatingErr(null);
+            setPostDriveRatingBusy(true);
+            try {
+              await submitStudentRatingInstructor(sid, value);
+              setPostDriveFlow(null);
+            } catch (e: unknown) {
+              setPostDriveRatingErr(e instanceof Error ? e.message : "Не удалось сохранить оценку");
+            } finally {
+              setPostDriveRatingBusy(false);
+            }
+          }}
         />
       </div>
     </ChatNavContext.Provider>

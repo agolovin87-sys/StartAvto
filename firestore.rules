@@ -469,6 +469,38 @@ service cloud.firestore {
             .hasOnly(['status', 'liveStartedAt', 'liveStudentAckAt', 'livePausedAt', 'liveTotalPausedMs', 'liveEndedAt', 'studentDisplayName']);
       }
 
+      /** Курсант после завершённого урока: оценка инструктора 1–5 (один раз). */
+      function driveSlotStudentRatesInstructor() {
+        return isStudentAccount()
+          && resource.data.studentId == request.auth.uid
+          && resource.data.status == 'completed'
+          && resource.data.get('studentRatingInstructor', null) == null
+          && request.resource.data.studentId == resource.data.studentId
+          && request.resource.data.instructorId == resource.data.instructorId
+          && request.resource.data.status == 'completed'
+          && request.resource.data.dateKey == resource.data.dateKey
+          && request.resource.data.startTime == resource.data.startTime
+          && request.resource.data.studentRatingInstructor is int
+          && request.resource.data.studentRatingInstructor >= 1
+          && request.resource.data.studentRatingInstructor <= 5
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['studentRatingInstructor']);
+      }
+
+      /** Инструктор после завершённого урока: оценка курсанта 3–5 (один раз). */
+      function driveSlotInstructorRatesStudent() {
+        return isInstructorAccount()
+          && resource.data.instructorId == request.auth.uid
+          && resource.data.status == 'completed'
+          && resource.data.get('instructorRatingStudent', null) == null
+          && request.resource.data.instructorId == resource.data.instructorId
+          && request.resource.data.studentId == resource.data.studentId
+          && request.resource.data.status == 'completed'
+          && request.resource.data.dateKey == resource.data.dateKey
+          && request.resource.data.startTime == resource.data.startTime
+          && request.resource.data.instructorRatingStudent in [3, 4, 5]
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['instructorRatingStudent']);
+      }
+
       /** Пауза таймера вождения. */
       function driveSlotInstructorPausesLive() {
         return isInstructorAccount()
@@ -545,6 +577,8 @@ service cloud.firestore {
         || driveSlotInstructorRunningLate()
         || driveSlotStudentAckLive()
         || driveSlotInstructorCompletesLive()
+        || driveSlotStudentRatesInstructor()
+        || driveSlotInstructorRatesStudent()
         || driveSlotInstructorPausesLive()
         || driveSlotInstructorResumesLive()
         || driveSlotInstructorCancelsLiveSession();

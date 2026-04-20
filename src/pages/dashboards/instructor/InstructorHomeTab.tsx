@@ -8,6 +8,7 @@ import {
   instructorCompleteDriveLiveSession,
   instructorDeleteDriveSlot,
   instructorStartDriveLiveSession,
+  submitInstructorRatingStudent,
   subscribeDriveSlotsForInstructor,
 } from "@/firebase/drives";
 import { mapFirebaseError } from "@/firebase/errors";
@@ -20,6 +21,7 @@ import {
 } from "@/lib/scheduleTimezone";
 import { isValidRuMobilePhone, normalizeRuPhone } from "@/lib/phoneRu";
 import { AlertDialog } from "@/components/ConfirmDialog";
+import { DriveLessonRatingModal } from "@/components/DriveLessonRatingModal";
 import {
   DriveFinishedDayTable,
   groupFinishedDriveSlotsByDateKey,
@@ -449,7 +451,11 @@ export function InstructorHomeTab() {
   const [lateModalSlot, setLateModalSlot] = useState<DriveSlot | null>(null);
   const [lateSelectedMin, setLateSelectedMin] = useState<5 | 10 | 15 | null>(null);
   const [lateShiftBusyId, setLateShiftBusyId] = useState<string | null>(null);
-  const [driveLiveCompletedDialogOpen, setDriveLiveCompletedDialogOpen] = useState(false);
+  const [postDriveFlow, setPostDriveFlow] = useState<
+    null | { slotId: string; step: "done" | "rate" }
+  >(null);
+  const [postDriveRatingBusy, setPostDriveRatingBusy] = useState(false);
+  const [postDriveRatingErr, setPostDriveRatingErr] = useState<string | null>(null);
 
   const prevSlotLiveSnapshotRef = useRef<
     Map<string, Pick<DriveSlot, "status" | "liveStudentAckAt" | "liveStartedAt">>
@@ -471,7 +477,7 @@ export function InstructorHomeTab() {
         was.liveStudentAckAt != null &&
         was.liveStartedAt != null
       ) {
-        setDriveLiveCompletedDialogOpen(true);
+        setPostDriveFlow({ slotId: sl.id, step: "done" });
         break;
       }
     }
@@ -1148,9 +1154,37 @@ export function InstructorHomeTab() {
       ) : null}
 
       <AlertDialog
-        open={driveLiveCompletedDialogOpen}
+        open={postDriveFlow?.step === "done"}
         message="Вождение завершено!"
-        onClose={() => setDriveLiveCompletedDialogOpen(false)}
+        onClose={() =>
+          setPostDriveFlow((f) => (f?.step === "done" ? { slotId: f.slotId, step: "rate" } : f))
+        }
+      />
+      <DriveLessonRatingModal
+        open={postDriveFlow?.step === "rate"}
+        variant="instructor"
+        busy={postDriveRatingBusy}
+        error={postDriveRatingErr}
+        onClose={() => {
+          setPostDriveFlow(null);
+          setPostDriveRatingErr(null);
+        }}
+        onSubmit={async (value) => {
+          const sid = postDriveFlow?.step === "rate" ? postDriveFlow.slotId : null;
+          if (!sid) return;
+          const g = value as 3 | 4 | 5;
+          if (g !== 3 && g !== 4 && g !== 5) return;
+          setPostDriveRatingErr(null);
+          setPostDriveRatingBusy(true);
+          try {
+            await submitInstructorRatingStudent(sid, g);
+            setPostDriveFlow(null);
+          } catch (e: unknown) {
+            setPostDriveRatingErr(e instanceof Error ? e.message : "Не удалось сохранить оценку");
+          } finally {
+            setPostDriveRatingBusy(false);
+          }
+        }}
       />
     </div>
   );

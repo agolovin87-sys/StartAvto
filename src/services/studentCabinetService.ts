@@ -144,6 +144,11 @@ export function buildDrivingLesson(
     duration: durationMinutesFromSlot(slot, trip),
     distance: distanceKmFromTrip(trip),
     rating: ratingFromErrors(errors),
+    instructorGradeStudent:
+      slot.instructorRatingStudent != null &&
+      [3, 4, 5].includes(slot.instructorRatingStudent)
+        ? slot.instructorRatingStudent
+        : null,
     errors: drivingErrs,
     type: "regular",
     /** Заметки к треку / комментарий инструктора; для отменённых слотов — причина в cancelReason. */

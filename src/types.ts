@@ -81,6 +81,10 @@ export interface DriveSlot {
    * Инструктор нажал «Опаздываю»: сдвиг начала на 5/10/15 мин (для статуса у курсанта); при старте сессии сбрасывается.
    */
   instructorLateShiftMin: number | null;
+  /** Оценка инструктора курсантом после завершения урока (1–5). */
+  studentRatingInstructor?: number | null;
+  /** Оценка курсанта инструктором после завершения урока (3, 4 или 5). */
+  instructorRatingStudent?: number | null;
 }
 
 export type FreeDriveWindowStatus = "open" | "reserved";

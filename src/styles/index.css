@@ -7435,6 +7435,56 @@ html[data-theme="light"] .drive-live-session-panel__toolbar {
   gap: 0.5rem;
 }
 
+.drive-lesson-rating-modal .confirm-dialog-title {
+  text-align: center;
+  width: 100%;
+}
+
+.drive-lesson-rating-stars {
+  display: flex;
+  justify-content: center;
+  gap: 0.25rem;
+  margin: 0.5rem 0 1rem;
+}
+
+.drive-lesson-rating-star {
+  background: none;
+  border: none;
+  padding: 0.15rem;
+  font-size: 2rem;
+  line-height: 1;
+  cursor: pointer;
+  color: rgba(148, 163, 184, 0.65);
+  transition: color 0.15s ease, transform 0.12s ease;
+}
+
+.drive-lesson-rating-star.is-on {
+  color: #fbbf24;
+  text-shadow: 0 0 6px rgba(251, 191, 36, 0.55);
+}
+
+.drive-lesson-rating-star:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.drive-lesson-rating-grades {
+  display: flex;
+  justify-content: center;
+  gap: 0.5rem;
+  margin: 0.5rem 0 1rem;
+}
+
+.drive-lesson-rating-grade.is-selected {
+  box-shadow: 0 0 0 2px rgba(251, 191, 36, 0.75);
+  border-color: #fbbf24;
+}
+
+.drive-lesson-rating-err {
+  margin: 0 0 0.5rem;
+  font-size: 0.82rem;
+}
+
 .admin-gps-modal.confirm-dialog {
   max-width: min(520px, calc(100vw - 2rem));
   position: relative;
@@ -13876,6 +13926,16 @@ html[data-theme="light"] .student-cab-drive-ring-count {
 
 .student-cab-drive-history-td-rating {
   white-space: nowrap;
+}
+
+.student-cab-drive-history-grade {
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  color: #fbbf24;
+}
+
+.student-cab-drive-history-grade-empty {
+  color: var(--theme-muted);
 }
 
 .student-cab-drive-history-dev {

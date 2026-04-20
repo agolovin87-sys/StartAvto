@@ -34,7 +34,7 @@ function formatErrorLine(e: LessonDriveError): string {
 }
 
 /**
- * История завершённых вождений (по умолчанию свёрнута): ошибки из процесса урока; оценка — в разработке.
+ * История завершённых вождений: ошибки из процесса урока; оценка — от инструктора (3–5) после урока.
  */
 export function StudentCabinetDrivingHistory() {
   const { user, profile } = useAuth();
@@ -119,7 +119,7 @@ export function StudentCabinetDrivingHistory() {
         hidden={!open}
       >
         <p className="student-cab-drive-history-hint">
-          Ошибки — отметки инструктора во время вождения. Оценка по завершении вождения (3–5 баллов) — в разработке.
+          Ошибки — отметки инструктора во время вождения. Оценка — выставляется инструктором после завершения урока (3, 4 или 5).
         </p>
         <div className="student-cab-drive-history-table-wrap">
           <table className="student-cab-drive-history-table">
@@ -173,7 +173,11 @@ export function StudentCabinetDrivingHistory() {
                         )}
                       </td>
                       <td className="student-cab-drive-history-td-rating">
-                        <span className="student-cab-drive-history-dev">В разработке</span>
+                        {lesson.instructorGradeStudent != null ? (
+                          <span className="student-cab-drive-history-grade">{lesson.instructorGradeStudent}</span>
+                        ) : (
+                          <span className="student-cab-drive-history-grade-empty">—</span>
+                        )}
                       </td>
                     </tr>
                   );

@@ -27,6 +27,8 @@ export interface DrivingLesson {
   duration: number;
   distance: number;
   rating: number;
+  /** Оценка инструктора (3–5), если уже сохранена в слоте. */
+  instructorGradeStudent?: number | null;
   errors: DrivingError[];
   trackUrl?: string;
   examSheetUrl?: string;
