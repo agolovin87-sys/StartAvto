@@ -13676,16 +13676,16 @@ html[data-theme="light"] .student-cab-drive-card {
 }
 
 .student-cab-drive-ring-arrow {
-  fill: #facc15;
+  fill: #22c55e;
   stroke: none;
-  filter: drop-shadow(0 0 6px rgba(250, 204, 21, 0.75));
+  filter: drop-shadow(0 0 6px rgba(34, 197, 94, 0.85));
   animation: student-cab-drive-arrow-pulse 1.9s ease-in-out infinite;
   pointer-events: none;
 }
 
 html[data-theme="light"] .student-cab-drive-ring-arrow {
-  fill: #0ea5e9;
-  filter: drop-shadow(0 0 5px rgba(14, 165, 233, 0.65));
+  fill: #16a34a;
+  filter: drop-shadow(0 0 5px rgba(22, 163, 74, 0.75));
 }
 
 @keyframes student-cab-drive-arrow-pulse {
@@ -13782,28 +13782,25 @@ html[data-theme="light"] .student-cab-drive-split-current {
   border-radius: 999px;
   font-size: 0.82rem;
   font-weight: 700;
+  color: #ffffff;
 }
 
 .student-cab-drive-badge--novice {
-  color: #1c1917;
   background: rgba(234, 179, 8, 0.58);
   border: 1px solid rgba(234, 179, 8, 1);
 }
 
 .student-cab-drive-badge--amateur {
-  color: #022c22;
   background: rgba(34, 197, 94, 0.58);
   border: 1px solid rgba(34, 197, 94, 0.98);
 }
 
 .student-cab-drive-badge--pro {
-  color: #ffffff;
   background: rgba(217, 70, 239, 0.7);
   border: 1px solid rgba(217, 70, 239, 0.98);
 }
 
 .student-cab-drive-badge--expert {
-  color: #082f49;
   background: rgba(14, 165, 233, 0.56);
   border: 1px solid rgba(14, 165, 233, 0.98);
 }
@@ -13848,18 +13845,6 @@ html[data-theme="light"] .student-cab-drive-split-current {
 .student-cab-drive-dot--expert {
   background: #0ea5e9;
   box-shadow: 0 0 5px rgba(14, 165, 233, 0.56);
-}
-
-html[data-theme="light"] .student-cab-drive-badge--novice {
-  color: #713f12;
-}
-
-html[data-theme="light"] .student-cab-drive-badge--amateur {
-  color: #14532d;
-}
-
-html[data-theme="light"] .student-cab-drive-badge--expert {
-  color: #1e3a8a;
 }
 
 html[data-theme="light"] .student-cab-drive-ring-count {
