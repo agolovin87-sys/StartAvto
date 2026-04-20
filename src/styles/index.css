@@ -13205,11 +13205,20 @@ html[data-theme="light"] .instructor-cab-section-ico {
 .instructor-cabinet-rating-section {
   --instructor-rating-badge-size: 6rem;
   --instructor-rating-row-gap: 1.1rem;
+  /* Как у .student-cab-title-with-ico: иконка 22px + gap 0.45rem — левый край слова «Рейтинг» */
+  --instructor-rating-title-indent: calc(22px + 0.45rem);
+}
+
+.instructor-cabinet-rating-section .instructor-cabinet-block-heading {
+  margin-bottom: 0.2rem;
 }
 
 .instructor-cabinet-rating-section .instructor-cabinet-rating-lead {
-  margin-bottom: 0.35rem;
-  padding-left: calc(var(--instructor-rating-badge-size) + var(--instructor-rating-row-gap));
+  margin-bottom: 0.2rem;
+  padding-left: calc(
+    var(--instructor-rating-title-indent) + var(--instructor-rating-badge-size) +
+      var(--instructor-rating-row-gap)
+  );
   box-sizing: border-box;
 }
 
@@ -13220,7 +13229,9 @@ html[data-theme="light"] .instructor-cab-section-ico {
   justify-content: flex-start;
   gap: var(--instructor-rating-row-gap);
   flex-wrap: wrap;
-  margin-top: -0.15rem;
+  margin-top: -0.28rem;
+  padding-left: var(--instructor-rating-title-indent);
+  box-sizing: border-box;
 }
 
 .instructor-cabinet-rating-badge {
@@ -13290,16 +13301,13 @@ html[data-theme="light"] .instructor-cab-section-ico {
 
 .instructor-cabinet-rating-badge-star {
   position: absolute;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 100%;
-  height: 100%;
+  left: 50%;
+  top: 50%;
   margin: 0;
   padding: 0;
+  display: block;
   font-size: 5.35rem;
-  line-height: 0;
+  line-height: 1;
   font-weight: 700;
   color: #eab308;
   opacity: 0.98;
@@ -13311,18 +13319,24 @@ html[data-theme="light"] .instructor-cab-section-ico {
   pointer-events: none;
   user-select: none;
   z-index: 2;
-  transform: translateY(0.07em);
+  /* Глиф ★ в метриках шрифта смещён вниз — поднимаем к визуальному центру круга */
+  transform: translate(-50%, calc(-50% - 0.11em));
 }
 
 .instructor-cabinet-rating-badge-value {
-  position: relative;
+  position: absolute;
+  left: 50%;
+  top: 50%;
   z-index: 3;
+  margin: 0;
+  padding: 0;
   font-size: 1.28rem;
   font-weight: 800;
   letter-spacing: -0.03em;
   line-height: 1;
   color: #713f12;
   text-shadow: 0 1px 0 rgba(255, 251, 235, 0.35);
+  transform: translate(-50%, -50%);
 }
 
 html[data-theme="light"] .instructor-cabinet-rating-badge {
