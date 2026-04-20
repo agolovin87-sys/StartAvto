@@ -36,8 +36,8 @@ export function InstructorCabinetRatingSection() {
     return { count: rated.length, average: Math.round((sum / rated.length) * 10) / 10 };
   }, [slots]);
 
-  const roundedStars =
-    ratingStats.average != null ? Math.min(5, Math.max(1, Math.round(ratingStats.average))) : 0;
+  const avgLabel =
+    ratingStats.average != null ? ratingStats.average.toFixed(1).replace(".", ",") : "";
 
   return (
     <section
@@ -60,22 +60,18 @@ export function InstructorCabinetRatingSection() {
         </p>
       ) : (
         <>
-          <div className="instructor-cabinet-rating-stars" aria-hidden>
-            {[1, 2, 3, 4, 5].map((n) => (
-              <span
-                key={n}
-                className={
-                  n <= roundedStars
-                    ? "instructor-cabinet-star instructor-cabinet-star--on"
-                    : "instructor-cabinet-star"
-                }
-              >
-                ★
-              </span>
-            ))}
+          <div
+            className="instructor-cabinet-rating-badge"
+            role="img"
+            aria-label={`Средняя оценка ${ratingStats.average?.toFixed(1).replace(".", ",")} из пяти, оценок ${ratingStats.count}`}
+          >
+            <span className="instructor-cabinet-rating-badge-star" aria-hidden>
+              ★
+            </span>
+            <span className="instructor-cabinet-rating-badge-value">{avgLabel}</span>
           </div>
           <p className="instructor-cabinet-rating-value">
-            <strong>{ratingStats.average?.toFixed(1)}</strong> из 5 · оценок: {ratingStats.count}
+            из 5 · оценок: {ratingStats.count}
           </p>
         </>
       )}

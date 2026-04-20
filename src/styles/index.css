@@ -13202,26 +13202,58 @@ html[data-theme="light"] .instructor-cab-section-ico {
   display: block;
 }
 
-.instructor-cabinet-rating-stars {
-  display: flex;
-  gap: 0.2rem;
-  margin: 0.35rem 0 0.25rem;
-  font-size: 1.65rem;
+.instructor-cabinet-rating-badge {
+  position: relative;
+  width: 5.5rem;
+  height: 5.5rem;
+  flex-shrink: 0;
+  margin: 0.25rem 0 0.15rem;
+  border-radius: 50%;
+  background: linear-gradient(160deg, #fde047 0%, #facc15 55%, #eab308 100%);
+  box-shadow:
+    0 0 0 1px rgba(161, 98, 7, 0.35),
+    0 6px 18px rgba(234, 179, 8, 0.38);
+  display: grid;
+  place-items: center;
+  isolation: isolate;
+}
+
+.instructor-cabinet-rating-badge-star {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  font-size: 4.5rem;
   line-height: 1;
-  letter-spacing: 0.02em;
+  font-weight: 700;
+  color: rgba(120, 53, 15, 0.22);
+  text-shadow: 0 1px 0 rgba(255, 251, 235, 0.35);
+  pointer-events: none;
+  user-select: none;
 }
 
-.instructor-cabinet-star {
-  color: rgba(255, 255, 255, 0.22);
+.instructor-cabinet-rating-badge-value {
+  position: relative;
+  z-index: 1;
+  font-size: 1.28rem;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 1;
+  color: #713f12;
 }
 
-html[data-theme="light"] .instructor-cabinet-star {
-  color: rgba(15, 23, 42, 0.2);
+html[data-theme="light"] .instructor-cabinet-rating-badge {
+  box-shadow:
+    0 0 0 1px rgba(202, 138, 4, 0.45),
+    0 6px 16px rgba(234, 179, 8, 0.35);
 }
 
-.instructor-cabinet-star--on {
-  color: #fbbf24;
-  text-shadow: 0 0 12px rgba(251, 191, 36, 0.45);
+html[data-theme="light"] .instructor-cabinet-rating-badge-star {
+  color: rgba(180, 83, 9, 0.2);
+}
+
+html[data-theme="light"] .instructor-cabinet-rating-badge-value {
+  color: #713f12;
 }
 
 .instructor-cabinet-rating-value {

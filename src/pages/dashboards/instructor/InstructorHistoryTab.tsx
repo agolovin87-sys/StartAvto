@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import { formatShortFio } from "@/admin/formatShortFio";
 import {
   driveHistoryTableDateCell,
@@ -149,6 +150,8 @@ function completedDriveToSyntheticTalonEntry(
 
 export function InstructorHistoryTab() {
   const { user, profile } = useAuth();
+  const location = useLocation();
+  const navigate = useNavigate();
   const instructorUid = (user?.uid ?? profile?.uid ?? "").trim();
   const [entries, setEntries] = useState<TalonHistoryEntry[]>([]);
   const [err, setErr] = useState<string | null>(null);
@@ -160,6 +163,19 @@ export function InstructorHistoryTab() {
   const [driveSectionOpen, setDriveSectionOpen] = useState(false);
   const [studentNameById, setStudentNameById] = useState<Record<string, string>>({});
   const loadedStudentIdsRef = useRef<Set<string>>(new Set());
+
+  useLayoutEffect(() => {
+    const st = location.state as { instructorHistoryExpandTalon?: boolean } | null;
+    if (!st?.instructorHistoryExpandTalon) return;
+    setTalonSectionOpen(true);
+    navigate(".", { replace: true, state: {} });
+    requestAnimationFrame(() => {
+      document.getElementById("instr-history-talon-heading")?.scrollIntoView({
+        block: "nearest",
+        behavior: "smooth",
+      });
+    });
+  }, [location.state, navigate]);
 
   const driveHistorySlots = useMemo(() => filterDriveHistorySlots(driveSlots), [driveSlots]);
 

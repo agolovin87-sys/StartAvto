@@ -130,12 +130,20 @@ function InstructorDashboardShell() {
   useDashboardTabHistory(tab, setTab, INSTRUCTOR_DASH_TABS);
 
   useEffect(() => {
-    const s = location.state as { instructorTab?: InstructorNavTab } | null;
+    const s = location.state as {
+      instructorTab?: InstructorNavTab;
+      instructorHistoryExpandTalon?: boolean;
+    } | null;
     if (!s || typeof s !== "object") return;
-    if (s.instructorTab && (INSTRUCTOR_DASH_TABS as readonly string[]).includes(s.instructorTab)) {
-      setTab(s.instructorTab);
-      navigate(".", { replace: true, state: {} });
+    const { instructorTab, ...rest } = s;
+    if (!instructorTab || !(INSTRUCTOR_DASH_TABS as readonly string[]).includes(instructorTab)) {
+      return;
     }
+    setTab(instructorTab);
+    navigate(".", {
+      replace: true,
+      state: Object.keys(rest).length > 0 ? rest : {},
+    });
   }, [location.state, navigate]);
   const [chatThreadOpen, setChatThreadOpen] = useState(false);
   const { setShellHeaderHidden } = useChatThreadShell();

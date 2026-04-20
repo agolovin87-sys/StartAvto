@@ -72,7 +72,12 @@ export function InstructorCabinetTalonSection() {
   const lastThree = useMemo(() => entries.slice(0, 3), [entries]);
 
   const goHistory = useCallback(() => {
-    navigate("..", { state: { instructorTab: "history" as const } });
+    navigate("..", {
+      state: {
+        instructorTab: "history" as const,
+        instructorHistoryExpandTalon: true,
+      },
+    });
   }, [navigate]);
 
   return (
