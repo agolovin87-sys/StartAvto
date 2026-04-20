@@ -13231,11 +13231,14 @@ html[data-theme="light"] .instructor-cab-section-ico {
   margin: 0;
   border-radius: 50%;
   overflow: hidden;
-  background: linear-gradient(165deg, #fde047 0%, #facc15 48%, #eab308 72%, #ca8a04 100%);
+  background: linear-gradient(168deg, #fef08a 0%, #fde047 22%, #facc15 52%, #eab308 78%, #b45309 100%);
   box-shadow:
     0 0 0 1px #78350f,
     0 0 0 2px rgba(253, 224, 71, 0.35),
-    0 6px 18px rgba(234, 179, 8, 0.42);
+    inset 0 10px 22px rgba(255, 255, 255, 0.52),
+    inset 0 -14px 26px rgba(120, 53, 9, 0.42),
+    inset 0 0 0 1px rgba(255, 251, 235, 0.28),
+    0 8px 22px rgba(234, 179, 8, 0.48);
   display: grid;
   place-items: center;
   isolation: isolate;
@@ -13250,27 +13253,53 @@ html[data-theme="light"] .instructor-cab-section-ico {
   pointer-events: none;
   background:
     radial-gradient(
-      120% 85% at 28% 18%,
-      rgba(255, 255, 255, 0.58) 0%,
-      rgba(255, 255, 255, 0.14) 28%,
-      transparent 52%
+      95% 70% at 32% 14%,
+      rgba(255, 255, 255, 0.92) 0%,
+      rgba(255, 255, 255, 0.35) 18%,
+      rgba(255, 255, 255, 0.08) 36%,
+      transparent 58%
+    ),
+    radial-gradient(
+      140% 90% at 50% 0%,
+      rgba(255, 255, 255, 0.45) 0%,
+      transparent 42%
     ),
     linear-gradient(
-      155deg,
-      rgba(255, 255, 255, 0.22) 0%,
-      rgba(255, 255, 255, 0) 38%,
-      rgba(0, 0, 0, 0.06) 100%
+      158deg,
+      rgba(255, 255, 255, 0.38) 0%,
+      rgba(255, 255, 255, 0.06) 32%,
+      transparent 48%,
+      rgba(0, 0, 0, 0.12) 100%
     );
   mix-blend-mode: soft-light;
+}
+
+.instructor-cabinet-rating-badge::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  z-index: 1;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse 115% 70% at 50% 108%, rgba(69, 26, 3, 0.38) 0%, transparent 58%),
+    radial-gradient(ellipse 80% 50% at 78% 72%, rgba(255, 255, 255, 0.12) 0%, transparent 55%);
+  mix-blend-mode: multiply;
+  opacity: 0.85;
 }
 
 .instructor-cabinet-rating-badge-star {
   position: absolute;
   inset: 0;
-  display: grid;
-  place-items: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
   font-size: 5.35rem;
-  line-height: 1;
+  line-height: 0;
   font-weight: 700;
   color: #eab308;
   opacity: 0.98;
@@ -13282,6 +13311,7 @@ html[data-theme="light"] .instructor-cab-section-ico {
   pointer-events: none;
   user-select: none;
   z-index: 2;
+  transform: translateY(0.07em);
 }
 
 .instructor-cabinet-rating-badge-value {
@@ -13299,7 +13329,10 @@ html[data-theme="light"] .instructor-cabinet-rating-badge {
   box-shadow:
     0 0 0 1px #92400e,
     0 0 0 2px rgba(254, 243, 199, 0.55),
-    0 6px 16px rgba(234, 179, 8, 0.38);
+    inset 0 10px 20px rgba(255, 255, 255, 0.55),
+    inset 0 -12px 22px rgba(146, 64, 14, 0.28),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.35),
+    0 8px 20px rgba(234, 179, 8, 0.4);
 }
 
 html[data-theme="light"] .instructor-cabinet-rating-badge-star {
