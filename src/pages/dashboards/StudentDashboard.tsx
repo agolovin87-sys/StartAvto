@@ -48,7 +48,6 @@ import { AdminChatTab } from "@/pages/dashboards/admin/AdminChatTab";
 import { AdminSettingsTab } from "@/pages/dashboards/admin/AdminSettingsTab";
 import { StudentHistoryTab } from "@/pages/dashboards/student/StudentHistoryTab";
 import { StudentTicketsTab } from "@/pages/dashboards/student/StudentTicketsTab";
-import { ExamTab } from "@/pages/student/ExamTab";
 import type { AccountStatus, DriveSlot, FreeDriveWindow, UserProfile } from "@/types";
 import { isPresenceEffectivelyOnline } from "@/utils/presence";
 import {
@@ -79,13 +78,12 @@ import {
   saveSeenDriveKeys,
 } from "@/lib/studentHomeDriveNotifications";
 
-type StudentNavTab = "home" | "chat" | "tickets" | "exam" | "history" | "settings";
+type StudentNavTab = "home" | "chat" | "tickets" | "history" | "settings";
 
 const STUDENT_DASH_TABS = [
   "home",
   "chat",
   "tickets",
-  "exam",
   "history",
   "settings",
 ] as const satisfies readonly StudentNavTab[];
@@ -140,17 +138,6 @@ function IconTicketsNav({ className }: { className?: string }) {
       <path
         fill="currentColor"
         d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"
-      />
-    </svg>
-  );
-}
-
-function IconExamNav({ className }: { className?: string }) {
-  return (
-    <svg className={className} viewBox="0 0 24 24" aria-hidden>
-      <path
-        fill="currentColor"
-        d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm4 18H6V4h7v5h5v11zm-8-8h6v2H10v-2zm0 4h8v2H10v-2z"
       />
     </svg>
   );
@@ -597,7 +584,6 @@ const navItems: {
   { id: "home", label: "Главная", Icon: IconHome },
   { id: "chat", label: "Чат", Icon: IconChatNav },
   { id: "tickets", label: "Билеты", Icon: IconTicketsNav },
-  { id: "exam", label: "Экзамен", Icon: IconExamNav },
   { id: "history", label: "История", Icon: IconHistory },
   { id: "settings", label: "Настройки", Icon: IconSettings },
 ];
@@ -1386,7 +1372,6 @@ function StudentDashboardShell() {
             </div>
           ) : null}
           {tab === "tickets" ? <StudentTicketsTab /> : null}
-          {tab === "exam" ? <ExamTab /> : null}
           {tab === "chat" ? (
             <AdminChatTab
               chatHeaderMode="default"
