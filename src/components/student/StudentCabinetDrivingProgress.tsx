@@ -19,12 +19,21 @@ const DRIVE_SCALE_BANDS: readonly { lenUnits: number; activeColor: string; minCo
   const u = RING_DASH_UNITS;
   const toUnits = (d: number) => (d / STUDENT_CABINET_REQUIRED_DRIVES) * u;
   return [
-    { lenUnits: toUnits(d1), activeColor: "#facc15", minCompleted: 1 },
-    { lenUnits: toUnits(d2), activeColor: "#22c55e", minCompleted: 8 },
-    { lenUnits: toUnits(d3), activeColor: "#a855f7", minCompleted: 16 },
-    { lenUnits: toUnits(d4), activeColor: "#3b82f6", minCompleted: 24 },
+    { lenUnits: toUnits(d1), activeColor: "#fde047", minCompleted: 1 },
+    { lenUnits: toUnits(d2), activeColor: "#4ade80", minCompleted: 8 },
+    { lenUnits: toUnits(d3), activeColor: "#e879f9", minCompleted: 16 },
+    { lenUnits: toUnits(d4), activeColor: "#38bdf8", minCompleted: 24 },
   ];
 })();
+
+const RING_RADIUS = 15.915;
+
+/** Положение «ползунка» на кольце — конец дуги текущего прогресса (от 12 ч по часовой). */
+function progressKnobXY(frac01: number): { x: number; y: number } {
+  const f = Math.max(0, Math.min(1, frac01));
+  const a = 2 * Math.PI * f;
+  return { x: 18 + RING_RADIUS * Math.sin(a), y: 18 - RING_RADIUS * Math.cos(a) };
+}
 
 type DriveTier = {
   id: "novice" | "amateur" | "pro" | "expert";
@@ -56,6 +65,8 @@ function DrivesRing({ completed, total }: { completed: number; total: number }) 
   const pastDash = `${pastFrac * u} ${u - pastFrac * u}`;
   const currentDash = `${sliceFrac * u} ${u - sliceFrac * u}`;
   const currentOffset = -pastFrac * u;
+  const thumbPos =
+    completed > 0 && totalFrac > 0 ? progressKnobXY(totalFrac) : null;
   const bandOffsets: number[] = [];
   let run = 0;
   for (const b of DRIVE_SCALE_BANDS) {
@@ -64,7 +75,16 @@ function DrivesRing({ completed, total }: { completed: number; total: number }) 
   }
   return (
     <div className="student-cab-drive-ring-wrap">
-      <svg className="student-cab-drive-ring-svg" viewBox="0 0 36 36" aria-hidden>
+      <svg
+        className="student-cab-drive-ring-svg"
+        viewBox="0 0 36 36"
+        role="img"
+        aria-label={
+          completed > 0
+            ? `Прогресс вождений: ${completed} из ${total}. Яркая точка — текущее положение на шкале.`
+            : `Прогресс вождений: ${completed} из ${total}`
+        }
+      >
         <circle className="student-cab-drive-ring-bg" cx="18" cy="18" r="15.915" fill="none" strokeWidth="3" />
         {DRIVE_SCALE_BANDS.map((band, i) => {
           const len = band.lenUnits;
@@ -78,7 +98,6 @@ function DrivesRing({ completed, total }: { completed: number; total: number }) 
               cy="18"
               r="15.915"
               fill="none"
-              strokeWidth="3"
               stroke={reached ? band.activeColor : "var(--student-cab-drive-scale-inactive)"}
               strokeDasharray={`${len} ${gap}`}
               strokeDashoffset={-(bandOffsets[i] ?? 0)}
@@ -93,7 +112,6 @@ function DrivesRing({ completed, total }: { completed: number; total: number }) 
             cy="18"
             r="15.915"
             fill="none"
-            strokeWidth="3"
             strokeDasharray={pastDash}
             transform="rotate(-90 18 18)"
           />
@@ -105,12 +123,14 @@ function DrivesRing({ completed, total }: { completed: number; total: number }) 
             cy="18"
             r="15.915"
             fill="none"
-            strokeWidth="3"
             strokeDasharray={currentDash}
             strokeDashoffset={currentOffset}
             strokeLinecap="round"
             transform="rotate(-90 18 18)"
           />
+        ) : null}
+        {thumbPos ? (
+          <circle className="student-cab-drive-ring-thumb" cx={thumbPos.x} cy={thumbPos.y} r="2.85" />
         ) : null}
       </svg>
       <div className="student-cab-drive-ring-center">
