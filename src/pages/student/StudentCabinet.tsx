@@ -42,8 +42,8 @@ export function StudentCabinet() {
         <div className="student-cabinet-blocks">
           <StudentCabinetTalonBalance />
           <StudentCabinetDrivingProgress />
-          <StudentCabinetExams />
           <StudentCabinetDrivingHistory />
+          <StudentCabinetExams />
         </div>
       </div>
     </div>

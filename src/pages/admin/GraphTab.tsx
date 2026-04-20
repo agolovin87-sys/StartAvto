@@ -275,7 +275,6 @@ export function AdminInternalExamSection() {
                 ))}
               </select>
             </label>
-            <AdminScheduledExamsSubsection groups={groups} groupId={groupId} />
             {err ? (
               <p className="form-error" role="alert">
                 {err}
@@ -507,6 +506,7 @@ export function AdminInternalExamSection() {
                 )
               ) : null}
             </div>
+            <AdminScheduledExamsSubsection groups={groups} groupId={groupId} />
           </>
         )}
       </div>
