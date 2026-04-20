@@ -14,6 +14,8 @@ export interface ScheduleLesson {
   studentName: string; // Фамилия И.О.
   instructorId: string;
   status: DriveSlot["status"];
+  /** Текст для колонки «Фактическое время» (завершённые уроки с таймерами). */
+  factualTimeLabel?: string;
 }
 
 export interface ScheduleWeekRange {
@@ -23,7 +25,12 @@ export interface ScheduleWeekRange {
   titleRu: string; // "с 01.01.2026 по 07.01.2026"
 }
 
+export type ScheduleGridCell = {
+  studentName: string;
+  factualTimeLabel: string;
+};
+
 export type ScheduleGrid = {
   times: string[];
-  byDateAndTime: Map<string, Map<string, string>>;
+  byDateAndTime: Map<string, Map<string, ScheduleGridCell>>;
 };

@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { formatShortFio } from "@/admin/formatShortFio";
+import { formatDriveSlotFactualExport } from "@/admin/scheduleFormat";
 import { subscribeInstructors } from "@/firebase/admin";
 import { fetchDriveSlotsForInstructor } from "@/firebase/drives";
 import type { ScheduleExportInstructor, ScheduleLesson, ScheduleWeekRange } from "@/types/schedule";
@@ -75,6 +76,7 @@ export function useScheduleExport() {
           studentName: formatShortFio((s.studentDisplayName || "").trim()),
           instructorId: s.instructorId,
           status: s.status,
+          factualTimeLabel: formatDriveSlotFactualExport(s),
         }))
         .sort(
           (a, b) =>

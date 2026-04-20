@@ -5,6 +5,7 @@ import { jsPDF } from "jspdf";
 import type {
   ScheduleExportInstructor,
   ScheduleGrid,
+  ScheduleGridCell,
   ScheduleLesson,
   ScheduleWeekRange,
 } from "@/types/schedule";
@@ -75,17 +76,41 @@ function buildGrid(lessons: ScheduleLesson[], week: ScheduleWeekRange): Schedule
     a.localeCompare(b, undefined, { numeric: true })
   );
 
-  const byDateAndTime = new Map<string, Map<string, string>>();
-  for (const dk of week.dateKeys) byDateAndTime.set(dk, new Map<string, string>());
+  const byDateAndTime = new Map<string, Map<string, ScheduleGridCell>>();
+  for (const dk of week.dateKeys) byDateAndTime.set(dk, new Map());
 
   for (const lesson of lessons) {
     if (!week.dateKeys.includes(lesson.date)) continue;
     if (lesson.status === "cancelled") continue;
     const row = byDateAndTime.get(lesson.date);
     if (!row) continue;
-    row.set(lesson.time, lesson.studentName || EM_DASH);
+    const factual = (lesson.factualTimeLabel ?? "").trim() || EM_DASH;
+    row.set(lesson.time, {
+      studentName: lesson.studentName || EM_DASH,
+      factualTimeLabel: factual,
+    });
   }
   return { times, byDateAndTime };
+}
+
+function factualColumnHtmlForRow(
+  time: string,
+  weekKeys: string[],
+  byDateAndTime: ScheduleGrid["byDateAndTime"]
+): string {
+  const entries: { dk: string; text: string }[] = [];
+  for (const dk of weekKeys) {
+    const cell = byDateAndTime.get(dk)?.get(time);
+    if (!cell || cell.studentName === EM_DASH) continue;
+    const t = cell.factualTimeLabel.trim();
+    if (!t || t === EM_DASH) continue;
+    entries.push({ dk, text: t });
+  }
+  if (entries.length === 0) return EM_DASH;
+  if (entries.length === 1) return escapeHtml(entries[0]!.text);
+  return entries
+    .map((e) => `${escapeHtml(dateKeyToRuDisplay(e.dk))}: ${escapeHtml(e.text)}`)
+    .join("<br/>");
 }
 
 function tableHtmlForWeek(lessons: ScheduleLesson[], weekRange: ScheduleWeekRange): string {
@@ -97,17 +122,18 @@ function tableHtmlForWeek(lessons: ScheduleLesson[], weekRange: ScheduleWeekRang
 
   const bodyRows =
     grid.times.length === 0
-      ? `<tr><td colspan="9">Нет занятий за эту неделю</td></tr>`
+      ? `<tr><td colspan="10">Нет занятий за эту неделю</td></tr>`
       : grid.times
           .map((time, idx) => {
+            const factualCol = factualColumnHtmlForRow(time, weekRange.dateKeys, grid.byDateAndTime);
             const cells = weekRange.dateKeys
               .map((dk) => {
                 const map = grid.byDateAndTime.get(dk);
-                const fio = map?.get(time) ?? EM_DASH;
+                const fio = map?.get(time)?.studentName ?? EM_DASH;
                 return `<td>${escapeHtml(fio)}</td>`;
               })
               .join("");
-            return `<tr><td>${idx + 1}</td><td>${escapeHtml(time)}</td>${cells}</tr>`;
+            return `<tr><td>${idx + 1}</td><td>${escapeHtml(time)}</td><td>${factualCol}</td>${cells}</tr>`;
           })
           .join("");
 
@@ -118,6 +144,7 @@ function tableHtmlForWeek(lessons: ScheduleLesson[], weekRange: ScheduleWeekRang
         <tr>
           <th>№ п/п</th>
           <th>Время</th>
+          <th>Фактическое время</th>
           ${dayHeaders}
         </tr>
       </thead>
@@ -316,6 +343,15 @@ export function generateScheduleHTML(
       min-width: 8.5em;
       max-width: 11em;
       white-space: nowrap;
+    }
+    .table-wrap th:nth-child(3),
+    .table-wrap td:nth-child(3) {
+      width: 14em;
+      min-width: 12em;
+      max-width: 22em;
+      white-space: normal;
+      text-align: left;
+      font-size: 11pt;
     }
   </style>
 </head>

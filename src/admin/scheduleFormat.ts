@@ -115,3 +115,19 @@ export function driveHistoryTableDateCell(slot: DriveSlot): string {
   }
   return dateKeyToRuDisplay(slot.dateKey);
 }
+
+const FACTUAL_EMPTY = "—";
+
+/**
+ * Фактическое начало и конец вождения для экспорта графика (например: «09:00 – 10:30 (90 мин.)»).
+ */
+export function formatDriveSlotFactualExport(slot: DriveSlot): string {
+  if (slot.status !== "completed") return FACTUAL_EMPTY;
+  const end = slot.liveEndedAt;
+  const start = slot.liveStudentAckAt ?? slot.liveStartedAt;
+  if (end == null || start == null) return FACTUAL_EMPTY;
+  const paused = slot.liveTotalPausedMs ?? 0;
+  const rawMs = end - start - paused;
+  const minutes = Math.max(1, Math.round(rawMs / 60_000));
+  return `${formatMsLocalHHmm(start)} – ${formatMsLocalHHmm(end)} (${minutes} мин.)`;
+}
