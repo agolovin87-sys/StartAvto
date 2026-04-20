@@ -51,7 +51,7 @@ export function InstructorCabinetRatingSection() {
         <IconInstructorCabinetRating className="instructor-cab-section-ico" />
         <span>Рейтинг</span>
       </h2>
-      <p className="field-hint instructor-cabinet-block-lead">
+      <p className="field-hint instructor-cabinet-block-lead instructor-cabinet-rating-lead">
         Средняя оценка от курсантов после завершённых вождений (звёзды 1–5 при закрытии урока).
       </p>
       {ratingStats.count === 0 ? (
@@ -59,7 +59,7 @@ export function InstructorCabinetRatingSection() {
           Пока нет оценок: после вождения курсант может поставить звёзды инструктору.
         </p>
       ) : (
-        <>
+        <div className="instructor-cabinet-rating-row">
           <div
             className="instructor-cabinet-rating-badge"
             role="img"
@@ -73,7 +73,7 @@ export function InstructorCabinetRatingSection() {
           <p className="instructor-cabinet-rating-value">
             из 5 · оценок: {ratingStats.count}
           </p>
-        </>
+        </div>
       )}
     </section>
   );
