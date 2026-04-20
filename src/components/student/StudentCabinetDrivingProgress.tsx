@@ -96,6 +96,7 @@ function DrivesRing({ completed, total }: { completed: number; total: number }) 
           const len = band.lenUnits;
           const gap = RING_DASH_UNITS - len;
           const reached = completed >= band.minCompleted;
+          if (!reached) return null;
           return (
             <circle
               key={i}
@@ -104,7 +105,7 @@ function DrivesRing({ completed, total }: { completed: number; total: number }) 
               cy="18"
               r="15.915"
               fill="none"
-              stroke={reached ? band.activeColor : "var(--student-cab-drive-scale-inactive)"}
+              stroke={band.activeColor}
               strokeDasharray={`${len} ${gap}`}
               strokeDashoffset={-(bandOffsets[i] ?? 0)}
               transform="rotate(-90 18 18)"
