@@ -19,10 +19,10 @@ const DRIVE_SCALE_BANDS: readonly { lenUnits: number; activeColor: string; minCo
   const u = RING_DASH_UNITS;
   const toUnits = (d: number) => (d / STUDENT_CABINET_REQUIRED_DRIVES) * u;
   return [
-    { lenUnits: toUnits(d1), activeColor: "#fde047", minCompleted: 1 },
-    { lenUnits: toUnits(d2), activeColor: "#4ade80", minCompleted: 8 },
-    { lenUnits: toUnits(d3), activeColor: "#e879f9", minCompleted: 16 },
-    { lenUnits: toUnits(d4), activeColor: "#38bdf8", minCompleted: 24 },
+    { lenUnits: toUnits(d1), activeColor: "#facc15", minCompleted: 1 },
+    { lenUnits: toUnits(d2), activeColor: "#22c55e", minCompleted: 8 },
+    { lenUnits: toUnits(d3), activeColor: "#d946ef", minCompleted: 16 },
+    { lenUnits: toUnits(d4), activeColor: "#0ea5e9", minCompleted: 24 },
   ];
 })();
 
@@ -33,6 +33,11 @@ function progressKnobXY(frac01: number): { x: number; y: number } {
   const f = Math.max(0, Math.min(1, frac01));
   const a = 2 * Math.PI * f;
   return { x: 18 + RING_RADIUS * Math.sin(a), y: 18 - RING_RADIUS * Math.cos(a) };
+}
+
+function progressArrowAngleDeg(frac01: number): number {
+  const f = Math.max(0, Math.min(1, frac01));
+  return f * 360;
 }
 
 type DriveTier = {
@@ -65,8 +70,9 @@ function DrivesRing({ completed, total }: { completed: number; total: number }) 
   const pastDash = `${pastFrac * u} ${u - pastFrac * u}`;
   const currentDash = `${sliceFrac * u} ${u - sliceFrac * u}`;
   const currentOffset = -pastFrac * u;
-  const thumbPos =
+  const arrowPos =
     completed > 0 && totalFrac > 0 ? progressKnobXY(totalFrac) : null;
+  const arrowAngle = progressArrowAngleDeg(totalFrac);
   const bandOffsets: number[] = [];
   let run = 0;
   for (const b of DRIVE_SCALE_BANDS) {
@@ -81,7 +87,7 @@ function DrivesRing({ completed, total }: { completed: number; total: number }) 
         role="img"
         aria-label={
           completed > 0
-            ? `Прогресс вождений: ${completed} из ${total}. Яркая точка — текущее положение на шкале.`
+            ? `Прогресс вождений: ${completed} из ${total}. Стрелка показывает текущее положение на шкале.`
             : `Прогресс вождений: ${completed} из ${total}`
         }
       >
@@ -129,8 +135,10 @@ function DrivesRing({ completed, total }: { completed: number; total: number }) 
             transform="rotate(-90 18 18)"
           />
         ) : null}
-        {thumbPos ? (
-          <circle className="student-cab-drive-ring-thumb" cx={thumbPos.x} cy={thumbPos.y} r="2.85" />
+        {arrowPos ? (
+          <g transform={`translate(${arrowPos.x} ${arrowPos.y}) rotate(${arrowAngle})`}>
+            <polygon className="student-cab-drive-ring-arrow" points="0,-3.6 2.35,2.1 -2.35,2.1" />
+          </g>
         ) : null}
       </svg>
       <div className="student-cab-drive-ring-center">
