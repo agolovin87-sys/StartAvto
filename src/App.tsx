@@ -139,7 +139,7 @@ export default function App() {
         <Route path="/app" element={<RoleHome />} />
         <Route path="/app/admin" element={<ProtectedApp role="admin" />} />
         <Route
-          path="/app/instructor"
+          path="/app/instructor/*"
           element={
             <InstructorOnboardingProvider>
               <ProtectedApp role="instructor" />
