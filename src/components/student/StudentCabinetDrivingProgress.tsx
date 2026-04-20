@@ -40,6 +40,14 @@ function progressArrowAngleDeg(frac01: number): number {
   return f * 360;
 }
 
+function activeBandColorForCompleted(completed: number): string {
+  for (let i = DRIVE_SCALE_BANDS.length - 1; i >= 0; i -= 1) {
+    const band = DRIVE_SCALE_BANDS[i];
+    if (band && completed >= band.minCompleted) return band.activeColor;
+  }
+  return "#facc15";
+}
+
 type DriveTier = {
   id: "novice" | "amateur" | "pro" | "expert";
   label: string;
@@ -70,6 +78,7 @@ function DrivesRing({ completed, total }: { completed: number; total: number }) 
   const pastDash = `${pastFrac * u} ${u - pastFrac * u}`;
   const currentDash = `${sliceFrac * u} ${u - sliceFrac * u}`;
   const currentOffset = -pastFrac * u;
+  const currentColor = activeBandColorForCompleted(completed);
   const arrowPos =
     completed > 0 && totalFrac > 0 ? progressKnobXY(totalFrac) : null;
   const arrowAngle = progressArrowAngleDeg(totalFrac);
@@ -130,6 +139,7 @@ function DrivesRing({ completed, total }: { completed: number; total: number }) 
             cy="18"
             r="15.915"
             fill="none"
+            stroke={currentColor}
             strokeDasharray={currentDash}
             strokeDashoffset={currentOffset}
             strokeLinecap="round"
