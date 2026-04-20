@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
-import { Route, Routes } from "react-router-dom";
+import { Route, Routes, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 import { useChatUnread } from "@/context/ChatUnreadContext";
 import { ChatNavContext } from "@/context/ChatNavContext";
@@ -31,7 +31,7 @@ import {
 } from "@/lib/instructorHomeDriveNotifications";
 import type { DriveSlot, FreeDriveWindow } from "@/types";
 
-type InstructorNavTab = "home" | "booking" | "chat" | "tickets" | "history" | "settings";
+export type InstructorNavTab = "home" | "booking" | "chat" | "tickets" | "history" | "settings";
 
 const INSTRUCTOR_DASH_TABS = [
   "home",
@@ -123,9 +123,20 @@ const navItems: {
 
 function InstructorDashboardShell() {
   const { profile, user } = useAuth();
+  const location = useLocation();
+  const navigate = useNavigate();
   const instructorUid = (user?.uid ?? profile?.uid ?? "").trim();
   const [tab, setTab] = useState<InstructorNavTab>("home");
   useDashboardTabHistory(tab, setTab, INSTRUCTOR_DASH_TABS);
+
+  useEffect(() => {
+    const s = location.state as { instructorTab?: InstructorNavTab } | null;
+    if (!s || typeof s !== "object") return;
+    if (s.instructorTab && (INSTRUCTOR_DASH_TABS as readonly string[]).includes(s.instructorTab)) {
+      setTab(s.instructorTab);
+      navigate(".", { replace: true, state: {} });
+    }
+  }, [location.state, navigate]);
   const [chatThreadOpen, setChatThreadOpen] = useState(false);
   const { setShellHeaderHidden } = useChatThreadShell();
   const { reportDashboardTab, totalUnread } = useChatUnread();
