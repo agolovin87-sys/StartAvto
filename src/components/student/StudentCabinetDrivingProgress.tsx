@@ -1,5 +1,6 @@
 import { useMemo } from "react";
 import { useAuth } from "@/context/AuthContext";
+import { IconCabinetProgress } from "@/components/student/studentCabinetSectionIcons";
 
 /** Норматив обязательных вождений по программе (для кольца прогресса). */
 export const STUDENT_CABINET_REQUIRED_DRIVES = 29;
@@ -129,8 +130,12 @@ export function StudentCabinetDrivingProgress() {
 
   return (
     <section className="student-cabinet-card student-cab-drive-card" aria-labelledby="cabinet-drive-title">
-      <h2 id="cabinet-drive-title" className="student-cabinet-talon-head-title">
-        Прогресс вождений
+      <h2
+        id="cabinet-drive-title"
+        className="student-cabinet-talon-head-title student-cab-title-with-ico"
+      >
+        <IconCabinetProgress />
+        <span>Прогресс вождений</span>
       </h2>
       <div className="student-cab-drive-body">
         <DrivesRing completed={completed} total={total} />

@@ -4,6 +4,7 @@ import { formatShortFio } from "@/admin/formatShortFio";
 import { useAuth } from "@/context/AuthContext";
 import { subscribeTalonHistoryForUser, type TalonHistoryEntry } from "@/firebase/history";
 import type { UserRole } from "@/types";
+import { IconCabinetOps, IconCabinetTalon } from "@/components/student/studentCabinetSectionIcons";
 
 function IconChevron({ open }: { open: boolean }) {
   return (
@@ -76,8 +77,12 @@ export function StudentCabinetTalonBalance() {
   return (
     <section className="student-cabinet-card student-cabinet-talon-brief" aria-labelledby="cabinet-talon-title">
       <div className="student-cabinet-talon-head">
-        <h2 id="cabinet-talon-title" className="student-cabinet-talon-head-title">
-          Баланс талонов
+        <h2
+          id="cabinet-talon-title"
+          className="student-cabinet-talon-head-title student-cab-title-with-ico"
+        >
+          <IconCabinetTalon />
+          <span>Баланс талонов</span>
         </h2>
         <div className="student-cabinet-talon-head-values" aria-label={`Талонов на счёте: ${balance}`}>
           <span
@@ -96,7 +101,10 @@ export function StudentCabinetTalonBalance() {
         aria-controls="cabinet-talon-ops-panel"
         onClick={() => setOpsOpen((v) => !v)}
       >
-        <span className="instructor-home-section-toggle-label">Последние операции</span>
+        <span className="student-cab-toggle-label-inner">
+          <IconCabinetOps />
+          <span className="instructor-home-section-toggle-label">Последние операции</span>
+        </span>
         <span className="instructor-home-section-toggle-meta">{lastThree.length}</span>
         <IconChevron open={opsOpen} />
       </button>

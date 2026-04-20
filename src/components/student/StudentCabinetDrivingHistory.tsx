@@ -4,6 +4,7 @@ import { useAuth } from "@/context/AuthContext";
 import { useStudentDriveLessons } from "@/hooks/useStudentDriveLessons";
 import type { LessonDriveError } from "@/types/errorTemplate";
 import type { DrivingLesson } from "@/types/studentCabinet";
+import { IconCabinetHistory } from "@/components/student/studentCabinetSectionIcons";
 
 function IconChevron({ open }: { open: boolean }) {
   return (
@@ -99,7 +100,10 @@ export function StudentCabinetDrivingHistory() {
         aria-controls="cabinet-drive-history-panel"
         onClick={() => setOpen((v) => !v)}
       >
-        <span className="instructor-home-section-toggle-label">История вождений</span>
+        <span className="student-cab-toggle-label-inner">
+          <IconCabinetHistory />
+          <span className="instructor-home-section-toggle-label">История вождений</span>
+        </span>
         <span className="instructor-home-section-toggle-meta">{rows.length}</span>
         <IconChevron open={open} />
       </button>

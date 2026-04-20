@@ -4,6 +4,7 @@ import { StudentCabinetTalonBalance } from "@/components/student/StudentCabinetT
 import { StudentCabinetDrivingProgress } from "@/components/student/StudentCabinetDrivingProgress";
 import { StudentCabinetDrivingHistory } from "@/components/student/StudentCabinetDrivingHistory";
 import { StudentCabinetExams } from "@/components/student/StudentCabinetExams";
+import { StudentCabinetInternalDrivingBlock } from "@/components/student/StudentCabinetInternalDrivingBlock";
 
 /**
  * Личный кабинет курсанта — отдельный маршрут `/app/student/cabinet` (без нижней навигации).
@@ -44,6 +45,7 @@ export function StudentCabinet() {
           <StudentCabinetDrivingProgress />
           <StudentCabinetDrivingHistory />
           <StudentCabinetExams />
+          <StudentCabinetInternalDrivingBlock />
         </div>
       </div>
     </div>

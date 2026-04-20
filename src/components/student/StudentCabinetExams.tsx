@@ -4,6 +4,7 @@ import { useStudentExam } from "@/hooks/useStudentExam";
 import type { AdminScheduledExam } from "@/types/scheduledExam";
 import { ADMIN_SCHEDULED_EXAM_TYPE_LABEL } from "@/types/scheduledExam";
 import { subscribeAdminScheduledExamsByGroup } from "@/services/scheduledExamService";
+import { IconCabinetExams } from "@/components/student/studentCabinetSectionIcons";
 import type { StudentExamView } from "@/types/internalExam";
 
 const PLACEHOLDER = "Дата не установлена…";
@@ -83,8 +84,12 @@ export function StudentCabinetExams() {
 
   return (
     <section className="student-cabinet-card student-cab-exams-card" aria-labelledby="cabinet-exams-title">
-      <h2 id="cabinet-exams-title" className="student-cabinet-talon-head-title">
-        Экзамены
+      <h2
+        id="cabinet-exams-title"
+        className="student-cabinet-talon-head-title student-cab-title-with-ico"
+      >
+        <IconCabinetExams />
+        <span>Экзамены</span>
       </h2>
       {loading ? (
         <p className="student-cab-exams-hint">Загрузка…</p>
@@ -105,8 +110,8 @@ export function StudentCabinetExams() {
         </ul>
       )}
       <p className="student-cab-exams-footnote">
-        Даты теории и экзамена в ГИБДД задаёт администратор. Внутренний экзамен по вождению назначает инструктор
-        во вкладке «Запись».
+        Даты теории и экзамена в ГИБДД задаёт администратор. Внутренний экзамен по вождению назначает инструктор во
+        вкладке «Запись»; сессия и подробности — в блоке ниже.
       </p>
     </section>
   );
