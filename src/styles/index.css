@@ -13561,6 +13561,7 @@ html[data-theme="light"] .student-cab-drive-card {
   display: flex;
   flex-wrap: wrap;
   align-items: flex-start;
+  margin-top: 0.4rem;
   gap: 1rem;
 }
 
@@ -13589,17 +13590,30 @@ html[data-theme="light"] .student-cab-drive-card {
 }
 
 .student-cab-drive-ring-arrow {
-  fill: #eab308;
+  fill: #facc15;
   stroke: #ffffff;
   stroke-width: 0.45;
-  filter: drop-shadow(0 0 6px rgba(234, 179, 8, 0.8)) drop-shadow(0 0 2px rgba(255, 255, 255, 0.8));
+  filter: drop-shadow(0 0 7px rgba(250, 204, 21, 0.88)) drop-shadow(0 0 2px rgba(255, 255, 255, 0.9));
+  animation: student-cab-drive-arrow-pulse 1.9s ease-in-out infinite;
   pointer-events: none;
 }
 
 html[data-theme="light"] .student-cab-drive-ring-arrow {
-  fill: #0284c7;
+  fill: #0ea5e9;
   stroke: #020617;
-  filter: drop-shadow(0 0 4px rgba(2, 132, 199, 0.6)) drop-shadow(0 0 1px rgba(2, 6, 23, 0.3));
+  filter: drop-shadow(0 0 5px rgba(14, 165, 233, 0.7)) drop-shadow(0 0 1px rgba(2, 6, 23, 0.3));
+}
+
+@keyframes student-cab-drive-arrow-pulse {
+  0%,
+  100% {
+    opacity: 0.62;
+    transform: scale(0.96);
+  }
+  45% {
+    opacity: 1;
+    transform: scale(1.08);
+  }
 }
 
 .student-cab-drive-ring-fg {
@@ -13725,9 +13739,9 @@ html[data-theme="light"] .student-cab-drive-split-current {
 }
 
 .student-cab-drive-badge--pro {
-  color: #2e1065;
-  background: rgba(162, 28, 175, 0.54);
-  border: 1px solid rgba(162, 28, 175, 0.96);
+  color: #ffffff;
+  background: rgba(217, 70, 239, 0.7);
+  border: 1px solid rgba(217, 70, 239, 0.98);
 }
 
 .student-cab-drive-badge--expert {
@@ -13769,8 +13783,8 @@ html[data-theme="light"] .student-cab-drive-split-current {
 }
 
 .student-cab-drive-dot--pro {
-  background: #a21caf;
-  box-shadow: 0 0 4px rgba(162, 28, 175, 0.5);
+  background: #d946ef;
+  box-shadow: 0 0 5px rgba(217, 70, 239, 0.62);
 }
 
 .student-cab-drive-dot--expert {

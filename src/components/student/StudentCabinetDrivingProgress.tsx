@@ -19,10 +19,10 @@ const DRIVE_SCALE_BANDS: readonly { lenUnits: number; activeColor: string; minCo
   const u = RING_DASH_UNITS;
   const toUnits = (d: number) => (d / STUDENT_CABINET_REQUIRED_DRIVES) * u;
   return [
-    { lenUnits: toUnits(d1), activeColor: "#eab308", minCompleted: 1 },
-    { lenUnits: toUnits(d2), activeColor: "#16a34a", minCompleted: 8 },
-    { lenUnits: toUnits(d3), activeColor: "#a21caf", minCompleted: 16 },
-    { lenUnits: toUnits(d4), activeColor: "#0284c7", minCompleted: 24 },
+    { lenUnits: toUnits(d1), activeColor: "#facc15", minCompleted: 1 },
+    { lenUnits: toUnits(d2), activeColor: "#22c55e", minCompleted: 8 },
+    { lenUnits: toUnits(d3), activeColor: "#d946ef", minCompleted: 16 },
+    { lenUnits: toUnits(d4), activeColor: "#0ea5e9", minCompleted: 24 },
   ];
 })();
 
