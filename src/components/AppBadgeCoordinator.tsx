@@ -2,7 +2,6 @@ import { useEffect } from "react";
 import { useNotificationCount } from "@/hooks/useNotificationCount";
 import { useBadging } from "@/hooks/useBadging";
 import { BADGE_PREF_CHANGED_EVENT } from "@/utils/badging";
-import { BadgeDebug } from "@/components/BadgeDebug";
 
 /**
  * Держит бейдж в актуальном состоянии: счётчик из useNotificationCount + реакция на настройки и вкладку.
@@ -31,5 +30,5 @@ export function AppBadgeCoordinator() {
     }
   }, [badgeCount, total, updateBadge]);
 
-  return <BadgeDebug computedTotal={total} />;
+  return null;
 }
