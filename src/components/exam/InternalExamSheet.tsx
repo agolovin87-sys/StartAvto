@@ -259,7 +259,7 @@ export function InternalExamSheet({
           rows={4}
           value={comment}
           onChange={(e) => setComment(e.target.value)}
-          placeholder="Можно оставить пустым"
+          placeholder="вкратце опишите ошибки..."
         />
       </label>
 
