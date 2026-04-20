@@ -451,7 +451,10 @@ service cloud.firestore {
           && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['liveStudentAckAt']);
       }
 
-      /** Завершение вождения: status + снятие полей live*. */
+      /**
+       * Завершение вождения: completed + liveEndedAt; liveStartedAt / liveStudentAckAt / liveTotalPausedMs
+       * сохраняются для журнала (клиент не удаляет их). Снимается только пауза (livePausedAt).
+       */
       function driveSlotInstructorCompletesLive() {
         return isInstructorAccount()
           && resource.data.instructorId == request.auth.uid
@@ -460,13 +463,13 @@ service cloud.firestore {
           && request.resource.data.status == 'completed'
           && request.resource.data.instructorId == request.auth.uid
           && request.resource.data.studentId == resource.data.studentId
-          && request.resource.data.get('liveStartedAt', null) == null
-          && request.resource.data.get('liveStudentAckAt', null) == null
+          && request.resource.data.get('liveStartedAt', null) == resource.data.get('liveStartedAt', null)
+          && request.resource.data.get('liveStudentAckAt', null) == resource.data.get('liveStudentAckAt', null)
+          && request.resource.data.get('liveTotalPausedMs', 0) == resource.data.get('liveTotalPausedMs', 0)
           && request.resource.data.get('livePausedAt', null) == null
-          && request.resource.data.get('liveTotalPausedMs', null) == null
           && request.resource.data.get('liveEndedAt', null) != null
           && request.resource.data.diff(resource.data).affectedKeys()
-            .hasOnly(['status', 'liveStartedAt', 'liveStudentAckAt', 'livePausedAt', 'liveTotalPausedMs', 'liveEndedAt', 'studentDisplayName']);
+            .hasOnly(['status', 'livePausedAt', 'liveEndedAt', 'studentDisplayName']);
       }
 
       /** Курсант после завершённого урока: оценка инструктора 1–5 (один раз). */
