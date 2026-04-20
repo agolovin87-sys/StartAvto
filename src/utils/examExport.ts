@@ -12,6 +12,46 @@ import {
 } from "@/types/internalExam";
 import { exportToPDF as exportHtmlToPdf } from "@/utils/exportUtils";
 
+const REQUIRED_EXPORT_EXERCISES: readonly { id: string; label: string }[] = [
+  {
+    id: "ex_intersection_unregulated_equal",
+    label: "Проезд нерегулируемого перекрестка равнозначных дорог (при его наличии)",
+  },
+  {
+    id: "ex_intersection_unregulated_unequal",
+    label: "Проезд нерегулируемого перекрестка неравнозначных дорог",
+  },
+  {
+    id: "ex_left_right_turns",
+    label: "Левые и правые повороты",
+  },
+  {
+    id: "ex_railway_crossing",
+    label: "Проезд железнодорожного переезда (при наличии)",
+  },
+  {
+    id: "ex_lane_change_multi_lane",
+    label:
+      "Перестроение на участке дороги, имеющей 2 или более полосы для движения в одном направлении (при наличии)",
+  },
+  {
+    id: "ex_overtake_or_ahead",
+    label: "Обгон или опережение (при наличии такой возможности)",
+  },
+  {
+    id: "ex_max_allowed_speed",
+    label: "Движение с максимальной разрешенной скоростью",
+  },
+  {
+    id: "ex_pedestrian_crossings_and_stops",
+    label: "Проезд пешеходных переходов и мест остановок маршрутных транспортных средств",
+  },
+  {
+    id: "ex_braking_and_stop_various_speeds",
+    label: "Торможение и остановка при движении на различных скоростях",
+  },
+];
+
 function escapeHtml(s: string): string {
   return s
     .replace(/&/g, "&amp;")
@@ -63,7 +103,19 @@ export function generateExamWordHTML(sheet: InternalExamSheet, options?: ExamWor
   const hintPt = bodyPt - 1.5;
   const lh = bodyPt <= 9 ? 1.1 : 1.12;
   const resultText = sheet.isPassed ? "Сдан" : "Не сдан";
-  const exerciseRows = INTERNAL_EXAM_EXERCISES.map(
+  const exerciseDefs = (() => {
+    const byId = new Map<string, { id: string; label: string }>();
+    const byLabel = new Set<string>();
+    for (const e of INTERNAL_EXAM_EXERCISES) {
+      byId.set(e.id, e);
+      byLabel.add(e.label);
+    }
+    for (const e of REQUIRED_EXPORT_EXERCISES) {
+      if (!byId.has(e.id) && !byLabel.has(e.label)) byId.set(e.id, e);
+    }
+    return Array.from(byId.values());
+  })();
+  const exerciseRows = exerciseDefs.map(
     (e) =>
       `<tr><td>${escapeHtml(e.label)}</td><td style="text-align:center">${sheet.exercises[e.id] ? "✓" : "—"}</td></tr>`
   ).join("");
