@@ -260,6 +260,7 @@ export function AdminInternalExamSection() {
           <p className="admin-settings-section-desc">Загрузка групп…</p>
         ) : (
           <>
+            <AdminScheduledExamsSubsection groups={groups} />
             <label className="field admin-internal-exam-field">
               <span className="field-label">Учебная группа</span>
               <select
@@ -506,7 +507,6 @@ export function AdminInternalExamSection() {
                 )
               ) : null}
             </div>
-            <AdminScheduledExamsSubsection groups={groups} />
           </>
         )}
       </div>

@@ -12036,9 +12036,9 @@ html[data-theme="light"] .instructor-error-template-selector__suggest-item--pick
 }
 
 .admin-scheduled-exams-sub {
-  margin: 1rem 0 0;
-  padding: 0.85rem 0 0;
-  border-top: 1px solid var(--theme-line-soft);
+  margin: 0 0 1rem;
+  padding: 0 0 0.85rem;
+  border-bottom: 1px solid var(--theme-line-soft);
 }
 
 .admin-scheduled-exams-sub__head {
