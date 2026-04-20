@@ -167,17 +167,6 @@ export function StudentCabinetDrivingProgress() {
         <div className="student-cab-drive-side">
           <p className="student-cab-drive-role-label">Текущий уровень</p>
           <p className={`student-cab-drive-badge ${tier.badgeClass}`}>{tier.label}</p>
-          {completed > 0 ? (
-            <p className="student-cab-drive-split-hint">
-              <span className="student-cab-drive-split-hint-part">
-                <span className="student-cab-drive-split-past" aria-hidden /> прошлый прогресс
-              </span>
-              <span aria-hidden>·</span>
-              <span className="student-cab-drive-split-hint-part">
-                <span className="student-cab-drive-split-current" aria-hidden /> текущий (последнее вождение)
-              </span>
-            </p>
-          ) : null}
           <ul className="student-cab-drive-legend">
             <li>
               <span className="student-cab-drive-dot student-cab-drive-dot--novice" /> 0–7 — новичок
