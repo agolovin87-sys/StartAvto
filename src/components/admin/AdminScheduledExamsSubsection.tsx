@@ -115,37 +115,40 @@ export function AdminScheduledExamsSubsection({ groups }: Props) {
         <p className="admin-settings-section-desc admin-scheduled-exams-loading">Загрузка…</p>
       ) : null}
       {showTable ? (
-        <div className="admin-schedule-table-wrap admin-internal-exam-table-wrap">
-          <table className="admin-schedule-table">
-            <thead>
-              <tr>
-                <th>Группа</th>
-                <th>Тип экзамена</th>
-                <th>Дата и время</th>
-                <th style={{ width: "6rem" }} aria-label="Действия" />
-              </tr>
-            </thead>
-            <tbody>
-              {rows.map((r) => (
-                <tr key={r.id}>
-                  <td>{r.groupName.trim() || r.groupId || "—"}</td>
-                  <td>{ADMIN_SCHEDULED_EXAM_TYPE_LABEL[r.examType]}</td>
-                  <td>
-                    {formatRuDate(r.examDate)} · {r.examTime}
-                  </td>
-                  <td>
-                    <button
-                      type="button"
-                      className="btn btn-danger btn-sm"
-                      onClick={() => setDeleteId(r.id)}
-                    >
-                      Удалить
-                    </button>
-                  </td>
+        <div className="admin-scheduled-exams-table-block">
+          <h4 className="admin-scheduled-exams-created-title">Созданные экзамены:</h4>
+          <div className="admin-schedule-table-wrap admin-internal-exam-table-wrap">
+            <table className="admin-schedule-table">
+              <thead>
+                <tr>
+                  <th>Группа</th>
+                  <th>Тип экзамена</th>
+                  <th>Дата и время</th>
+                  <th style={{ width: "6rem" }} aria-label="Действия" />
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {rows.map((r) => (
+                  <tr key={r.id}>
+                    <td>{r.groupName.trim() || r.groupId || "—"}</td>
+                    <td>{ADMIN_SCHEDULED_EXAM_TYPE_LABEL[r.examType]}</td>
+                    <td>
+                      {formatRuDate(r.examDate)} · {r.examTime}
+                    </td>
+                    <td>
+                      <button
+                        type="button"
+                        className="btn btn-danger btn-sm"
+                        onClick={() => setDeleteId(r.id)}
+                      >
+                        Удалить
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       ) : null}
       {err ? (

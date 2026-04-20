@@ -12082,6 +12082,18 @@ html[data-theme="light"] .instructor-error-template-selector__suggest-item--pick
   margin-top: 0.35rem;
 }
 
+.admin-scheduled-exams-table-block {
+  margin-top: 0.35rem;
+}
+
+.admin-scheduled-exams-created-title {
+  margin: 0 0 0.45rem;
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: var(--theme-heading);
+  line-height: 1.3;
+}
+
 .admin-scheduled-exams-modal {
   max-width: 22rem;
   width: calc(100vw - 2rem);
