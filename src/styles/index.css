@@ -13677,7 +13677,9 @@ html[data-theme="light"] .student-cab-drive-card {
 
 .student-cab-drive-ring-arrow {
   fill: #22c55e;
-  stroke: none;
+  stroke: #ffffff;
+  stroke-width: 0.5;
+  stroke-linejoin: round;
   filter: drop-shadow(0 0 6px rgba(34, 197, 94, 0.85));
   animation: student-cab-drive-arrow-pulse 1.9s ease-in-out infinite;
   pointer-events: none;
@@ -13685,6 +13687,7 @@ html[data-theme="light"] .student-cab-drive-card {
 
 html[data-theme="light"] .student-cab-drive-ring-arrow {
   fill: #16a34a;
+  stroke: #ffffff;
   filter: drop-shadow(0 0 5px rgba(22, 163, 74, 0.75));
 }
 
