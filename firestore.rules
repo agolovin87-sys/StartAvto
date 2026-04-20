@@ -1094,6 +1094,30 @@ service cloud.firestore {
         && resource.data.instructorId == request.auth.uid;
     }
 
+    /**
+     * Запланированные админом даты: внутр. теория, экзамен в РЭО ГИБДД (по учебной группе).
+     */
+    match /adminScheduledExams/{examId} {
+      function studentReadsOwnGroupScheduledExam() {
+        return isStudentAccount()
+          && resource.data.groupId
+            == get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('groupId', '');
+      }
+      allow read: if isAdmin() || studentReadsOwnGroupScheduledExam();
+      allow create: if isAdmin()
+        && request.resource.data.groupId is string
+        && request.resource.data.groupId.size() > 0
+        && request.resource.data.groupName is string
+        && request.resource.data.examType in ['internal_theory', 'gibdd_reo']
+        && request.resource.data.examDate is string
+        && request.resource.data.examDate.size() >= 8
+        && request.resource.data.examTime is string
+        && request.resource.data.examTime.size() >= 4
+        && request.resource.data.createdAt is timestamp;
+      allow update: if false;
+      allow delete: if isAdmin();
+    }
+
     /** Внутренние экзамены по вождению. */
     match /internalExamSessions/{sessionId} {
       allow read: if isAdmin()

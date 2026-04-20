@@ -5,6 +5,7 @@ import type { InternalExamSession, InternalExamSheet } from "@/types/internalExa
 import { getInternalExamSheet } from "@/services/internalExamService";
 import { exportExamSheetPDF as exportExamSheetPdfFromSheet } from "@/services/examExportService";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
+import { AdminScheduledExamsSubsection } from "@/components/admin/AdminScheduledExamsSubsection";
 
 function statusRu(s: InternalExamSession["students"][0]): { label: string; cls: string } {
   if (s.status === "pending") return { label: "Не начат", cls: "admin-internal-exam-status--pending" };
@@ -274,6 +275,7 @@ export function AdminInternalExamSection() {
                 ))}
               </select>
             </label>
+            <AdminScheduledExamsSubsection groups={groups} groupId={groupId} />
             {err ? (
               <p className="form-error" role="alert">
                 {err}

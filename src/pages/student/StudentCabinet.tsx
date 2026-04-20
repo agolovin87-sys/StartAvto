@@ -3,6 +3,7 @@ import { useAuth } from "@/context/AuthContext";
 import { StudentCabinetTalonBalance } from "@/components/student/StudentCabinetTalonBalance";
 import { StudentCabinetDrivingProgress } from "@/components/student/StudentCabinetDrivingProgress";
 import { StudentCabinetDrivingHistory } from "@/components/student/StudentCabinetDrivingHistory";
+import { StudentCabinetExams } from "@/components/student/StudentCabinetExams";
 
 /**
  * Личный кабинет курсанта — отдельный маршрут `/app/student/cabinet` (без нижней навигации).
@@ -41,6 +42,7 @@ export function StudentCabinet() {
         <div className="student-cabinet-blocks">
           <StudentCabinetTalonBalance />
           <StudentCabinetDrivingProgress />
+          <StudentCabinetExams />
           <StudentCabinetDrivingHistory />
         </div>
       </div>
