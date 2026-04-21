@@ -11,6 +11,7 @@ import {
 } from "@/services/carService";
 
 const BRANDS = ["LADA", "KIA", "Hyundai", "Renault", "Volkswagen"] as const;
+const MAX_CAR_PHOTO_DATA_URL_LEN = 900_000;
 
 const STATUS_OPTIONS: { value: CarStatus; label: string }[] = [
   { value: "active", label: "Активен" },
@@ -243,18 +244,57 @@ export function CarFormModal({ open, initial, instructors, onClose, onSaved }: P
     }
   }
 
+  async function compressPhotoToDataUrl(file: File): Promise<string | null> {
+    if (!file.type.startsWith("image/")) return null;
+    const originalDataUrl = await new Promise<string | null>((resolve) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(typeof reader.result === "string" ? reader.result : null);
+      reader.onerror = () => resolve(null);
+      reader.readAsDataURL(file);
+    });
+    if (!originalDataUrl) return null;
+    if (originalDataUrl.length <= MAX_CAR_PHOTO_DATA_URL_LEN) return originalDataUrl;
+
+    const img = await new Promise<HTMLImageElement | null>((resolve) => {
+      const image = new Image();
+      image.onload = () => resolve(image);
+      image.onerror = () => resolve(null);
+      image.src = originalDataUrl;
+    });
+    if (!img) return null;
+
+    const maxSide = 1600;
+    const scale = Math.min(1, maxSide / Math.max(img.width, img.height));
+    const width = Math.max(1, Math.round(img.width * scale));
+    const height = Math.max(1, Math.round(img.height * scale));
+    const canvas = document.createElement("canvas");
+    canvas.width = width;
+    canvas.height = height;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return null;
+    ctx.drawImage(img, 0, 0, width, height);
+
+    for (const quality of [0.9, 0.82, 0.72, 0.62, 0.52]) {
+      const candidate = canvas.toDataURL("image/jpeg", quality);
+      if (candidate.length <= MAX_CAR_PHOTO_DATA_URL_LEN) return candidate;
+    }
+    return null;
+  }
+
   function onPhotoFile(f: File | null) {
     if (!f || !f.type.startsWith("image/")) {
       setPhotoDataUrl(null);
       return;
     }
-    const reader = new FileReader();
-    reader.onload = () => {
-      const s = typeof reader.result === "string" ? reader.result : null;
-      if (s && s.length < 2_500_000) setPhotoDataUrl(s);
-      else setErr("Файл слишком большой (макс. ~2 МБ).");
-    };
-    reader.readAsDataURL(f);
+    void compressPhotoToDataUrl(f).then((dataUrl) => {
+      if (dataUrl) {
+        setPhotoDataUrl(dataUrl);
+      } else {
+        setErr(
+          "Не удалось подготовить фото: выберите изображение меньшего размера или качества."
+        );
+      }
+    });
   }
 
   function onDocFile(
