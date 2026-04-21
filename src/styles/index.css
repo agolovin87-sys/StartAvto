@@ -13139,7 +13139,9 @@ html[data-theme="light"] .student-exam-card--failed .student-exam-card__result {
   font: inherit;
   color: inherit;
   cursor: pointer;
-  border-radius: inherit;
+  /* Не `inherit`: у `.instructor-preview-bar` нет radius — углы превращались в 0 */
+  border-radius: 14px;
+  overflow: hidden;
   appearance: none;
   -webkit-tap-highlight-color: transparent;
 }
