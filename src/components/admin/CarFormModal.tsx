@@ -5,6 +5,7 @@ import type { UserProfile } from "@/types";
 import { createCar, updateCar, type CarInput } from "@/services/carService";
 
 const BRANDS = ["LADA", "KIA", "Hyundai", "Renault", "Volkswagen"] as const;
+const MAX_DOC_DATA_URL_LEN = 420_000;
 
 const STATUS_OPTIONS: { value: CarStatus; label: string }[] = [
   { value: "active", label: "Активен" },
@@ -212,11 +213,14 @@ export function CarFormModal({ open, initial, instructors, onClose, onSaved }: P
     const reader = new FileReader();
     reader.onload = () => {
       const s = typeof reader.result === "string" ? reader.result : null;
-      if (s && s.length < 7_000_000) {
+      if (s && s.length <= MAX_DOC_DATA_URL_LEN) {
         setData(s);
         setName(f.name);
       } else {
-        setErr("Файл документа слишком большой (макс. ~5 МБ).");
+        setErr(
+          "Файл документа слишком большой для сохранения в базе. " +
+            "Загрузите PDF/изображение меньшего размера (рекомендуется до 300 КБ)."
+        );
       }
     };
     reader.readAsDataURL(f);
