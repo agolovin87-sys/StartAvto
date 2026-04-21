@@ -5,6 +5,7 @@ import { deleteMaintenanceRecord, subscribeMaintenanceHistory } from "@/services
 
 const TYPE_LABEL: Record<CarMaintenanceType, string> = {
   TO: "ТО",
+  oil_change: "Замена масла",
   repair: "Ремонт",
   tyre_change: "Замена шин",
   other: "Другое",

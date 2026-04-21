@@ -274,7 +274,9 @@ export function AdminCarsPanel() {
                     <td>
                       {c.nextServiceDueMileage != null ? (
                         <span className={warn ? "admin-cars-to-warn" : ""}>
-                          до {c.nextServiceDueMileage.toLocaleString("ru-RU")} км
+                          {c.nextServiceType === "oil_change"
+                            ? `Замена масла на: ${c.nextServiceDueMileage.toLocaleString("ru-RU")} км`
+                            : `до ${c.nextServiceDueMileage.toLocaleString("ru-RU")} км`}
                           {kmLeft != null ? (
                             <span className="admin-cars-to-left">
                               {" "}

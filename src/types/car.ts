@@ -19,6 +19,8 @@ export interface Car {
   nextMaintenanceDate: number | null;
   /** Пробег (км), при котором запланировано следующее ТО */
   nextServiceDueMileage: number | null;
+  /** Тип следующего обслуживания по последней записи ТО */
+  nextServiceType?: CarMaintenanceType | null;
   maintenanceInterval: number;
   notes?: string;
   /** Фото (data URL), опционально */
@@ -41,7 +43,7 @@ export interface Car {
   updatedAt: number;
 }
 
-export type CarMaintenanceType = "TO" | "repair" | "tyre_change" | "other";
+export type CarMaintenanceType = "TO" | "oil_change" | "repair" | "tyre_change" | "other";
 
 export interface CarMaintenance {
   id: string;

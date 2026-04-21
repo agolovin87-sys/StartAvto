@@ -5,6 +5,7 @@ import { addMaintenanceRecord, updateMaintenanceRecord } from "@/services/carSer
 
 const TYPE_OPTIONS: { value: CarMaintenanceType; label: string }[] = [
   { value: "TO", label: "ТО" },
+  { value: "oil_change", label: "Замена масла" },
   { value: "repair", label: "Ремонт" },
   { value: "tyre_change", label: "Замена шин" },
   { value: "other", label: "Другое" },

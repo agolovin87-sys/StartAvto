@@ -78,6 +78,14 @@ export function normalizeCar(id: string, data: Record<string, unknown>): Car {
       typeof data.nextServiceDueMileage === "number"
         ? data.nextServiceDueMileage
         : null,
+    nextServiceType:
+      data.nextServiceType === "TO" ||
+      data.nextServiceType === "oil_change" ||
+      data.nextServiceType === "repair" ||
+      data.nextServiceType === "tyre_change" ||
+      data.nextServiceType === "other"
+        ? data.nextServiceType
+        : null,
     maintenanceInterval:
       typeof data.maintenanceInterval === "number" ? data.maintenanceInterval : 10000,
     notes: typeof data.notes === "string" ? data.notes : undefined,
@@ -142,6 +150,7 @@ function normalizeMaintenance(
 ): CarMaintenance {
   const typeRaw = data.type;
   const type: CarMaintenanceType =
+    typeRaw === "oil_change" ||
     typeRaw === "repair" ||
     typeRaw === "tyre_change" ||
     typeRaw === "other" ||
@@ -329,6 +338,7 @@ async function syncCarFromLatestMaintenance(carId: string): Promise<void> {
     mileage: latest ? Math.max(car.mileage, latest.mileage) : car.mileage,
     lastMaintenanceDate: latest ? latest.date : car.lastMaintenanceDate,
     nextServiceDueMileage: latest ? latest.nextMileage : null,
+    nextServiceType: latest ? latest.type : null,
     updatedAt: Date.now(),
   });
 }
