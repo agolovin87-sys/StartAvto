@@ -18,9 +18,6 @@ export function InstructorCabinet() {
         <header className="student-cabinet-header">
           <div>
             <h1 className="dashboard-title student-cabinet-title">Личный кабинет инструктора</h1>
-            <p className="student-cabinet-hint instructor-cabinet-page-lead">
-              Баланс талонов, оценки от курсантов и учебное ТС — в одном месте.
-            </p>
           </div>
           <div className="student-cabinet-header-actions">
             <button

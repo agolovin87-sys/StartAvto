@@ -88,7 +88,25 @@ export function InstructorCabinetVehicleSection() {
                   🚗
                 </div>
               )}
+            </div>
+            <div className="instructor-cabinet-vehicle-info-col">
+              <p className="instructor-cabinet-vehicle-line">
+                <IconMini path="M18.92 6.01C18.72 5.42 18.16 5 17.5 5h-11c-.66 0-1.21.42-1.42 1.01L3 12v8c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h12v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-8l-2.08-5.99zM5 11l1.5-4.5h11L19 11H5z" />
+                <strong>Модель УТС:</strong>{" "}
+                <span>
+                  {assignedCar.brand} {assignedCar.model}
+                </span>
+              </p>
+              <p className="instructor-cabinet-vehicle-line">
+                <IconMini path="M20 8H4V6h16v2zm0 2v8H4v-8h16zm-6 2h-4v4h4v-4z" />
+                <strong>Госномер:</strong> <span>{assignedCar.licensePlate}</span>
+              </p>
+              <p className="instructor-cabinet-vehicle-line">
+                <IconMini path="M3 5h18v14H3V5zm2 2v10h14V7H5zm1 1h4v2H6V8zm0 3h12v2H6v-2z" />
+                <strong>VIN:</strong> <span>{assignedCar.vin || "—"}</span>
+              </p>
               <div className="instructor-cabinet-vehicle-docs-row">
+                <IconMini path="M19 3H5c-1.1 0-2 .9-2 2v14a2 2 0 002 2h14c1.1 0 2-.9 2-2V5a2 2 0 00-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z" />
                 <span className="instructor-cabinet-vehicle-docs-label">Документы:</span>
                 <button
                   type="button"
@@ -114,30 +132,14 @@ export function InstructorCabinetVehicleSection() {
                 </button>
               </div>
             </div>
-            <div className="instructor-cabinet-vehicle-info-col">
-              <p className="instructor-cabinet-vehicle-line">
-                <IconMini path="M18.92 6.01C18.72 5.42 18.16 5 17.5 5h-11c-.66 0-1.21.42-1.42 1.01L3 12v8c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h12v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-8l-2.08-5.99zM5 11l1.5-4.5h11L19 11H5z" />
-                <strong>Модель УТС:</strong>{" "}
-                <span>
-                  {assignedCar.brand} {assignedCar.model}
-                </span>
-              </p>
-              <p className="instructor-cabinet-vehicle-line">
-                <IconMini path="M20 8H4V6h16v2zm0 2v8H4v-8h16zm-6 2h-4v4h4v-4z" />
-                <strong>Госномер:</strong> <span>{assignedCar.licensePlate}</span>
-              </p>
-              <p className="instructor-cabinet-vehicle-line">
-                <IconMini path="M3 5h18v14H3V5zm2 2v10h14V7H5zm1 1h4v2H6V8zm0 3h12v2H6v-2z" />
-                <strong>VIN:</strong> <span>{assignedCar.vin || "—"}</span>
-              </p>
-            </div>
           </div>
 
           <div className="instructor-cabinet-vehicle-panel">
             <p className="instructor-cabinet-vehicle-line">
               <IconMini path="M12 2l4 4h-3v7h-2V6H8l4-4zm-7 13h14v7H5v-7zm2 2v3h10v-3H7z" />
-              <strong>ТО: Запланированные:</strong> <span>{plannedLabel}</span>
+              <strong>ТО: Запланированные:</strong>
             </p>
+            <p className="instructor-cabinet-vehicle-planned-value">{plannedLabel}</p>
           </div>
 
           <div className="instructor-cabinet-vehicle-panel">
