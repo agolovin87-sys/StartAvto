@@ -729,7 +729,7 @@ export function InstructorHomeTab() {
       <section className="instructor-home-section" aria-labelledby="instr-self-heading">
         <h2 id="instr-self-heading" className="instructor-subtitle">
           <span className="instructor-home-login-subtitle-row">
-            {"Карточка инструктора (нажмите для входа "}
+            {"Карточка инструктора (нажмите для входа"}
             <span className="home-login-hint-arrows" aria-hidden="true">
               <span className="home-login-hint-arrows__chev" />
               <span className="home-login-hint-arrows__chev" />

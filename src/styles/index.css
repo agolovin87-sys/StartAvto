@@ -4569,6 +4569,7 @@ html[data-theme="purple"] .instr-side-btn.instr-side-loc:hover {
   display: inline-flex;
   align-items: flex-end;
   gap: 3px;
+  margin-left: 0.35em;
   color: #16a34a;
   animation: home-login-hint-arrows-blink 1.15s ease-in-out infinite;
 }

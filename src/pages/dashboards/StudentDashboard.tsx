@@ -1003,7 +1003,7 @@ function StudentDashboardShell() {
                   <span className="student-home-subtitle-row">
                     <IconRole />
                     <span>
-                      {"Карточка курсанта (нажмите для входа "}
+                      {"Карточка курсанта (нажмите для входа"}
                       <span className="home-login-hint-arrows" aria-hidden="true">
                         <span className="home-login-hint-arrows__chev" />
                         <span className="home-login-hint-arrows__chev" />
