@@ -13523,6 +13523,108 @@ html[data-theme="light"] .instructor-cabinet-rating-badge-value {
   word-break: break-word;
 }
 
+.instructor-cabinet-mini-ico {
+  width: 1rem;
+  height: 1rem;
+  color: #38bdf8;
+  flex-shrink: 0;
+}
+
+.instructor-cabinet-vehicle-layout {
+  display: grid;
+  grid-template-columns: 112px minmax(0, 1fr);
+  gap: 0.75rem;
+  margin-bottom: 0.6rem;
+}
+
+.instructor-cabinet-vehicle-photo-col {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.instructor-cabinet-vehicle-photo {
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  border-radius: 0.65rem;
+  object-fit: cover;
+  border: 1px solid var(--theme-line);
+}
+
+.instructor-cabinet-vehicle-photo-fallback {
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  border-radius: 0.65rem;
+  border: 1px solid var(--theme-line);
+  background: var(--theme-slate-soft);
+  display: grid;
+  place-items: center;
+  font-size: 1.5rem;
+}
+
+.instructor-cabinet-vehicle-docs-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.15rem 0.45rem;
+  align-items: center;
+}
+
+.instructor-cabinet-vehicle-docs-label {
+  font-size: 0.77rem;
+  color: var(--theme-muted);
+}
+
+.instructor-cabinet-doc-link {
+  font-size: 0.78rem;
+}
+
+.instructor-cabinet-doc-link:disabled {
+  opacity: 0.42;
+  text-decoration: none;
+  cursor: not-allowed;
+}
+
+.instructor-cabinet-vehicle-info-col {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.instructor-cabinet-vehicle-line {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.85rem;
+  line-height: 1.35;
+  color: var(--theme-text);
+}
+
+.instructor-cabinet-vehicle-line strong {
+  color: var(--theme-heading);
+  font-weight: 700;
+}
+
+.instructor-cabinet-vehicle-panel {
+  margin-top: 0.45rem;
+  padding: 0.45rem 0.55rem;
+  border: 1px solid var(--theme-line);
+  border-radius: 0.7rem;
+  background: var(--theme-slate-soft);
+}
+
+.instructor-cabinet-vehicle-line--head {
+  margin-bottom: 0.4rem;
+}
+
+.instructor-cabinet-vehicle-history-wrap {
+  overflow-x: auto;
+}
+
+.instructor-cabinet-vehicle-history-table {
+  min-width: 520px;
+}
+
 .instructor-cabinet-vehicle-alert {
   margin: 0.25rem 0 0;
   padding: 0.4rem 0.55rem;
@@ -13538,6 +13640,24 @@ html[data-theme="light"] .instructor-cabinet-vehicle-alert {
   border-color: rgba(202, 138, 4, 0.42);
   background: rgba(254, 243, 199, 0.7);
   color: #92400e;
+}
+
+html[data-theme="light"] .instructor-cabinet-mini-ico {
+  color: #0284c7;
+}
+
+@media (max-width: 560px) {
+  .instructor-cabinet-vehicle-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .instructor-cabinet-vehicle-photo-col {
+    max-width: 140px;
+  }
+
+  .instructor-cabinet-vehicle-history-table {
+    min-width: 480px;
+  }
 }
 
 /* Личный кабинет курсанта (отдельный маршрут) */
