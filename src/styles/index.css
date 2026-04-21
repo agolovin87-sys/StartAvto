@@ -13570,6 +13570,23 @@ html[data-theme="light"] .instructor-cabinet-rating-badge-value {
   margin-top: 0.1rem;
 }
 
+.instructor-cabinet-doc-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  flex-wrap: wrap;
+}
+
+.instructor-cabinet-doc-item--sub {
+  display: flex;
+  width: 100%;
+}
+
+.instructor-cabinet-doc-expiry {
+  font-size: 0.76rem;
+  color: var(--theme-muted);
+}
+
 .instructor-cabinet-vehicle-docs-label {
   font-size: 0.77rem;
   color: var(--theme-muted);
@@ -13688,6 +13705,10 @@ html[data-theme="light"] .instructor-cabinet-mini-ico {
 
   .instructor-cabinet-vehicle-history-table td:last-child {
     max-width: 130px;
+  }
+
+  .instructor-cabinet-doc-expiry {
+    font-size: 0.72rem;
   }
 }
 

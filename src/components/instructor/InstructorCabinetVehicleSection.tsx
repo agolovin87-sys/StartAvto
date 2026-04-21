@@ -17,6 +17,12 @@ function formatRuDate(ms: number): string {
   return `${String(d.getDate()).padStart(2, "0")}.${String(d.getMonth() + 1).padStart(2, "0")}.${d.getFullYear()}`;
 }
 
+function formatRuDateShort(ms: number | null | undefined): string {
+  if (ms == null || !Number.isFinite(ms)) return "—";
+  const d = new Date(ms);
+  return `${String(d.getDate()).padStart(2, "0")}.${String(d.getMonth() + 1).padStart(2, "0")}.${d.getFullYear()}`;
+}
+
 /**
  * Учебный автомобиль инструктора (из профиля).
  */
@@ -111,28 +117,38 @@ export function InstructorCabinetVehicleSection() {
               <div className="instructor-cabinet-vehicle-docs-row">
                 <IconMini path="M19 3H5c-1.1 0-2 .9-2 2v14a2 2 0 002 2h14c1.1 0 2-.9 2-2V5a2 2 0 00-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z" />
                 <span className="instructor-cabinet-vehicle-docs-label">Документы:</span>
-                <button
-                  type="button"
-                  className="student-cabinet-text-link instructor-cabinet-doc-link"
-                  disabled={!assignedCar.osagoFileDataUrl}
-                  onClick={() =>
-                    assignedCar.osagoFileDataUrl &&
-                    window.open(assignedCar.osagoFileDataUrl, "_blank", "noopener,noreferrer")
-                  }
-                >
-                  ОСАГО
-                </button>
-                <button
-                  type="button"
-                  className="student-cabinet-text-link instructor-cabinet-doc-link"
-                  disabled={!assignedCar.diagCardFileDataUrl}
-                  onClick={() =>
-                    assignedCar.diagCardFileDataUrl &&
-                    window.open(assignedCar.diagCardFileDataUrl, "_blank", "noopener,noreferrer")
-                  }
-                >
-                  ДК
-                </button>
+                <span className="instructor-cabinet-doc-item">
+                  <button
+                    type="button"
+                    className="student-cabinet-text-link instructor-cabinet-doc-link"
+                    disabled={!assignedCar.osagoFileDataUrl}
+                    onClick={() =>
+                      assignedCar.osagoFileDataUrl &&
+                      window.open(assignedCar.osagoFileDataUrl, "_blank", "noopener,noreferrer")
+                    }
+                  >
+                    ОСАГО
+                  </button>
+                  <span className="instructor-cabinet-doc-expiry">
+                    (до: {formatRuDateShort(assignedCar.osagoToDate)})
+                  </span>
+                </span>
+                <span className="instructor-cabinet-doc-item instructor-cabinet-doc-item--sub">
+                  <button
+                    type="button"
+                    className="student-cabinet-text-link instructor-cabinet-doc-link"
+                    disabled={!assignedCar.diagCardFileDataUrl}
+                    onClick={() =>
+                      assignedCar.diagCardFileDataUrl &&
+                      window.open(assignedCar.diagCardFileDataUrl, "_blank", "noopener,noreferrer")
+                    }
+                  >
+                    ДК
+                  </button>
+                  <span className="instructor-cabinet-doc-expiry">
+                    (до: {formatRuDateShort(assignedCar.diagCardDueDate)})
+                  </span>
+                </span>
               </div>
             </div>
           </div>
