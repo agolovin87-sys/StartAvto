@@ -4557,6 +4557,49 @@ html[data-theme="purple"] .instr-side-btn.instr-side-loc:hover {
   font-size: 0.95rem;
 }
 
+.instructor-home-login-subtitle-row {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+/** Три стрелки вниз у подсказки «нажмите для входа» (инструктор / курсант). */
+.home-login-hint-arrows {
+  display: inline-flex;
+  align-items: flex-end;
+  gap: 3px;
+  color: #16a34a;
+  animation: home-login-hint-arrows-blink 1.15s ease-in-out infinite;
+}
+
+.home-login-hint-arrows__chev {
+  width: 0;
+  height: 0;
+  border-left: 5px solid transparent;
+  border-right: 5px solid transparent;
+  border-top: 7px solid currentColor;
+}
+
+@keyframes home-login-hint-arrows-blink {
+  0%,
+  100% {
+    opacity: 0.38;
+    filter: brightness(0.92);
+  }
+  50% {
+    opacity: 1;
+    filter: brightness(1.12);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .home-login-hint-arrows {
+    animation: none;
+    opacity: 1;
+  }
+}
+
 .student-home-subtitle-row {
   display: inline-flex;
   align-items: center;
