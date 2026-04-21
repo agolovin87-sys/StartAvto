@@ -13301,11 +13301,64 @@ html[data-theme="light"] .student-exam-card--failed .student-exam-card__result {
   font: inherit;
   color: inherit;
   cursor: pointer;
+  position: relative;
   /* Не `inherit`: у `.instructor-preview-bar` нет radius — углы превращались в 0 */
   border-radius: 14px;
   overflow: hidden;
   appearance: none;
   -webkit-tap-highlight-color: transparent;
+}
+
+/** Переливание по кнопке превью «ЛК» на главной (инструктор / курсант). */
+.instructor-home-self-cabinet-btn::before {
+  content: "";
+  position: absolute;
+  top: -40%;
+  bottom: -40%;
+  left: -90%;
+  width: 55%;
+  z-index: 0;
+  pointer-events: none;
+  border-radius: inherit;
+  background: linear-gradient(
+    102deg,
+    transparent 0%,
+    transparent 38%,
+    rgba(255, 255, 255, 0.07) 44%,
+    rgba(196, 181, 253, 0.42) 50%,
+    rgba(224, 231, 255, 0.2) 53%,
+    rgba(255, 255, 255, 0.08) 58%,
+    transparent 68%,
+    transparent 100%
+  );
+  transform: translateX(0) skewX(-12deg);
+  animation: instructor-home-self-cabinet-shimmer 4.8s ease-in-out infinite;
+}
+
+.instructor-home-self-cabinet-btn > * {
+  position: relative;
+  z-index: 1;
+}
+
+@keyframes instructor-home-self-cabinet-shimmer {
+  0% {
+    transform: translateX(-5%) skewX(-12deg);
+    opacity: 0.55;
+  }
+  45% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateX(320%) skewX(-12deg);
+    opacity: 0.55;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .instructor-home-self-cabinet-btn::before {
+    animation: none;
+    opacity: 0;
+  }
 }
 
 .instructor-home-self-cabinet-btn:focus-visible {
