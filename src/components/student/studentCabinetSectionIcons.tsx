@@ -101,3 +101,39 @@ export function IconCabinetDrivingExam(props: { className?: string }) {
     </svg>
   );
 }
+
+/** Внутренний экзамен — теория (ЛК курсанта). */
+export function IconStudentCabExamTheory(props: { className?: string }) {
+  return (
+    <svg
+      className={props.className ?? "student-cab-exams-ico"}
+      viewBox="0 0 24 24"
+      width={20}
+      height={20}
+      aria-hidden
+    >
+      <path
+        fill="currentColor"
+        d="M18 2H6a2 2 0 00-2 2v16c0 1.1.9 2 2 2h12a2 2 0 002-2V4a2 2 0 00-2-2zM9 4h2v8.17l-1-.6-1 .6V4zm9 16H6v-2h12v2zm0-4H6v-2h12v2zm0-4H6V8h12v4z"
+      />
+    </svg>
+  );
+}
+
+/** Экзамен в РЭО ГИБДД (ЛК курсанта). */
+export function IconStudentCabExamGibdd(props: { className?: string }) {
+  return (
+    <svg
+      className={props.className ?? "student-cab-exams-ico"}
+      viewBox="0 0 24 24"
+      width={20}
+      height={20}
+      aria-hidden
+    >
+      <path
+        fill="currentColor"
+        d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm-1 6h2v5h-2V7zm0 7h2v2h-2v-2z"
+      />
+    </svg>
+  );
+}

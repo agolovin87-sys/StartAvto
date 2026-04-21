@@ -4,7 +4,12 @@ import { useStudentExam } from "@/hooks/useStudentExam";
 import type { AdminScheduledExam } from "@/types/scheduledExam";
 import { ADMIN_SCHEDULED_EXAM_TYPE_LABEL } from "@/types/scheduledExam";
 import { subscribeAdminScheduledExamsByGroup } from "@/services/scheduledExamService";
-import { IconCabinetExams } from "@/components/student/studentCabinetSectionIcons";
+import {
+  IconCabinetDrivingExam,
+  IconCabinetExams,
+  IconStudentCabExamGibdd,
+  IconStudentCabExamTheory,
+} from "@/components/student/studentCabinetSectionIcons";
 import type { StudentExamView } from "@/types/internalExam";
 
 const PLACEHOLDER = "Дата не установлена…";
@@ -95,24 +100,35 @@ export function StudentCabinetExams() {
         <p className="student-cab-exams-hint">Загрузка…</p>
       ) : (
         <ul className="student-cab-exams-list">
-          <li className="student-cab-exams-row">
-            <span className="student-cab-exams-kind">{ADMIN_SCHEDULED_EXAM_TYPE_LABEL.internal_theory}</span>
-            <span className="student-cab-exams-value">{theoryLine}</span>
+          <li className="student-cab-exams-row student-cab-exams-row--theory">
+            <span className="student-cab-exams-row-ico-wrap" aria-hidden>
+              <IconStudentCabExamTheory />
+            </span>
+            <div className="student-cab-exams-row-body">
+              <span className="student-cab-exams-kind">{ADMIN_SCHEDULED_EXAM_TYPE_LABEL.internal_theory}</span>
+              <span className="student-cab-exams-value">{theoryLine}</span>
+            </div>
           </li>
-          <li className="student-cab-exams-row">
-            <span className="student-cab-exams-kind">Внутренний экзамен — Вождение</span>
-            <span className="student-cab-exams-value">{driveLine}</span>
+          <li className="student-cab-exams-row student-cab-exams-row--drive">
+            <span className="student-cab-exams-row-ico-wrap" aria-hidden>
+              <IconCabinetDrivingExam className="student-cab-exams-ico" />
+            </span>
+            <div className="student-cab-exams-row-body">
+              <span className="student-cab-exams-kind">Внутренний экзамен — Вождение</span>
+              <span className="student-cab-exams-value">{driveLine}</span>
+            </div>
           </li>
-          <li className="student-cab-exams-row">
-            <span className="student-cab-exams-kind">{ADMIN_SCHEDULED_EXAM_TYPE_LABEL.gibdd_reo}</span>
-            <span className="student-cab-exams-value">{gibddLine}</span>
+          <li className="student-cab-exams-row student-cab-exams-row--gibdd">
+            <span className="student-cab-exams-row-ico-wrap" aria-hidden>
+              <IconStudentCabExamGibdd />
+            </span>
+            <div className="student-cab-exams-row-body">
+              <span className="student-cab-exams-kind">{ADMIN_SCHEDULED_EXAM_TYPE_LABEL.gibdd_reo}</span>
+              <span className="student-cab-exams-value">{gibddLine}</span>
+            </div>
           </li>
         </ul>
       )}
-      <p className="student-cab-exams-footnote">
-        Даты теории и экзамена в ГИБДД задаёт администратор. Внутренний экзамен по вождению назначает инструктор во
-        вкладке «Запись»; сессия и подробности — в блоке ниже.
-      </p>
     </section>
   );
 }
