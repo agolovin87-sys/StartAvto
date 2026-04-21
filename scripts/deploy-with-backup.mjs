@@ -62,7 +62,7 @@ function buildDeployMessage({ now, iso, hasStagedChanges }) {
     `Дата и время сохранения (локально): ${localLine}`,
     `Дата и время (UTC, ISO): ${iso}`,
     "",
-    "Действие: сборка (npm run build), публикация на Firebase Hosting и выкат Firestore (правила и индексы).",
+    "Действие: сборка (npm run build), публикация на Firebase Hosting и выкат Firestore/Storage правил и индексов.",
     "",
   ];
 
@@ -113,10 +113,20 @@ if (!projectId) {
   process.exit(1);
 }
 
-console.log("\n▶ Firebase: Hosting + Firestore (rules, indexes)\n");
-run(
-  `npx --yes firebase-tools@latest deploy --only hosting,firestore:rules,firestore:indexes --project ${projectId}`
-);
+console.log("\n▶ Firebase: Hosting + Firestore + Storage rules\n");
+try {
+  run(
+    `npx --yes firebase-tools@latest deploy --only hosting,firestore:rules,firestore:indexes,storage --project ${projectId}`
+  );
+} catch (e) {
+  console.log(
+    "\n⚠ Не удалось задеплоить storage rules (чаще всего Storage ещё не инициализирован). " +
+      "Продолжаем деплой Hosting + Firestore.\n"
+  );
+  run(
+    `npx --yes firebase-tools@latest deploy --only hosting,firestore:rules,firestore:indexes --project ${projectId}`
+  );
+}
 
 const now = new Date();
 const iso = now.toISOString();

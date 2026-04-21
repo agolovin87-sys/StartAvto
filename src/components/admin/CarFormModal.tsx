@@ -2,10 +2,15 @@ import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import type { Car, CarStatus } from "@/types/car";
 import type { UserProfile } from "@/types";
-import { createCar, updateCar, type CarInput } from "@/services/carService";
+import {
+  createCar,
+  deleteCarDocument,
+  updateCar,
+  uploadCarDocument,
+  type CarInput,
+} from "@/services/carService";
 
 const BRANDS = ["LADA", "KIA", "Hyundai", "Renault", "Volkswagen"] as const;
-const MAX_DOC_DATA_URL_LEN = 420_000;
 
 const STATUS_OPTIONS: { value: CarStatus; label: string }[] = [
   { value: "active", label: "Активен" },
@@ -45,10 +50,14 @@ export function CarFormModal({ open, initial, instructors, onClose, onSaved }: P
   const [photoDataUrl, setPhotoDataUrl] = useState<string | null>(null);
   const [osagoFileDataUrl, setOsagoFileDataUrl] = useState<string | null>(null);
   const [osagoFileName, setOsagoFileName] = useState<string | null>(null);
+  const [osagoStoragePath, setOsagoStoragePath] = useState<string | null>(null);
+  const [osagoFile, setOsagoFile] = useState<File | null>(null);
   const [osagoFromStr, setOsagoFromStr] = useState("");
   const [osagoToStr, setOsagoToStr] = useState("");
   const [diagCardFileDataUrl, setDiagCardFileDataUrl] = useState<string | null>(null);
   const [diagCardFileName, setDiagCardFileName] = useState<string | null>(null);
+  const [diagCardStoragePath, setDiagCardStoragePath] = useState<string | null>(null);
+  const [diagCardFile, setDiagCardFile] = useState<File | null>(null);
   const [diagCardDueStr, setDiagCardDueStr] = useState("");
 
   useEffect(() => {
@@ -71,6 +80,8 @@ export function CarFormModal({ open, initial, instructors, onClose, onSaved }: P
       setPhotoDataUrl(initial.photoDataUrl ?? null);
       setOsagoFileDataUrl(initial.osagoFileDataUrl ?? null);
       setOsagoFileName(initial.osagoFileName ?? null);
+      setOsagoStoragePath(initial.osagoStoragePath ?? null);
+      setOsagoFile(null);
       setOsagoFromStr(
         initial.osagoFromDate
           ? new Date(initial.osagoFromDate).toISOString().slice(0, 10)
@@ -83,6 +94,8 @@ export function CarFormModal({ open, initial, instructors, onClose, onSaved }: P
       );
       setDiagCardFileDataUrl(initial.diagCardFileDataUrl ?? null);
       setDiagCardFileName(initial.diagCardFileName ?? null);
+      setDiagCardStoragePath(initial.diagCardStoragePath ?? null);
+      setDiagCardFile(null);
       setDiagCardDueStr(
         initial.diagCardDueDate
           ? new Date(initial.diagCardDueDate).toISOString().slice(0, 10)
@@ -105,10 +118,14 @@ export function CarFormModal({ open, initial, instructors, onClose, onSaved }: P
       setPhotoDataUrl(null);
       setOsagoFileDataUrl(null);
       setOsagoFileName(null);
+      setOsagoStoragePath(null);
+      setOsagoFile(null);
       setOsagoFromStr("");
       setOsagoToStr("");
       setDiagCardFileDataUrl(null);
       setDiagCardFileName(null);
+      setDiagCardStoragePath(null);
+      setDiagCardFile(null);
       setDiagCardDueStr("");
     }
   }, [open, initial]);
@@ -143,7 +160,7 @@ export function CarFormModal({ open, initial, instructors, onClose, onSaved }: P
       const p = instructors.find((i) => i.uid === ins);
       instructorName = p?.displayName;
     }
-    const payload: CarInput = {
+    const payloadBase: CarInput = {
       brand,
       model: model.trim(),
       year: y,
@@ -163,19 +180,59 @@ export function CarFormModal({ open, initial, instructors, onClose, onSaved }: P
       photoDataUrl: photoDataUrl ?? null,
       osagoFileDataUrl: osagoFileDataUrl ?? null,
       osagoFileName: osagoFileName ?? null,
+      osagoStoragePath: osagoStoragePath ?? null,
       osagoFromDate: osagoFromMs,
       osagoToDate: osagoToMs,
       diagCardFileDataUrl: diagCardFileDataUrl ?? null,
       diagCardFileName: diagCardFileName ?? null,
+      diagCardStoragePath: diagCardStoragePath ?? null,
       diagCardDueDate: diagDueMs,
     };
 
     setBusy(true);
     try {
-      if (initial) {
-        await updateCar(initial.id, payload);
-      } else {
-        await createCar(payload);
+      const carId = initial?.id ?? (await createCar(payloadBase));
+      let nextOsagoUrl = osagoFileDataUrl ?? null;
+      let nextOsagoName = osagoFileName ?? null;
+      let nextOsagoPath = osagoStoragePath ?? null;
+      let nextDiagUrl = diagCardFileDataUrl ?? null;
+      let nextDiagName = diagCardFileName ?? null;
+      let nextDiagPath = diagCardStoragePath ?? null;
+
+      if (osagoFile) {
+        const up = await uploadCarDocument(osagoFile, "osago", carId);
+        nextOsagoUrl = up.url;
+        nextOsagoName = up.fileName;
+        nextOsagoPath = up.path;
+      }
+      if (diagCardFile) {
+        const up = await uploadCarDocument(diagCardFile, "diag", carId);
+        nextDiagUrl = up.url;
+        nextDiagName = up.fileName;
+        nextDiagPath = up.path;
+      }
+
+      await updateCar(carId, {
+        ...payloadBase,
+        osagoFileDataUrl: nextOsagoUrl,
+        osagoFileName: nextOsagoName,
+        osagoStoragePath: nextOsagoPath,
+        diagCardFileDataUrl: nextDiagUrl,
+        diagCardFileName: nextDiagName,
+        diagCardStoragePath: nextDiagPath,
+      });
+
+      if (osagoFile && initial?.osagoStoragePath && initial.osagoStoragePath !== nextOsagoPath) {
+        await deleteCarDocument(initial.osagoStoragePath).catch(() => {});
+      }
+      if (diagCardFile && initial?.diagCardStoragePath && initial.diagCardStoragePath !== nextDiagPath) {
+        await deleteCarDocument(initial.diagCardStoragePath).catch(() => {});
+      }
+      if (!osagoFileDataUrl && initial?.osagoStoragePath) {
+        await deleteCarDocument(initial.osagoStoragePath).catch(() => {});
+      }
+      if (!diagCardFileDataUrl && initial?.diagCardStoragePath) {
+        await deleteCarDocument(initial.diagCardStoragePath).catch(() => {});
       }
       onSaved();
       onClose();
@@ -202,28 +259,20 @@ export function CarFormModal({ open, initial, instructors, onClose, onSaved }: P
 
   function onDocFile(
     f: File | null,
-    setData: (v: string | null) => void,
+    setFile: (v: File | null) => void,
     setName: (v: string | null) => void
   ) {
     if (!f) {
-      setData(null);
+      setFile(null);
       setName(null);
       return;
     }
-    const reader = new FileReader();
-    reader.onload = () => {
-      const s = typeof reader.result === "string" ? reader.result : null;
-      if (s && s.length <= MAX_DOC_DATA_URL_LEN) {
-        setData(s);
-        setName(f.name);
-      } else {
-        setErr(
-          "Файл документа слишком большой для сохранения в базе. " +
-            "Загрузите PDF/изображение меньшего размера (рекомендуется до 300 КБ)."
-        );
-      }
-    };
-    reader.readAsDataURL(f);
+    if (f.size > 12 * 1024 * 1024) {
+      setErr("Файл документа слишком большой (макс. 12 МБ).");
+      return;
+    }
+    setFile(f);
+    setName(f.name);
   }
 
   function openDataUrl(dataUrl: string | null) {
@@ -344,18 +393,19 @@ export function CarFormModal({ open, initial, instructors, onClose, onSaved }: P
                 onChange={(e) =>
                   onDocFile(
                     e.target.files?.[0] ?? null,
-                    setOsagoFileDataUrl,
+                    setOsagoFile,
                     setOsagoFileName
                   )
                 }
               />
               <div className="admin-car-docs-meta">
                 {osagoFileName ? <span className="field-hint">{osagoFileName}</span> : null}
-                {osagoFileDataUrl ? (
+                {osagoFileDataUrl || osagoFile ? (
                   <>
                     <button
                       type="button"
                       className="btn btn-ghost btn-sm"
+                      disabled={!osagoFileDataUrl}
                       onClick={() => openDataUrl(osagoFileDataUrl)}
                     >
                       Открыть файл
@@ -366,6 +416,8 @@ export function CarFormModal({ open, initial, instructors, onClose, onSaved }: P
                       onClick={() => {
                         setOsagoFileDataUrl(null);
                         setOsagoFileName(null);
+                        setOsagoStoragePath(null);
+                        setOsagoFile(null);
                         setOsagoFromStr("");
                         setOsagoToStr("");
                       }}
@@ -405,18 +457,19 @@ export function CarFormModal({ open, initial, instructors, onClose, onSaved }: P
                 onChange={(e) =>
                   onDocFile(
                     e.target.files?.[0] ?? null,
-                    setDiagCardFileDataUrl,
+                    setDiagCardFile,
                     setDiagCardFileName
                   )
                 }
               />
               <div className="admin-car-docs-meta">
                 {diagCardFileName ? <span className="field-hint">{diagCardFileName}</span> : null}
-                {diagCardFileDataUrl ? (
+                {diagCardFileDataUrl || diagCardFile ? (
                   <>
                     <button
                       type="button"
                       className="btn btn-ghost btn-sm"
+                      disabled={!diagCardFileDataUrl}
                       onClick={() => openDataUrl(diagCardFileDataUrl)}
                     >
                       Открыть файл
@@ -427,6 +480,8 @@ export function CarFormModal({ open, initial, instructors, onClose, onSaved }: P
                       onClick={() => {
                         setDiagCardFileDataUrl(null);
                         setDiagCardFileName(null);
+                        setDiagCardStoragePath(null);
+                        setDiagCardFile(null);
                         setDiagCardDueStr("");
                       }}
                     >

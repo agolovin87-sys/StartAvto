@@ -16,6 +16,7 @@ import {
   updateDoc,
   type DocumentData,
 } from "firebase/firestore";
+import { deleteObject, getDownloadURL, ref, uploadBytes } from "firebase/storage";
 import type { Car, CarMaintenance, CarMaintenanceType, CarStatus } from "@/types/car";
 import { getFirebase } from "@/firebase/config";
 
@@ -97,6 +98,12 @@ export function normalizeCar(id: string, data: Record<string, unknown>): Car {
         : data.osagoFileName === null
           ? null
           : undefined,
+    osagoStoragePath:
+      typeof data.osagoStoragePath === "string"
+        ? data.osagoStoragePath
+        : data.osagoStoragePath === null
+          ? null
+          : undefined,
     osagoFromDate:
       data.osagoFromDate == null ? null : toMillis(data.osagoFromDate),
     osagoToDate:
@@ -111,6 +118,12 @@ export function normalizeCar(id: string, data: Record<string, unknown>): Car {
       typeof data.diagCardFileName === "string"
         ? data.diagCardFileName
         : data.diagCardFileName === null
+          ? null
+          : undefined,
+    diagCardStoragePath:
+      typeof data.diagCardStoragePath === "string"
+        ? data.diagCardStoragePath
+        : data.diagCardStoragePath === null
           ? null
           : undefined,
     diagCardDueDate:
@@ -358,6 +371,27 @@ export async function updateMaintenanceRecord(
     updatedAt: serverTimestamp(),
   });
   await syncCarFromLatestMaintenance(carId);
+}
+
+export async function uploadCarDocument(
+  file: File,
+  kind: "osago" | "diag",
+  carId?: string
+): Promise<{ url: string; path: string; fileName: string }> {
+  const { storage } = getFirebase();
+  const safeName = file.name.replace(/[^\w.\-()]+/g, "_");
+  const path = `cars/docs/${carId ?? "new"}/${kind}/${Date.now()}-${safeName}`;
+  const storageRef = ref(storage, path);
+  await uploadBytes(storageRef, file, { contentType: file.type || undefined });
+  const url = await getDownloadURL(storageRef);
+  return { url, path, fileName: file.name };
+}
+
+export async function deleteCarDocument(storagePath: string | null | undefined): Promise<void> {
+  const path = (storagePath ?? "").trim();
+  if (!path) return;
+  const { storage } = getFirebase();
+  await deleteObject(ref(storage, path));
 }
 
 /** Активные авто (для будущей привязки к урокам). */

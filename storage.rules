@@ -1,0 +1,21 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isAdminEmail() {
+      return isSignedIn()
+        && request.auth.token.email != null
+        && request.auth.token.email.lower() == 'start-auto13@mail.ru';
+    }
+
+    // Документы автомобилей: загрузка/удаление только админом.
+    // Для скачивания используем downloadURL, поэтому отдельный read по правилу не требуется.
+    match /cars/docs/{allPaths=**} {
+      allow read: if isAdminEmail();
+      allow write: if isAdminEmail();
+    }
+  }
+}

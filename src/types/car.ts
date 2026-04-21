@@ -26,12 +26,14 @@ export interface Car {
   /** ОСАГО: файл (data URL) */
   osagoFileDataUrl?: string | null;
   osagoFileName?: string | null;
+  osagoStoragePath?: string | null;
   /** ОСАГО: период страхования */
   osagoFromDate?: number | null;
   osagoToDate?: number | null;
   /** Диагностическая карта: файл и срок действия */
   diagCardFileDataUrl?: string | null;
   diagCardFileName?: string | null;
+  diagCardStoragePath?: string | null;
   diagCardDueDate?: number | null;
   /** Мягкое удаление */
   deleted?: boolean;
