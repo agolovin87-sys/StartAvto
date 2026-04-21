@@ -11,6 +11,15 @@ import { IconInstructorCabinetWorkload } from "@/components/instructor/instructo
 
 const Y_MAX = 8;
 
+/** Вертикальный отступ в % viewBox, чтобы точка при 0 и линия у нуля не обрезались. */
+const CHART_Y_PAD = 7;
+
+function plotYForDriveCount(v: number): number {
+  const clamped = Math.max(0, Math.min(Y_MAX, v));
+  const inner = 100 - 2 * CHART_Y_PAD;
+  return CHART_Y_PAD + (1 - clamped / Y_MAX) * inner;
+}
+
 /** Все дни пн–вс — как в «Мой график» (индексы 0..6 от понедельника). */
 const X_AXIS_DAYS: { weekIndex: number; label: string }[] = [
   { weekIndex: 0, label: "Пн" },
@@ -81,6 +90,14 @@ export function InstructorCabinetWorkloadSection() {
     [drivesByDateKey, weekKeys]
   );
 
+  const weekTotalDrives = useMemo(() => {
+    let sum = 0;
+    for (const dk of weekKeys) {
+      sum += drivesByDateKey.get(dk) ?? 0;
+    }
+    return sum;
+  }, [weekKeys, drivesByDateKey]);
+
   const ariaSummary = X_AXIS_DAYS.map((d) => {
     const dk = weekKeys[d.weekIndex] ?? "";
     const n = drivesByDateKey.get(dk) ?? 0;
@@ -92,7 +109,7 @@ export function InstructorCabinetWorkloadSection() {
     return lineValues
       .map((v, i) => {
         const x = ((i + 0.5) / n) * 100;
-        const y = 100 - (Math.max(0, Math.min(Y_MAX, v)) / Y_MAX) * 100;
+        const y = plotYForDriveCount(v);
         return `${x},${y}`;
       })
       .join(" ");
@@ -133,14 +150,10 @@ export function InstructorCabinetWorkloadSection() {
         </button>
       </div>
 
-      <p className="field-hint instructor-cabinet-block-lead instructor-cabinet-workload-lead">
-        {`Данные из «Мой график»: прошедшие (completed) и будущие (scheduled) вождения по каждому дню; по вертикали — вождений в день, шкала 0–${Y_MAX}.`}
-      </p>
-
       <div
         className="instructor-cabinet-workload-chart-wrap"
-        role="img"
-        aria-label={`Загруженность за неделю ${weekRangeLabel}. Вождений по дням: ${ariaSummary}. Шкала до ${Y_MAX}.`}
+        role="region"
+        aria-label={`График за неделю ${weekRangeLabel}. Всего вождений: ${weekTotalDrives}. По дням: ${ariaSummary}.`}
       >
         <div className="instructor-cabinet-workload-chart-body">
           <div className="instructor-cabinet-workload-y-axis" aria-hidden>
@@ -172,7 +185,7 @@ export function InstructorCabinetWorkloadSection() {
               <div className="instructor-cabinet-workload-points">
                 {X_AXIS_DAYS.map((d, i) => {
                   const v = lineValues[i] ?? 0;
-                  const y = 100 - (Math.max(0, Math.min(Y_MAX, v)) / Y_MAX) * 100;
+                  const y = plotYForDriveCount(v);
                   const x = ((i + 0.5) / X_AXIS_DAYS.length) * 100;
                   return (
                     <span
@@ -194,8 +207,9 @@ export function InstructorCabinetWorkloadSection() {
             </div>
           </div>
         </div>
-        <p className="instructor-cabinet-workload-y-cap" aria-hidden>
-          Вождений в день (0–{Y_MAX} на шкале; больше {Y_MAX} — точка у верхней отметки)
+        <p className="instructor-cabinet-workload-y-cap">
+          Общее количество вождений в неделю:{" "}
+          <strong>{weekTotalDrives.toLocaleString("ru-RU")}</strong>
         </p>
       </div>
     </section>

@@ -13566,11 +13566,6 @@ html[data-theme="light"] .instructor-cabinet-rating-badge-value {
   transform: scale(0.96);
 }
 
-.instructor-cabinet-workload-lead {
-  margin-top: 0;
-  margin-bottom: 0.55rem;
-}
-
 .instructor-cabinet-workload-chart-wrap {
   margin-top: 0.15rem;
   padding: 0.45rem 0.35rem 0.35rem;
@@ -13674,13 +13669,15 @@ html[data-theme="light"] .instructor-cabinet-rating-badge-value {
 
 .instructor-cabinet-workload-point {
   position: absolute;
-  width: 0.52rem;
-  height: 0.52rem;
+  width: 0.58rem;
+  height: 0.58rem;
   border-radius: 999px;
   border: 2px solid #fff;
   background: #16a34a;
   transform: translate(-50%, -50%);
-  box-shadow: 0 0 0 1px rgba(22, 163, 74, 0.55);
+  box-shadow:
+    0 0 0 1px rgba(22, 163, 74, 0.65),
+    0 1px 3px rgba(0, 0, 0, 0.25);
 }
 
 .instructor-cabinet-workload-x-axis {
@@ -13715,9 +13712,15 @@ html[data-theme="light"] .instructor-cabinet-rating-badge-value {
 
 .instructor-cabinet-workload-y-cap {
   margin: 0.35rem 0 0;
-  font-size: 0.68rem;
-  color: var(--theme-muted);
+  font-size: 0.78rem;
+  color: var(--theme-soft);
   text-align: center;
+  line-height: 1.35;
+}
+
+.instructor-cabinet-workload-y-cap strong {
+  color: var(--theme-heading);
+  font-weight: 800;
 }
 
 html[data-theme="light"] .instructor-cabinet-workload-chart-wrap {
@@ -13761,8 +13764,8 @@ html[data-theme="light"] .instructor-cabinet-workload-chart-wrap {
   }
 
   .instructor-cabinet-workload-point {
-    width: 0.48rem;
-    height: 0.48rem;
+    width: 0.52rem;
+    height: 0.52rem;
   }
 }
 
