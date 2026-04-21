@@ -13643,6 +13643,22 @@ html[data-theme="light"] .instructor-cabinet-vehicle-planned-value {
   background: var(--theme-slate-soft);
 }
 
+.instructor-cabinet-mileage-btn {
+  width: 100%;
+  background: linear-gradient(180deg, #7c3aed 0%, #6d28d9 100%);
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  margin: 0.1rem 0 0.35rem;
+}
+
+.instructor-cabinet-mileage-btn:hover:not(:disabled) {
+  background: linear-gradient(180deg, #8b5cf6 0%, #7c3aed 100%);
+}
+
+.instructor-cabinet-mileage-modal {
+  max-width: min(520px, calc(100vw - 24px));
+}
+
 .instructor-cabinet-vehicle-line--head {
   margin-bottom: 0.4rem;
 }

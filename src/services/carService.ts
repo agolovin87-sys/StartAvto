@@ -275,6 +275,15 @@ export async function updateCar(id: string, data: Partial<CarInput>): Promise<vo
   await updateDoc(ref, patch as DocumentData);
 }
 
+export async function submitInstructorMileage(carId: string, mileage: number): Promise<void> {
+  const { db } = getFirebase();
+  const ref = doc(db, CARS, carId);
+  await updateDoc(ref, {
+    mileage: Math.max(0, Math.round(mileage)),
+    updatedAt: Date.now(),
+  });
+}
+
 /** Мягкое удаление */
 export async function deleteCar(id: string): Promise<void> {
   const { db } = getFirebase();

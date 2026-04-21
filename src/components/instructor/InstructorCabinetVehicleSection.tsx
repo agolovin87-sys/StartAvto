@@ -1,6 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
 import { IconInstructorCabinetVehicle } from "@/components/instructor/instructorCabinetSectionIcons";
-import { subscribeCarsForInstructor, subscribeMaintenanceHistory } from "@/services/carService";
+import {
+  submitInstructorMileage,
+  subscribeCarsForInstructor,
+  subscribeMaintenanceHistory,
+} from "@/services/carService";
 import type { Car, CarMaintenance } from "@/types/car";
 import { useAuth } from "@/context/AuthContext";
 
@@ -32,6 +36,10 @@ export function InstructorCabinetVehicleSection() {
   const [assignedCars, setAssignedCars] = useState<Car[]>([]);
   const assignedCar = assignedCars[0] ?? null;
   const [historyRows, setHistoryRows] = useState<CarMaintenance[]>([]);
+  const [mileageModalOpen, setMileageModalOpen] = useState(false);
+  const [mileageInput, setMileageInput] = useState("");
+  const [mileageBusy, setMileageBusy] = useState(false);
+  const [mileageErr, setMileageErr] = useState("");
   const kmLeft =
     assignedCar?.nextServiceDueMileage != null
       ? assignedCar.nextServiceDueMileage - assignedCar.mileage
@@ -66,6 +74,31 @@ export function InstructorCabinetVehicleSection() {
     return subscribeMaintenanceHistory(assignedCar.id, setHistoryRows, () => setHistoryRows([]));
   }, [assignedCar]);
 
+  useEffect(() => {
+    if (!mileageModalOpen || !assignedCar) return;
+    setMileageInput(String(Math.max(0, Math.round(assignedCar.mileage))));
+    setMileageErr("");
+  }, [mileageModalOpen, assignedCar]);
+
+  async function onSubmitMileage() {
+    if (!assignedCar) return;
+    const val = Number(mileageInput.replace(/\s+/g, "").replace(",", "."));
+    if (!Number.isFinite(val) || val < 0) {
+      setMileageErr("Введите корректный пробег в км.");
+      return;
+    }
+    setMileageBusy(true);
+    setMileageErr("");
+    try {
+      await submitInstructorMileage(assignedCar.id, val);
+      setMileageModalOpen(false);
+    } catch {
+      setMileageErr("Не удалось отправить показания. Попробуйте снова.");
+    } finally {
+      setMileageBusy(false);
+    }
+  }
+
   return (
     <section
       className="student-cabinet-card instructor-cabinet-block-surface instructor-cabinet-vehicle-section"
@@ -84,6 +117,13 @@ export function InstructorCabinetVehicleSection() {
         </p>
       ) : (
         <>
+          <button
+            type="button"
+            className="btn instructor-cabinet-mileage-btn"
+            onClick={() => setMileageModalOpen(true)}
+          >
+            Показания пробега
+          </button>
           <div className="instructor-cabinet-vehicle-layout">
             <div className="instructor-cabinet-vehicle-photo-col">
               {assignedCar.photoDataUrl ? (
@@ -199,6 +239,64 @@ export function InstructorCabinetVehicleSection() {
           </div>
         </>
       )}
+      {mileageModalOpen && assignedCar ? (
+        <div
+          className="modal-backdrop"
+          role="presentation"
+          onClick={() => {
+            if (!mileageBusy) setMileageModalOpen(false);
+          }}
+        >
+          <div
+            className="modal-panel student-cabinet-modal instructor-cabinet-mileage-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="instr-mileage-modal-title"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h2 id="instr-mileage-modal-title" className="modal-title">
+              Введите текущие показания пробега
+            </h2>
+            <label className="field-label" htmlFor="instr-mileage-input">
+              Показания, км
+            </label>
+            <input
+              id="instr-mileage-input"
+              type="number"
+              className="input"
+              min={0}
+              step={1}
+              value={mileageInput}
+              onChange={(e) => setMileageInput(e.target.value)}
+              disabled={mileageBusy}
+              inputMode="numeric"
+            />
+            {mileageErr ? (
+              <p className="form-error" role="alert">
+                {mileageErr}
+              </p>
+            ) : null}
+            <div className="modal-actions">
+              <button
+                type="button"
+                className="btn btn-primary"
+                onClick={() => void onSubmitMileage()}
+                disabled={mileageBusy}
+              >
+                Отправить
+              </button>
+              <button
+                type="button"
+                className="btn btn-ghost"
+                onClick={() => setMileageModalOpen(false)}
+                disabled={mileageBusy}
+              >
+                Отмена
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
       {nearService ? (
         <p className="instructor-cabinet-vehicle-alert" role="status">
           Внимание: до следующего ТО осталось {kmLeft?.toLocaleString("ru-RU")} км.
