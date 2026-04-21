@@ -42,6 +42,13 @@ export function CarFormModal({ open, initial, instructors, onClose, onSaved }: P
   const [notes, setNotes] = useState("");
   const [instructorId, setInstructorId] = useState("");
   const [photoDataUrl, setPhotoDataUrl] = useState<string | null>(null);
+  const [osagoFileDataUrl, setOsagoFileDataUrl] = useState<string | null>(null);
+  const [osagoFileName, setOsagoFileName] = useState<string | null>(null);
+  const [osagoFromStr, setOsagoFromStr] = useState("");
+  const [osagoToStr, setOsagoToStr] = useState("");
+  const [diagCardFileDataUrl, setDiagCardFileDataUrl] = useState<string | null>(null);
+  const [diagCardFileName, setDiagCardFileName] = useState<string | null>(null);
+  const [diagCardDueStr, setDiagCardDueStr] = useState("");
 
   useEffect(() => {
     if (!open) return;
@@ -61,6 +68,25 @@ export function CarFormModal({ open, initial, instructors, onClose, onSaved }: P
       setNotes(initial.notes ?? "");
       setInstructorId(initial.instructorId ?? "");
       setPhotoDataUrl(initial.photoDataUrl ?? null);
+      setOsagoFileDataUrl(initial.osagoFileDataUrl ?? null);
+      setOsagoFileName(initial.osagoFileName ?? null);
+      setOsagoFromStr(
+        initial.osagoFromDate
+          ? new Date(initial.osagoFromDate).toISOString().slice(0, 10)
+          : ""
+      );
+      setOsagoToStr(
+        initial.osagoToDate
+          ? new Date(initial.osagoToDate).toISOString().slice(0, 10)
+          : ""
+      );
+      setDiagCardFileDataUrl(initial.diagCardFileDataUrl ?? null);
+      setDiagCardFileName(initial.diagCardFileName ?? null);
+      setDiagCardDueStr(
+        initial.diagCardDueDate
+          ? new Date(initial.diagCardDueDate).toISOString().slice(0, 10)
+          : ""
+      );
     } else {
       setBrand("LADA");
       setModel("");
@@ -76,6 +102,13 @@ export function CarFormModal({ open, initial, instructors, onClose, onSaved }: P
       setNotes("");
       setInstructorId("");
       setPhotoDataUrl(null);
+      setOsagoFileDataUrl(null);
+      setOsagoFileName(null);
+      setOsagoFromStr("");
+      setOsagoToStr("");
+      setDiagCardFileDataUrl(null);
+      setDiagCardFileName(null);
+      setDiagCardDueStr("");
     }
   }, [open, initial]);
 
@@ -89,6 +122,17 @@ export function CarFormModal({ open, initial, instructors, onClose, onSaved }: P
     }
     if (vin.length > 0 && vin.length !== 17) {
       setErr("VIN должен содержать 17 символов или оставьте пустым.");
+      return;
+    }
+    const osagoFromMs = osagoFromStr ? new Date(`${osagoFromStr}T00:00:00`).getTime() : null;
+    const osagoToMs = osagoToStr ? new Date(`${osagoToStr}T00:00:00`).getTime() : null;
+    const diagDueMs = diagCardDueStr ? new Date(`${diagCardDueStr}T00:00:00`).getTime() : null;
+    if ((osagoFromMs == null) !== (osagoToMs == null)) {
+      setErr("Для ОСАГО укажите обе даты: с и по.");
+      return;
+    }
+    if (osagoFromMs != null && osagoToMs != null && osagoFromMs > osagoToMs) {
+      setErr("Период ОСАГО указан неверно: дата начала позже даты окончания.");
       return;
     }
     const y = Math.min(2026, Math.max(1990, year));
@@ -116,6 +160,13 @@ export function CarFormModal({ open, initial, instructors, onClose, onSaved }: P
       maintenanceInterval: Math.max(1000, maintenanceInterval),
       notes: notes.trim() || undefined,
       photoDataUrl: photoDataUrl ?? null,
+      osagoFileDataUrl: osagoFileDataUrl ?? null,
+      osagoFileName: osagoFileName ?? null,
+      osagoFromDate: osagoFromMs,
+      osagoToDate: osagoToMs,
+      diagCardFileDataUrl: diagCardFileDataUrl ?? null,
+      diagCardFileName: diagCardFileName ?? null,
+      diagCardDueDate: diagDueMs,
     };
 
     setBusy(true);
@@ -146,6 +197,34 @@ export function CarFormModal({ open, initial, instructors, onClose, onSaved }: P
       else setErr("Файл слишком большой (макс. ~2 МБ).");
     };
     reader.readAsDataURL(f);
+  }
+
+  function onDocFile(
+    f: File | null,
+    setData: (v: string | null) => void,
+    setName: (v: string | null) => void
+  ) {
+    if (!f) {
+      setData(null);
+      setName(null);
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => {
+      const s = typeof reader.result === "string" ? reader.result : null;
+      if (s && s.length < 7_000_000) {
+        setData(s);
+        setName(f.name);
+      } else {
+        setErr("Файл документа слишком большой (макс. ~5 МБ).");
+      }
+    };
+    reader.readAsDataURL(f);
+  }
+
+  function openDataUrl(dataUrl: string | null) {
+    if (!dataUrl) return;
+    window.open(dataUrl, "_blank", "noopener,noreferrer");
   }
 
   if (!open || typeof document === "undefined") return null;
@@ -252,6 +331,116 @@ export function CarFormModal({ open, initial, instructors, onClose, onSaved }: P
                 placeholder="XTA..."
               />
             </label>
+            <div className="field field-span-2 admin-car-docs-block">
+              <span className="field-label">Документы: ОСАГО</span>
+              <input
+                type="file"
+                accept="image/*,application/pdf,.pdf"
+                className="input"
+                onChange={(e) =>
+                  onDocFile(
+                    e.target.files?.[0] ?? null,
+                    setOsagoFileDataUrl,
+                    setOsagoFileName
+                  )
+                }
+              />
+              <div className="admin-car-docs-meta">
+                {osagoFileName ? <span className="field-hint">{osagoFileName}</span> : null}
+                {osagoFileDataUrl ? (
+                  <>
+                    <button
+                      type="button"
+                      className="btn btn-ghost btn-sm"
+                      onClick={() => openDataUrl(osagoFileDataUrl)}
+                    >
+                      Открыть файл
+                    </button>
+                    <button
+                      type="button"
+                      className="btn btn-ghost btn-sm"
+                      onClick={() => {
+                        setOsagoFileDataUrl(null);
+                        setOsagoFileName(null);
+                        setOsagoFromStr("");
+                        setOsagoToStr("");
+                      }}
+                    >
+                      Удалить файл
+                    </button>
+                  </>
+                ) : null}
+              </div>
+              <div className="admin-car-docs-dates">
+                <label className="field">
+                  <span className="field-label">Срок страхования: с</span>
+                  <input
+                    type="date"
+                    className="input"
+                    value={osagoFromStr}
+                    onChange={(e) => setOsagoFromStr(e.target.value)}
+                  />
+                </label>
+                <label className="field">
+                  <span className="field-label">по</span>
+                  <input
+                    type="date"
+                    className="input"
+                    value={osagoToStr}
+                    onChange={(e) => setOsagoToStr(e.target.value)}
+                  />
+                </label>
+              </div>
+            </div>
+            <div className="field field-span-2 admin-car-docs-block">
+              <span className="field-label">Документы: Диагностическая карта</span>
+              <input
+                type="file"
+                accept="image/*,application/pdf,.pdf"
+                className="input"
+                onChange={(e) =>
+                  onDocFile(
+                    e.target.files?.[0] ?? null,
+                    setDiagCardFileDataUrl,
+                    setDiagCardFileName
+                  )
+                }
+              />
+              <div className="admin-car-docs-meta">
+                {diagCardFileName ? <span className="field-hint">{diagCardFileName}</span> : null}
+                {diagCardFileDataUrl ? (
+                  <>
+                    <button
+                      type="button"
+                      className="btn btn-ghost btn-sm"
+                      onClick={() => openDataUrl(diagCardFileDataUrl)}
+                    >
+                      Открыть файл
+                    </button>
+                    <button
+                      type="button"
+                      className="btn btn-ghost btn-sm"
+                      onClick={() => {
+                        setDiagCardFileDataUrl(null);
+                        setDiagCardFileName(null);
+                        setDiagCardDueStr("");
+                      }}
+                    >
+                      Удалить файл
+                    </button>
+                  </>
+                ) : null}
+              </div>
+              <label className="field">
+                <span className="field-label">Срок действия до: дд.мм.гггг</span>
+                <input
+                  type="date"
+                  className="input"
+                  value={diagCardDueStr}
+                  onChange={(e) => setDiagCardDueStr(e.target.value)}
+                />
+              </label>
+            </div>
             <label className="field">
               <span className="field-label">Цвет (палитра)</span>
               <input

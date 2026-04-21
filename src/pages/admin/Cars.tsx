@@ -31,6 +31,11 @@ function kmUntilService(car: Car): number | null {
   return car.nextServiceDueMileage - car.mileage;
 }
 
+function openDoc(dataUrl: string | null) {
+  if (!dataUrl) return;
+  window.open(dataUrl, "_blank", "noopener,noreferrer");
+}
+
 export function AdminCarsPanel() {
   const { cars, loading, error, refresh } = useCars();
   const [instructors, setInstructors] = useState<UserProfile[]>([]);
@@ -173,6 +178,7 @@ export function AdminCarsPanel() {
               <th>Фото</th>
               <th>Модель</th>
               <th>Госномер</th>
+              <th>Документы</th>
               <th>Инструктор</th>
               <th>Статус</th>
               <th>Пробег</th>
@@ -183,13 +189,13 @@ export function AdminCarsPanel() {
           <tbody>
             {loading ? (
               <tr>
-                <td colSpan={8} className="admin-schedule-table-empty">
+                <td colSpan={9} className="admin-schedule-table-empty">
                   Загрузка…
                 </td>
               </tr>
             ) : slice.length === 0 ? (
               <tr>
-                <td colSpan={8} className="admin-schedule-table-empty">
+                <td colSpan={9} className="admin-schedule-table-empty">
                   Нет автомобилей по фильтрам.
                 </td>
               </tr>
@@ -217,6 +223,26 @@ export function AdminCarsPanel() {
                     </td>
                     <td>
                       <code className="admin-cars-plate">{c.licensePlate}</code>
+                    </td>
+                    <td>
+                      <div className="admin-cars-docs">
+                        <button
+                          type="button"
+                          className="student-cabinet-text-link admin-cars-doc-link"
+                          disabled={!c.osagoFileDataUrl}
+                          onClick={() => openDoc(c.osagoFileDataUrl ?? null)}
+                        >
+                          ОСАГО
+                        </button>
+                        <button
+                          type="button"
+                          className="student-cabinet-text-link admin-cars-doc-link"
+                          disabled={!c.diagCardFileDataUrl}
+                          onClick={() => openDoc(c.diagCardFileDataUrl ?? null)}
+                        >
+                          ДК
+                        </button>
+                      </div>
                     </td>
                     <td>
                       <select

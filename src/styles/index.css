@@ -2812,6 +2812,23 @@ html[data-theme="light"] .admin-cars-service-alert {
   font-size: 0.85rem;
 }
 
+.admin-cars-docs {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  flex-wrap: wrap;
+}
+
+.admin-cars-doc-link {
+  font-size: 0.8rem;
+}
+
+.admin-cars-doc-link:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  text-decoration: none;
+}
+
 .admin-cars-assign-select {
   max-width: 11rem;
   font-size: 0.82rem;
@@ -2977,6 +2994,28 @@ html[data-theme="light"] .admin-cars-service-alert {
   border: 1px solid var(--theme-line);
 }
 
+.admin-car-docs-block {
+  padding: 0.55rem 0.65rem;
+  border: 1px solid var(--theme-line);
+  border-radius: 0.7rem;
+  background: var(--theme-slate-soft);
+}
+
+.admin-car-docs-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  align-items: center;
+  margin-top: 0.45rem;
+}
+
+.admin-car-docs-dates {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.5rem;
+  margin-top: 0.45rem;
+}
+
 .admin-car-maint-head {
   display: flex;
   flex-wrap: wrap;
@@ -3038,7 +3077,7 @@ html[data-theme="light"] .admin-cars-service-alert {
   }
 
   .admin-cars-table {
-    min-width: 860px;
+    min-width: 980px;
     font-size: 0.82rem;
   }
 
@@ -3065,6 +3104,10 @@ html[data-theme="light"] .admin-cars-service-alert {
 
   .admin-car-maint-table {
     min-width: 760px;
+  }
+
+  .admin-car-docs-dates {
+    grid-template-columns: 1fr;
   }
 }
 

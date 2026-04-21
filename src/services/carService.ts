@@ -85,6 +85,36 @@ export function normalizeCar(id: string, data: Record<string, unknown>): Car {
         : data.photoDataUrl === null
           ? null
           : undefined,
+    osagoFileDataUrl:
+      typeof data.osagoFileDataUrl === "string"
+        ? data.osagoFileDataUrl
+        : data.osagoFileDataUrl === null
+          ? null
+          : undefined,
+    osagoFileName:
+      typeof data.osagoFileName === "string"
+        ? data.osagoFileName
+        : data.osagoFileName === null
+          ? null
+          : undefined,
+    osagoFromDate:
+      data.osagoFromDate == null ? null : toMillis(data.osagoFromDate),
+    osagoToDate:
+      data.osagoToDate == null ? null : toMillis(data.osagoToDate),
+    diagCardFileDataUrl:
+      typeof data.diagCardFileDataUrl === "string"
+        ? data.diagCardFileDataUrl
+        : data.diagCardFileDataUrl === null
+          ? null
+          : undefined,
+    diagCardFileName:
+      typeof data.diagCardFileName === "string"
+        ? data.diagCardFileName
+        : data.diagCardFileName === null
+          ? null
+          : undefined,
+    diagCardDueDate:
+      data.diagCardDueDate == null ? null : toMillis(data.diagCardDueDate),
     deleted: data.deleted === true,
     createdAt: toMillis(data.createdAt),
     updatedAt: toMillis(data.updatedAt),
