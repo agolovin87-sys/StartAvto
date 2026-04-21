@@ -11,15 +11,19 @@ import { IconInstructorCabinetWorkload } from "@/components/instructor/instructo
 
 const Y_MAX = 8;
 
-/** Колонки по ТЗ: Пн–Чт, Сб, Вс (без Пт). Индексы 0..6 от понедельника. */
+/** Все дни пн–вс — как в «Мой график» (индексы 0..6 от понедельника). */
 const X_AXIS_DAYS: { weekIndex: number; label: string }[] = [
   { weekIndex: 0, label: "Пн" },
   { weekIndex: 1, label: "Вт" },
   { weekIndex: 2, label: "Ср" },
   { weekIndex: 3, label: "Чт" },
+  { weekIndex: 4, label: "Пт" },
   { weekIndex: 5, label: "Сб" },
   { weekIndex: 6, label: "Вс" },
 ];
+
+/** Подписи оси Y: 8 … 0 (ноль — нет вождений). */
+const Y_TICKS = [8, 7, 6, 5, 4, 3, 2, 1, 0] as const;
 
 function formatRuDdMmYyyy(dateKey: string): string {
   const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(dateKey.trim());
@@ -27,16 +31,17 @@ function formatRuDdMmYyyy(dateKey: string): string {
   return `${m[3]}.${m[2]}.${m[1]}`;
 }
 
+/** Как `slotsByDateKey` во вкладке «Главная» → «Мой график». */
 function slotCountsAsWorkload(s: DriveSlot): boolean {
-  return s.status === "scheduled" && Boolean(s.studentId?.trim()) && Boolean(s.dateKey);
+  return s.status === "scheduled" && Boolean(s.dateKey);
 }
 
 /**
  * График загруженности: число подтверждённых вождений (слотов) по дням — как в «Мой график».
  */
 export function InstructorCabinetWorkloadSection() {
-  const { profile } = useAuth();
-  const uid = profile?.uid?.trim() ?? "";
+  const { user, profile } = useAuth();
+  const uid = (user?.uid ?? profile?.uid ?? "").trim();
   const [slots, setSlots] = useState<DriveSlot[]>([]);
   const [weekMondayKey, setWeekMondayKey] = useState(() =>
     scheduleMondayDateKeyForWeekContaining()
@@ -129,7 +134,7 @@ export function InstructorCabinetWorkloadSection() {
       </div>
 
       <p className="field-hint instructor-cabinet-block-lead instructor-cabinet-workload-lead">
-        {`Данные из «Мой график»: по вертикали — число подтверждённых вождений (записей) на день; шкала 1–${Y_MAX}.`}
+        {`Данные из «Мой график»: число записей со статусом «подтверждено» (scheduled) по каждому дню; по вертикали — вождений в день, шкала 0–${Y_MAX}.`}
       </p>
 
       <div
@@ -139,7 +144,7 @@ export function InstructorCabinetWorkloadSection() {
       >
         <div className="instructor-cabinet-workload-chart-body">
           <div className="instructor-cabinet-workload-y-axis" aria-hidden>
-            {Array.from({ length: Y_MAX }, (_, i) => Y_MAX - i).map((n) => (
+            {Y_TICKS.map((n) => (
               <span key={n} className="instructor-cabinet-workload-y-tick">
                 {n}
               </span>
@@ -147,13 +152,22 @@ export function InstructorCabinetWorkloadSection() {
           </div>
           <div className="instructor-cabinet-workload-plot">
             <div className="instructor-cabinet-workload-grid" aria-hidden>
-              {Array.from({ length: Y_MAX }, (_, i) => (
-                <div key={i} className="instructor-cabinet-workload-grid-line" />
+              {Y_TICKS.map((n) => (
+                <div key={n} className="instructor-cabinet-workload-grid-line" />
               ))}
             </div>
             <div className="instructor-cabinet-workload-line-area">
-              <svg className="instructor-cabinet-workload-line-svg" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden>
-                <polyline className="instructor-cabinet-workload-line" points={linePoints} />
+              <svg
+                className="instructor-cabinet-workload-line-svg"
+                viewBox="0 0 100 100"
+                preserveAspectRatio="none"
+                aria-hidden
+              >
+                <polyline
+                  className="instructor-cabinet-workload-line"
+                  points={linePoints}
+                  vectorEffect="non-scaling-stroke"
+                />
               </svg>
               <div className="instructor-cabinet-workload-points">
                 {X_AXIS_DAYS.map((d, i) => {
@@ -186,7 +200,7 @@ export function InstructorCabinetWorkloadSection() {
           </div>
         </div>
         <p className="instructor-cabinet-workload-y-cap" aria-hidden>
-          Вождений (макс. {Y_MAX} на шкале)
+          Вождений в день (0–{Y_MAX} на шкале; больше {Y_MAX} — линия у верха, число над точкой)
         </p>
       </div>
     </section>
