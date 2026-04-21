@@ -13646,12 +13646,16 @@ html[data-theme="light"] .instructor-cabinet-rating-badge-value {
   top: 0.5rem;
   bottom: 1.65rem;
   z-index: 1;
+  overflow: hidden;
 }
 
 .instructor-cabinet-workload-line-svg {
   position: absolute;
   inset: 0;
-  overflow: visible;
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
 }
 
 .instructor-cabinet-workload-line {
