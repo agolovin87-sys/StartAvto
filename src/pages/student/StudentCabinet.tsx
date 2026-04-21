@@ -1,5 +1,5 @@
-import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
+import { CabinetBackToDashboardButton } from "@/components/CabinetBackToDashboardButton";
 import { StudentCabinetTalonBalance } from "@/components/student/StudentCabinetTalonBalance";
 import { StudentCabinetDrivingProgress } from "@/components/student/StudentCabinetDrivingProgress";
 import { StudentCabinetDrivingHistory } from "@/components/student/StudentCabinetDrivingHistory";
@@ -10,7 +10,6 @@ import { StudentCabinetInternalDrivingBlock } from "@/components/student/Student
  * Личный кабинет курсанта — отдельный маршрут `/app/student/cabinet` (без нижней навигации).
  */
 export function StudentCabinet() {
-  const navigate = useNavigate();
   const { profile } = useAuth();
   const displayName = profile?.displayName?.trim() ?? "Курсант";
 
@@ -22,20 +21,7 @@ export function StudentCabinet() {
             <h1 className="dashboard-title student-cabinet-title">Личный кабинет курсанта</h1>
           </div>
           <div className="student-cabinet-header-actions">
-            <button
-              type="button"
-              className="student-cab-back-ico-btn"
-              onClick={() => navigate("..")}
-              aria-label="Назад к главной"
-              title="Назад"
-            >
-              <svg className="student-cab-back-ico" viewBox="0 0 24 24" aria-hidden>
-                <path
-                  fill="currentColor"
-                  d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"
-                />
-              </svg>
-            </button>
+            <CabinetBackToDashboardButton />
             <span className="student-cabinet-user-name">{displayName}</span>
           </div>
         </header>
@@ -47,6 +33,10 @@ export function StudentCabinet() {
           <StudentCabinetExams />
           <StudentCabinetInternalDrivingBlock />
         </div>
+
+        <footer className="student-cabinet-footer-back">
+          <CabinetBackToDashboardButton />
+        </footer>
       </div>
     </div>
   );

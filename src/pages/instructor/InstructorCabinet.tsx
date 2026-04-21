@@ -1,5 +1,5 @@
-import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
+import { CabinetBackToDashboardButton } from "@/components/CabinetBackToDashboardButton";
 import { InstructorCabinetRatingSection } from "@/components/instructor/InstructorCabinetRatingSection";
 import { InstructorCabinetWorkloadSection } from "@/components/instructor/InstructorCabinetWorkloadSection";
 import { InstructorCabinetTalonSection } from "@/components/instructor/InstructorCabinetTalonSection";
@@ -9,7 +9,6 @@ import { InstructorCabinetVehicleSection } from "@/components/instructor/Instruc
  * Личный кабинет инструктора — структура как у курсанта (`/app/instructor/cabinet`).
  */
 export function InstructorCabinet() {
-  const navigate = useNavigate();
   const { profile } = useAuth();
   const displayName = profile?.displayName?.trim() ?? "Инструктор";
 
@@ -21,20 +20,7 @@ export function InstructorCabinet() {
             <h1 className="dashboard-title student-cabinet-title">Личный кабинет инструктора</h1>
           </div>
           <div className="student-cabinet-header-actions">
-            <button
-              type="button"
-              className="student-cab-back-ico-btn"
-              onClick={() => navigate("..")}
-              aria-label="Назад к главной"
-              title="Назад"
-            >
-              <svg className="student-cab-back-ico" viewBox="0 0 24 24" aria-hidden>
-                <path
-                  fill="currentColor"
-                  d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"
-                />
-              </svg>
-            </button>
+            <CabinetBackToDashboardButton />
             <span className="student-cabinet-user-name">{displayName}</span>
           </div>
         </header>
@@ -45,6 +31,10 @@ export function InstructorCabinet() {
           <InstructorCabinetWorkloadSection />
           <InstructorCabinetVehicleSection />
         </div>
+
+        <footer className="student-cabinet-footer-back">
+          <CabinetBackToDashboardButton />
+        </footer>
       </div>
     </div>
   );
