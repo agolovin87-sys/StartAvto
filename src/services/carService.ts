@@ -8,6 +8,7 @@ import {
   doc,
   getDoc,
   getDocs,
+  limit,
   onSnapshot,
   orderBy,
   query,
@@ -264,15 +265,37 @@ export function subscribeMaintenanceHistory(
 
 export type MaintenanceInput = Omit<CarMaintenance, "id" | "carId">;
 
-export async function addMaintenanceRecord(
-  carId: string,
-  data: MaintenanceInput
-): Promise<void> {
+async function syncCarFromLatestMaintenance(carId: string): Promise<void> {
   const { db } = getFirebase();
   const carRef = doc(db, CARS, carId);
   const carSnap = await getDoc(carRef);
   if (!carSnap.exists()) throw new Error("Автомобиль не найден");
   const car = normalizeCar(carSnap.id, carSnap.data() as Record<string, unknown>);
+  const latestSnap = await getDocs(
+    query(collection(doc(db, CARS, carId), MAINT), orderBy("date", "desc"), limit(1))
+  );
+  const latest = latestSnap.docs[0]
+    ? normalizeMaintenance(
+        latestSnap.docs[0].id,
+        carId,
+        latestSnap.docs[0].data() as Record<string, unknown>
+      )
+    : null;
+  await updateDoc(carRef, {
+    mileage: latest ? Math.max(car.mileage, latest.mileage) : car.mileage,
+    lastMaintenanceDate: latest ? latest.date : car.lastMaintenanceDate,
+    nextServiceDueMileage: latest ? latest.nextMileage : null,
+    updatedAt: Date.now(),
+  });
+}
+
+export async function addMaintenanceRecord(
+  carId: string,
+  data: MaintenanceInput
+): Promise<void> {
+  const { db } = getFirebase();
+  const carSnap = await getDoc(doc(db, CARS, carId));
+  if (!carSnap.exists()) throw new Error("Автомобиль не найден");
 
   await addDoc(collection(doc(db, CARS, carId), MAINT), {
     date: data.date,
@@ -283,14 +306,28 @@ export async function addMaintenanceRecord(
     nextMileage: data.nextMileage,
     createdAt: serverTimestamp(),
   });
+  await syncCarFromLatestMaintenance(carId);
+}
 
-  const nextMileage = Math.max(car.mileage, data.mileage);
-  await updateDoc(carRef, {
-    mileage: nextMileage,
-    lastMaintenanceDate: data.date,
-    nextServiceDueMileage: data.nextMileage,
-    updatedAt: Date.now(),
+export async function updateMaintenanceRecord(
+  carId: string,
+  maintenanceId: string,
+  data: MaintenanceInput
+): Promise<void> {
+  const { db } = getFirebase();
+  const maintRef = doc(doc(db, CARS, carId), MAINT, maintenanceId);
+  const maintSnap = await getDoc(maintRef);
+  if (!maintSnap.exists()) throw new Error("Запись ТО не найдена");
+  await updateDoc(maintRef, {
+    date: data.date,
+    type: data.type,
+    mileage: data.mileage,
+    cost: data.cost,
+    description: data.description,
+    nextMileage: data.nextMileage,
+    updatedAt: serverTimestamp(),
   });
+  await syncCarFromLatestMaintenance(carId);
 }
 
 /** Активные авто (для будущей привязки к урокам). */

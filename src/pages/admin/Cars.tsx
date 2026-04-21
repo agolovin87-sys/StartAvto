@@ -14,7 +14,7 @@ import {
   deleteCar,
 } from "@/services/carService";
 import { useCars } from "@/hooks/useCars";
-import type { Car, CarStatus } from "@/types/car";
+import type { Car, CarMaintenance, CarStatus } from "@/types/car";
 import type { UserProfile } from "@/types";
 
 const STATUS_LABEL: Record<CarStatus, string> = {
@@ -46,6 +46,7 @@ export function AdminCarsPanel() {
 
   const [historyCar, setHistoryCar] = useState<Car | null>(null);
   const [maintCar, setMaintCar] = useState<Car | null>(null);
+  const [editingMaint, setEditingMaint] = useState<CarMaintenance | null>(null);
 
   const [deleteTarget, setDeleteTarget] = useState<Car | null>(null);
   const [assignBusy, setAssignBusy] = useState<string | null>(null);
@@ -77,6 +78,14 @@ export function AdminCarsPanel() {
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const safePage = Math.min(page, totalPages);
   const slice = filtered.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
+  const dueSoonCount = useMemo(
+    () =>
+      cars.filter((c) => {
+        const left = kmUntilService(c);
+        return left != null && left >= 0 && left <= 50;
+      }).length,
+    [cars]
+  );
 
   useEffect(() => {
     setPage(1);
@@ -107,6 +116,12 @@ export function AdminCarsPanel() {
           <span className="field-hint">
             Проверьте правила Firestore для коллекции <code>cars</code>.
           </span>
+        </div>
+      ) : null}
+      {dueSoonCount > 0 ? (
+        <div className="admin-cars-service-alert" role="status">
+          Внимание: {dueSoonCount} авто до ТО за 50 км. Сообщение отображается администратору и
+          закреплённому инструктору.
         </div>
       ) : null}
 
@@ -182,7 +197,7 @@ export function AdminCarsPanel() {
               slice.map((c) => {
                 const kmLeft = kmUntilService(c);
                 const warn =
-                  kmLeft != null && kmLeft >= 0 && kmLeft < 500 && c.status === "active";
+                  kmLeft != null && kmLeft >= 0 && kmLeft <= 50 && c.status === "active";
                 return (
                   <tr key={c.id}>
                     <td className="admin-cars-td-photo">
@@ -240,7 +255,7 @@ export function AdminCarsPanel() {
                               (осталось {kmLeft.toLocaleString("ru-RU")} км)
                             </span>
                           ) : null}
-                          {warn ? <span className="admin-cars-to-badge"> &lt;500 км</span> : null}
+                          {warn ? <span className="admin-cars-to-badge"> ≤50 км</span> : null}
                         </span>
                       ) : (
                         "—"
@@ -269,6 +284,7 @@ export function AdminCarsPanel() {
                           type="button"
                           className="btn btn-ghost btn-sm"
                           onClick={() => {
+                            setEditingMaint(null);
                             setMaintCar(c);
                           }}
                         >
@@ -332,15 +348,25 @@ export function AdminCarsPanel() {
         onClose={() => setHistoryCar(null)}
         onAddClick={() => {
           if (historyCar) {
+            setEditingMaint(null);
             setMaintCar(historyCar);
           }
+        }}
+        onEditClick={(row) => {
+          if (!historyCar) return;
+          setEditingMaint(row);
+          setMaintCar(historyCar);
         }}
       />
 
       <MaintenanceModal
         open={maintCar != null}
         car={maintCar}
-        onClose={() => setMaintCar(null)}
+        editRecord={editingMaint}
+        onClose={() => {
+          setMaintCar(null);
+          setEditingMaint(null);
+        }}
         onSaved={() => void refresh()}
       />
 

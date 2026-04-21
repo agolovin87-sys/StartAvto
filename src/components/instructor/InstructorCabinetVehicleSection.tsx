@@ -1,12 +1,21 @@
 import { useAuth } from "@/context/AuthContext";
 import { IconInstructorCabinetVehicle } from "@/components/instructor/instructorCabinetSectionIcons";
+import { useCars } from "@/hooks/useCars";
 
 /**
  * Учебный автомобиль инструктора (из профиля).
  */
 export function InstructorCabinetVehicleSection() {
-  const { profile } = useAuth();
+  const { user, profile } = useAuth();
+  const { cars } = useCars();
+  const uid = (user?.uid ?? profile?.uid ?? "").trim();
   const vehicle = profile?.vehicleLabel?.trim() || "—";
+  const assignedCar = cars.find((c) => c.instructorId === uid && !c.deleted);
+  const kmLeft =
+    assignedCar?.nextServiceDueMileage != null
+      ? assignedCar.nextServiceDueMileage - assignedCar.mileage
+      : null;
+  const nearService = kmLeft != null && kmLeft >= 0 && kmLeft <= 50;
 
   return (
     <section
@@ -24,6 +33,12 @@ export function InstructorCabinetVehicleSection() {
       <p className="field-hint instructor-cabinet-block-lead">
         Обозначение задаётся в настройках профиля (администратор или вы, если доступно).
       </p>
+      {nearService ? (
+        <p className="instructor-cabinet-vehicle-alert" role="status">
+          Внимание: до следующего ТО осталось {kmLeft?.toLocaleString("ru-RU")} км.
+          Сообщите администратору и запланируйте замену.
+        </p>
+      ) : null}
     </section>
   );
 }

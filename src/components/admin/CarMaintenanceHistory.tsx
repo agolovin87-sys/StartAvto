@@ -45,11 +45,20 @@ type Props = {
   car: Car | null;
   onClose: () => void;
   onAddClick: () => void;
+  onEditClick: (row: CarMaintenance) => void;
 };
 
-export function CarMaintenanceHistory({ open, car, onClose, onAddClick }: Props) {
+export function CarMaintenanceHistory({
+  open,
+  car,
+  onClose,
+  onAddClick,
+  onEditClick,
+}: Props) {
   const [rows, setRows] = useState<CarMaintenance[]>([]);
   const [err, setErr] = useState<string | null>(null);
+  const [descOpen, setDescOpen] = useState(false);
+  const [descText, setDescText] = useState("");
 
   useEffect(() => {
     if (!open || !car) {
@@ -118,12 +127,13 @@ export function CarMaintenanceHistory({ open, car, onClose, onAddClick }: Props)
                 <th>Стоимость</th>
                 <th>До след. ТО</th>
                 <th>Описание</th>
+                <th>Действия</th>
               </tr>
             </thead>
             <tbody>
               {sorted.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="admin-schedule-table-empty">
+                  <td colSpan={7} className="admin-schedule-table-empty">
                     Записей пока нет.
                   </td>
                 </tr>
@@ -135,7 +145,31 @@ export function CarMaintenanceHistory({ open, car, onClose, onAddClick }: Props)
                     <td>{r.mileage.toLocaleString("ru-RU")}</td>
                     <td>{r.cost.toLocaleString("ru-RU")} ₽</td>
                     <td>{r.nextMileage.toLocaleString("ru-RU")} км</td>
-                    <td className="admin-car-maint-desc">{r.description || "—"}</td>
+                    <td className="admin-car-maint-desc">
+                      {r.description.trim() ? (
+                        <button
+                          type="button"
+                          className="student-cabinet-text-link admin-car-maint-desc-btn"
+                          onClick={() => {
+                            setDescText(r.description.trim());
+                            setDescOpen(true);
+                          }}
+                        >
+                          Посмотреть
+                        </button>
+                      ) : (
+                        "—"
+                      )}
+                    </td>
+                    <td>
+                      <button
+                        type="button"
+                        className="btn btn-ghost btn-sm"
+                        onClick={() => onEditClick(r)}
+                      >
+                        Изменить
+                      </button>
+                    </td>
                   </tr>
                 ))
               )}
@@ -143,6 +177,36 @@ export function CarMaintenanceHistory({ open, car, onClose, onAddClick }: Props)
           </table>
         </div>
       </div>
+      {descOpen ? (
+        <div className="admin-car-modal-overlay" role="presentation">
+          <button
+            type="button"
+            className="admin-car-modal-backdrop"
+            aria-label="Закрыть"
+            onClick={() => setDescOpen(false)}
+          />
+          <div
+            className="admin-car-modal-card admin-car-modal-card--sm admin-car-maint-desc-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="car-maint-desc-title"
+          >
+            <h3 id="car-maint-desc-title" className="admin-car-modal-title">
+              Описание ТО
+            </h3>
+            <p className="admin-car-maint-desc-text">{descText}</p>
+            <div className="admin-car-form-actions">
+              <button
+                type="button"
+                className="btn btn-primary"
+                onClick={() => setDescOpen(false)}
+              >
+                Ок
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </div>,
     document.body
   );

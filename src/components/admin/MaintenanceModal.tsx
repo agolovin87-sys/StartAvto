@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
-import type { Car, CarMaintenanceType } from "@/types/car";
-import { addMaintenanceRecord } from "@/services/carService";
+import type { Car, CarMaintenance, CarMaintenanceType } from "@/types/car";
+import { addMaintenanceRecord, updateMaintenanceRecord } from "@/services/carService";
 
 const TYPE_OPTIONS: { value: CarMaintenanceType; label: string }[] = [
   { value: "TO", label: "ТО" },
@@ -13,16 +13,18 @@ const TYPE_OPTIONS: { value: CarMaintenanceType; label: string }[] = [
 type Props = {
   open: boolean;
   car: Car | null;
+  editRecord?: CarMaintenance | null;
   onClose: () => void;
   onSaved: () => void;
 };
 
-export function MaintenanceModal({ open, car, onClose, onSaved }: Props) {
+export function MaintenanceModal({ open, car, editRecord, onClose, onSaved }: Props) {
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const [dateStr, setDateStr] = useState("");
   const [type, setType] = useState<CarMaintenanceType>("TO");
   const [mileage, setMileage] = useState(0);
+  const [nextMileage, setNextMileage] = useState(0);
   const [cost, setCost] = useState(0);
   const [description, setDescription] = useState("");
 
@@ -33,11 +35,25 @@ export function MaintenanceModal({ open, car, onClose, onSaved }: Props) {
     setDateStr(
       `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`
     );
+    if (editRecord) {
+      const rd = new Date(editRecord.date);
+      setDateStr(
+        `${rd.getFullYear()}-${String(rd.getMonth() + 1).padStart(2, "0")}-${String(rd.getDate()).padStart(2, "0")}`
+      );
+      setType(editRecord.type);
+      setMileage(editRecord.mileage);
+      setNextMileage(editRecord.nextMileage);
+      setCost(editRecord.cost);
+      setDescription(editRecord.description);
+      return;
+    }
     setType("TO");
     setMileage(car.mileage);
+    const interval = Math.max(1000, car.maintenanceInterval);
+    setNextMileage(car.mileage + interval);
     setCost(0);
     setDescription("");
-  }, [open, car]);
+  }, [open, car, editRecord]);
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -49,19 +65,23 @@ export function MaintenanceModal({ open, car, onClose, onSaved }: Props) {
       return;
     }
     const at = new Date(y, m - 1, day).getTime();
-    const mi = Math.max(1000, car.maintenanceInterval);
-    const nextMileage = Math.max(mileage, car.mileage) + mi;
+    if (nextMileage < mileage) {
+      setErr("Пробег до следующей замены не может быть меньше пробега на момент записи.");
+      return;
+    }
 
     setBusy(true);
     try {
-      await addMaintenanceRecord(car.id, {
+      const payload = {
         date: at,
         type,
         mileage: Math.max(0, mileage),
         cost: Math.max(0, cost),
         description: description.trim(),
-        nextMileage,
-      });
+        nextMileage: Math.max(0, nextMileage),
+      };
+      if (editRecord) await updateMaintenanceRecord(car.id, editRecord.id, payload);
+      else await addMaintenanceRecord(car.id, payload);
       onSaved();
       onClose();
     } catch (ex: unknown) {
@@ -74,7 +94,6 @@ export function MaintenanceModal({ open, car, onClose, onSaved }: Props) {
   if (!open || !car || typeof document === "undefined") return null;
 
   const interval = Math.max(1000, car.maintenanceInterval);
-  const previewNext = Math.max(mileage, car.mileage) + interval;
 
   return createPortal(
     <div className="admin-car-modal-overlay" role="presentation">
@@ -91,7 +110,7 @@ export function MaintenanceModal({ open, car, onClose, onSaved }: Props) {
         aria-labelledby="maint-form-title"
       >
         <h2 id="maint-form-title" className="admin-car-modal-title">
-          Запись о ТО · {car.licensePlate}
+          {editRecord ? "Изменить запись ТО" : "Запись о ТО"} · {car.licensePlate}
         </h2>
         <form className="admin-car-form" onSubmit={(e) => void submit(e)}>
           {err ? (
@@ -135,6 +154,17 @@ export function MaintenanceModal({ open, car, onClose, onSaved }: Props) {
             />
           </label>
           <label className="field">
+            <span className="field-label">Пробег до следующей замены, км</span>
+            <input
+              type="number"
+              className="input"
+              min={0}
+              value={nextMileage}
+              onChange={(e) => setNextMileage(Number(e.target.value))}
+              required
+            />
+          </label>
+          <label className="field">
             <span className="field-label">Стоимость, ₽</span>
             <input
               type="number"
@@ -154,16 +184,15 @@ export function MaintenanceModal({ open, car, onClose, onSaved }: Props) {
             />
           </label>
           <p className="field-hint admin-car-maint-hint">
-            Следующее ТО по пробегу (расчёт): до{" "}
-            <strong>{previewNext.toLocaleString("ru-RU")} км</strong> (интервал {interval}{" "}
-            км)
+            Интервал ТО по карточке авто: <strong>{interval.toLocaleString("ru-RU")} км</strong>.
+            Укажите целевой пробег для следующей замены вручную.
           </p>
           <div className="admin-car-form-actions">
             <button type="button" className="btn btn-ghost" onClick={onClose} disabled={busy}>
               Отмена
             </button>
             <button type="submit" className="btn btn-primary" disabled={busy}>
-              {busy ? "…" : "Сохранить"}
+              {busy ? "…" : editRecord ? "Сохранить изменения" : "Сохранить"}
             </button>
           </div>
         </form>
