@@ -1003,16 +1003,13 @@ function StudentDashboardShell() {
                   <span className="student-home-subtitle-row">
                     <IconRole />
                     <span>
-                      Карточка курсанта (нажмите для входа)
-                      <span className="home-login-hint-arrows-paren" aria-hidden="true">
-                        (
-                        <span className="home-login-hint-arrows">
-                          <span className="home-login-hint-arrows__chev" />
-                          <span className="home-login-hint-arrows__chev" />
-                          <span className="home-login-hint-arrows__chev" />
-                        </span>
-                        )
+                      {"Карточка курсанта (нажмите для входа "}
+                      <span className="home-login-hint-arrows" aria-hidden="true">
+                        <span className="home-login-hint-arrows__chev" />
+                        <span className="home-login-hint-arrows__chev" />
+                        <span className="home-login-hint-arrows__chev" />
                       </span>
+                      {")"}
                     </span>
                   </span>
                 </h2>
