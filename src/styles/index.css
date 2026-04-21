@@ -4561,7 +4561,21 @@ html[data-theme="purple"] .instr-side-btn.instr-side-loc:hover {
   display: inline-flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: 0.35rem;
+  gap: 0;
+}
+
+/** Скобки со стрелками сразу после «(нажмите для входа)». */
+.home-login-hint-arrows-paren {
+  display: inline-flex;
+  align-items: flex-end;
+  margin-left: 0.12em;
+  white-space: nowrap;
+  font-weight: 500;
+  color: var(--theme-muted, #64748b);
+}
+
+.home-login-hint-arrows-paren .home-login-hint-arrows {
+  margin: 0 1px;
 }
 
 /** Три стрелки вниз у подсказки «нажмите для входа» (инструктор / курсант). */
