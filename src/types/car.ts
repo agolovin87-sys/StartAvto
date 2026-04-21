@@ -14,6 +14,8 @@ export interface Car {
   instructorName?: string;
   status: CarStatus;
   mileage: number;
+  /** Когда инструктор последний раз передал показания пробега из ЛК (мс UTC). */
+  instructorMileageSubmittedAt?: number | null;
   fuelLevel?: number;
   lastMaintenanceDate: number | null;
   nextMaintenanceDate: number | null;

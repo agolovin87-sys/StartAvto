@@ -66,6 +66,11 @@ export function normalizeCar(id: string, data: Record<string, unknown>): Car {
       typeof data.instructorName === "string" ? data.instructorName : undefined,
     status,
     mileage: typeof data.mileage === "number" ? data.mileage : 0,
+    instructorMileageSubmittedAt:
+      typeof data.instructorMileageSubmittedAt === "number" &&
+      Number.isFinite(data.instructorMileageSubmittedAt)
+        ? data.instructorMileageSubmittedAt
+        : undefined,
     fuelLevel: typeof data.fuelLevel === "number" ? data.fuelLevel : undefined,
     lastMaintenanceDate:
       data.lastMaintenanceDate == null
@@ -278,9 +283,11 @@ export async function updateCar(id: string, data: Partial<CarInput>): Promise<vo
 export async function submitInstructorMileage(carId: string, mileage: number): Promise<void> {
   const { db } = getFirebase();
   const ref = doc(db, CARS, carId);
+  const now = Date.now();
   await updateDoc(ref, {
     mileage: Math.max(0, Math.round(mileage)),
-    updatedAt: Date.now(),
+    updatedAt: now,
+    instructorMileageSubmittedAt: now,
   });
 }
 

@@ -13959,6 +13959,36 @@ html[data-theme="light"] .instructor-cabinet-vehicle-planned-value {
   background: linear-gradient(180deg, #8b5cf6 0%, #7c3aed 100%);
 }
 
+@keyframes instructor-cabinet-mileage-btn-glow {
+  0%,
+  100% {
+    box-shadow:
+      0 0 0 1px rgba(255, 255, 255, 0.22),
+      0 0 12px rgba(196, 181, 253, 0.45);
+    filter: brightness(1);
+  }
+  50% {
+    box-shadow:
+      0 0 0 2px rgba(253, 230, 138, 0.55),
+      0 0 22px rgba(250, 204, 21, 0.55),
+      0 0 28px rgba(167, 139, 250, 0.65);
+    filter: brightness(1.08);
+  }
+}
+
+.instructor-cabinet-mileage-btn--remind {
+  animation: instructor-cabinet-mileage-btn-glow 2.4s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .instructor-cabinet-mileage-btn--remind {
+    animation: none;
+    box-shadow:
+      0 0 0 2px rgba(253, 230, 138, 0.45),
+      0 0 16px rgba(250, 204, 21, 0.4);
+  }
+}
+
 .instructor-cabinet-mileage-modal {
   max-width: min(520px, calc(100vw - 24px));
 }

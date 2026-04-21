@@ -7,6 +7,7 @@ import {
 } from "@/services/carService";
 import type { Car, CarMaintenance } from "@/types/car";
 import { useAuth } from "@/context/AuthContext";
+import { scheduleMondayDateKeyForWeekContaining } from "@/lib/scheduleTimezone";
 
 function IconMini({ path }: { path: string }) {
   return (
@@ -56,6 +57,8 @@ export function InstructorCabinetVehicleSection() {
   const [mileageInput, setMileageInput] = useState("");
   const [mileageBusy, setMileageBusy] = useState(false);
   const [mileageErr, setMileageErr] = useState("");
+  /** Смена календарной недели без перезагрузки страницы */
+  const [weekClock, setWeekClock] = useState(0);
   const kmLeft =
     assignedCar?.nextServiceDueMileage != null
       ? assignedCar.nextServiceDueMileage - assignedCar.mileage
@@ -89,6 +92,20 @@ export function InstructorCabinetVehicleSection() {
     }
     return subscribeMaintenanceHistory(assignedCar.id, setHistoryRows, () => setHistoryRows([]));
   }, [assignedCar]);
+
+  useEffect(() => {
+    const id = window.setInterval(() => setWeekClock((n) => n + 1), 60_000);
+    return () => window.clearInterval(id);
+  }, []);
+
+  const mileageWeeklyRemindGlow = useMemo(() => {
+    if (!assignedCar) return false;
+    const thisWeekMon = scheduleMondayDateKeyForWeekContaining(Date.now());
+    const submittedAt = assignedCar.instructorMileageSubmittedAt;
+    if (submittedAt == null || !Number.isFinite(submittedAt)) return true;
+    const submitWeekMon = scheduleMondayDateKeyForWeekContaining(submittedAt);
+    return submitWeekMon < thisWeekMon;
+  }, [assignedCar, weekClock]);
 
   useEffect(() => {
     if (!mileageModalOpen || !assignedCar) return;
@@ -217,8 +234,16 @@ export function InstructorCabinetVehicleSection() {
           </div>
           <button
             type="button"
-            className="btn instructor-cabinet-mileage-btn"
+            className={
+              "btn instructor-cabinet-mileage-btn" +
+              (mileageWeeklyRemindGlow ? " instructor-cabinet-mileage-btn--remind" : "")
+            }
             onClick={() => setMileageModalOpen(true)}
+            aria-label={
+              mileageWeeklyRemindGlow
+                ? "Показания пробега: требуется передать за текущую неделю"
+                : "Показания пробега"
+            }
           >
             Показания пробега
           </button>

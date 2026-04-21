@@ -1192,9 +1192,12 @@ service cloud.firestore {
         || (
           isInstructorAccount()
           && resource.data.get('instructorId', null) == request.auth.uid
-          && request.resource.data.diff(resource.data).changedKeys().hasOnly(['mileage', 'updatedAt'])
+          && request.resource.data.diff(resource.data).changedKeys().hasOnly(['mileage', 'updatedAt', 'instructorMileageSubmittedAt'])
           && request.resource.data.mileage is number
           && request.resource.data.mileage >= 0
+          && (!request.resource.data.keys().hasAny(['instructorMileageSubmittedAt'])
+            || (request.resource.data.instructorMileageSubmittedAt is int
+              && request.resource.data.instructorMileageSubmittedAt > 0))
         );
       match /maintenance/{maintId} {
         allow read: if isAdmin()
