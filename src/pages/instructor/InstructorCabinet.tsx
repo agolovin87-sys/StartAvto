@@ -1,6 +1,7 @@
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 import { InstructorCabinetRatingSection } from "@/components/instructor/InstructorCabinetRatingSection";
+import { InstructorCabinetWorkloadSection } from "@/components/instructor/InstructorCabinetWorkloadSection";
 import { InstructorCabinetTalonSection } from "@/components/instructor/InstructorCabinetTalonSection";
 import { InstructorCabinetVehicleSection } from "@/components/instructor/InstructorCabinetVehicleSection";
 
@@ -41,6 +42,7 @@ export function InstructorCabinet() {
         <div className="student-cabinet-blocks instructor-cabinet-blocks">
           <InstructorCabinetTalonSection />
           <InstructorCabinetRatingSection />
+          <InstructorCabinetWorkloadSection />
           <InstructorCabinetVehicleSection />
         </div>
       </div>
