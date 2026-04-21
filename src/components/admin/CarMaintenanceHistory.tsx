@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import type { Car, CarMaintenance, CarMaintenanceType } from "@/types/car";
-import { subscribeMaintenanceHistory } from "@/services/carService";
+import { deleteMaintenanceRecord, subscribeMaintenanceHistory } from "@/services/carService";
 
 const TYPE_LABEL: Record<CarMaintenanceType, string> = {
   TO: "ТО",
@@ -57,6 +57,7 @@ export function CarMaintenanceHistory({
 }: Props) {
   const [rows, setRows] = useState<CarMaintenance[]>([]);
   const [err, setErr] = useState<string | null>(null);
+  const [deleteBusyId, setDeleteBusyId] = useState<string | null>(null);
   const [descOpen, setDescOpen] = useState(false);
   const [descText, setDescText] = useState("");
 
@@ -162,13 +163,32 @@ export function CarMaintenanceHistory({
                       )}
                     </td>
                     <td>
-                      <button
-                        type="button"
-                        className="btn btn-ghost btn-sm"
-                        onClick={() => onEditClick(r)}
-                      >
-                        Изменить
-                      </button>
+                      <div className="admin-cars-actions">
+                        <button
+                          type="button"
+                          className="btn btn-ghost btn-sm"
+                          onClick={() => onEditClick(r)}
+                        >
+                          Изменить
+                        </button>
+                        <button
+                          type="button"
+                          className="btn btn-danger btn-sm"
+                          disabled={deleteBusyId === r.id}
+                          onClick={() => {
+                            const ok = window.confirm("Удалить эту запись ТО?");
+                            if (!ok) return;
+                            setDeleteBusyId(r.id);
+                            void deleteMaintenanceRecord(car.id, r.id)
+                              .catch((e: unknown) =>
+                                setErr(e instanceof Error ? e.message : "Не удалось удалить запись")
+                              )
+                              .finally(() => setDeleteBusyId(null));
+                          }}
+                        >
+                          {deleteBusyId === r.id ? "…" : "Удалить"}
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))

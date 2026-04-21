@@ -5,6 +5,7 @@ import {
   addDoc,
   collection,
   deleteField,
+  deleteDoc,
   doc,
   getDoc,
   getDocs,
@@ -370,6 +371,18 @@ export async function updateMaintenanceRecord(
     nextMileage: data.nextMileage,
     updatedAt: serverTimestamp(),
   });
+  await syncCarFromLatestMaintenance(carId);
+}
+
+export async function deleteMaintenanceRecord(
+  carId: string,
+  maintenanceId: string
+): Promise<void> {
+  const { db } = getFirebase();
+  const maintRef = doc(doc(db, CARS, carId), MAINT, maintenanceId);
+  const maintSnap = await getDoc(maintRef);
+  if (!maintSnap.exists()) throw new Error("Запись ТО не найдена");
+  await deleteDoc(maintRef);
   await syncCarFromLatestMaintenance(carId);
 }
 
