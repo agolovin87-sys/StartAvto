@@ -13660,11 +13660,11 @@ html[data-theme="light"] .instructor-cabinet-rating-badge-value {
 
 .instructor-cabinet-workload-line {
   fill: none;
-  stroke: #0ea5e9;
+  stroke: #22c55e;
   stroke-width: 3;
   stroke-linecap: round;
   stroke-linejoin: round;
-  filter: drop-shadow(0 0 6px rgba(14, 165, 233, 0.35));
+  filter: drop-shadow(0 0 6px rgba(34, 197, 94, 0.45));
 }
 
 .instructor-cabinet-workload-points {
@@ -13678,9 +13678,9 @@ html[data-theme="light"] .instructor-cabinet-rating-badge-value {
   height: 0.52rem;
   border-radius: 999px;
   border: 2px solid #fff;
-  background: #0284c7;
+  background: #16a34a;
   transform: translate(-50%, -50%);
-  box-shadow: 0 0 0 1px rgba(2, 132, 199, 0.55);
+  box-shadow: 0 0 0 1px rgba(22, 163, 74, 0.55);
 }
 
 .instructor-cabinet-workload-x-axis {
@@ -13689,10 +13689,10 @@ html[data-theme="light"] .instructor-cabinet-rating-badge-value {
   right: 0;
   bottom: 0;
   display: flex;
-  align-items: flex-end;
+  align-items: center;
   justify-content: space-between;
   gap: 0.2rem;
-  padding: 0 0.15rem;
+  padding: 0.25rem 0.15rem 0;
 }
 
 .instructor-cabinet-workload-col {
@@ -13702,25 +13702,15 @@ html[data-theme="light"] .instructor-cabinet-rating-badge-value {
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: flex-end;
-  height: 100%;
-}
-
-.instructor-cabinet-workload-point-value {
-  min-height: 1rem;
-  font-size: 0.68rem;
-  font-weight: 800;
-  color: var(--theme-heading);
-  line-height: 1;
-  margin-bottom: 0.12rem;
+  justify-content: center;
 }
 
 .instructor-cabinet-workload-x-label {
-  margin-top: 0.35rem;
   font-size: 0.72rem;
   font-weight: 700;
   letter-spacing: 0.02em;
   color: var(--theme-soft);
+  text-align: center;
 }
 
 .instructor-cabinet-workload-y-cap {

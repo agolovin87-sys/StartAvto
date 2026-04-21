@@ -87,11 +87,11 @@ export function InstructorCabinetWorkloadSection() {
     return `${d.label}: ${n}${n > Y_MAX ? ` (на шкале до ${Y_MAX})` : ""}`;
   }).join(", ");
   const linePoints = useMemo(() => {
-    const count = X_AXIS_DAYS.length;
-    if (count === 0) return "";
+    const n = X_AXIS_DAYS.length;
+    if (n === 0) return "";
     return lineValues
       .map((v, i) => {
-        const x = count === 1 ? 0 : (i / (count - 1)) * 100;
+        const x = ((i + 0.5) / n) * 100;
         const y = 100 - (Math.max(0, Math.min(Y_MAX, v)) / Y_MAX) * 100;
         return `${x},${y}`;
       })
@@ -173,11 +173,12 @@ export function InstructorCabinetWorkloadSection() {
                 {X_AXIS_DAYS.map((d, i) => {
                   const v = lineValues[i] ?? 0;
                   const y = 100 - (Math.max(0, Math.min(Y_MAX, v)) / Y_MAX) * 100;
+                  const x = ((i + 0.5) / X_AXIS_DAYS.length) * 100;
                   return (
                     <span
                       key={`${d.label}-point`}
                       className="instructor-cabinet-workload-point"
-                      style={{ left: `${(i / Math.max(1, X_AXIS_DAYS.length - 1)) * 100}%`, top: `${y}%` }}
+                      style={{ left: `${x}%`, top: `${y}%` }}
                       aria-hidden
                     />
                   );
@@ -185,22 +186,16 @@ export function InstructorCabinetWorkloadSection() {
               </div>
             </div>
             <div className="instructor-cabinet-workload-x-axis">
-              {X_AXIS_DAYS.map((d) => {
-                const raw = drivesByDateKey.get(weekKeys[d.weekIndex] ?? "") ?? 0;
-                return (
-                  <div key={d.label} className="instructor-cabinet-workload-col">
-                    <span className="instructor-cabinet-workload-point-value" aria-hidden>
-                      {raw > 0 ? raw : ""}
-                    </span>
-                    <span className="instructor-cabinet-workload-x-label">{d.label}</span>
-                  </div>
-                );
-              })}
+              {X_AXIS_DAYS.map((d) => (
+                <div key={d.label} className="instructor-cabinet-workload-col">
+                  <span className="instructor-cabinet-workload-x-label">{d.label}</span>
+                </div>
+              ))}
             </div>
           </div>
         </div>
         <p className="instructor-cabinet-workload-y-cap" aria-hidden>
-          Вождений в день (0–{Y_MAX} на шкале; больше {Y_MAX} — линия у верха, число над точкой)
+          Вождений в день (0–{Y_MAX} на шкале; больше {Y_MAX} — точка у верхней отметки)
         </p>
       </div>
     </section>
