@@ -1,8 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { IconInstructorCabinetVehicle } from "@/components/instructor/instructorCabinetSectionIcons";
-import { useCars } from "@/hooks/useCars";
-import { subscribeMaintenanceHistory } from "@/services/carService";
-import type { CarMaintenance } from "@/types/car";
+import { subscribeCarsForInstructor, subscribeMaintenanceHistory } from "@/services/carService";
+import type { Car, CarMaintenance } from "@/types/car";
 import { useAuth } from "@/context/AuthContext";
 
 function IconMini({ path }: { path: string }) {
@@ -23,9 +22,9 @@ function formatRuDate(ms: number): string {
  */
 export function InstructorCabinetVehicleSection() {
   const { user, profile } = useAuth();
-  const { cars } = useCars();
   const uid = (user?.uid ?? profile?.uid ?? "").trim();
-  const assignedCar = cars.find((c) => c.instructorId === uid && !c.deleted);
+  const [assignedCars, setAssignedCars] = useState<Car[]>([]);
+  const assignedCar = assignedCars[0] ?? null;
   const [historyRows, setHistoryRows] = useState<CarMaintenance[]>([]);
   const kmLeft =
     assignedCar?.nextServiceDueMileage != null
@@ -48,6 +47,10 @@ export function InstructorCabinetVehicleSection() {
                 : "ТО";
     return `${typeLabel} на ${assignedCar.nextServiceDueMileage.toLocaleString("ru-RU")} км`;
   }, [assignedCar]);
+
+  useEffect(() => {
+    return subscribeCarsForInstructor(uid, setAssignedCars, () => setAssignedCars([]));
+  }, [uid]);
 
   useEffect(() => {
     if (!assignedCar) {

@@ -15,6 +15,7 @@ import {
   query,
   serverTimestamp,
   updateDoc,
+  where,
   type DocumentData,
 } from "firebase/firestore";
 import { deleteObject, getDownloadURL, ref, uploadBytes } from "firebase/storage";
@@ -203,6 +204,33 @@ export function subscribeCars(
   const { db } = getFirebase();
   return onSnapshot(
     collection(db, CARS),
+    (snap) => {
+      const list: Car[] = [];
+      for (const d of snap.docs) {
+        const c = normalizeCar(d.id, d.data() as Record<string, unknown>);
+        if (!c.deleted) list.push(c);
+      }
+      list.sort((a, b) => b.updatedAt - a.updatedAt);
+      onUpdate(list);
+    },
+    (e) => onError?.(e as Error)
+  );
+}
+
+export function subscribeCarsForInstructor(
+  instructorUid: string,
+  onUpdate: (cars: Car[]) => void,
+  onError?: (e: Error) => void
+): () => void {
+  const { db } = getFirebase();
+  const uid = instructorUid.trim();
+  if (!uid) {
+    onUpdate([]);
+    return () => {};
+  }
+  const q = query(collection(db, CARS), where("instructorId", "==", uid));
+  return onSnapshot(
+    q,
     (snap) => {
       const list: Car[] = [];
       for (const d of snap.docs) {
