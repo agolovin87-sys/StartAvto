@@ -28,6 +28,7 @@ export function MaintenanceModal({ open, car, editRecord, onClose, onSaved }: Pr
   const [nextMileage, setNextMileage] = useState(0);
   const [cost, setCost] = useState(0);
   const [description, setDescription] = useState("");
+  const oilChangeSelected = type === "oil_change";
 
   useEffect(() => {
     if (!open || !car) return;
@@ -66,7 +67,7 @@ export function MaintenanceModal({ open, car, editRecord, onClose, onSaved }: Pr
       return;
     }
     const at = new Date(y, m - 1, day).getTime();
-    if (nextMileage < mileage) {
+    if (oilChangeSelected && nextMileage < mileage) {
       setErr("Пробег до следующей замены не может быть меньше пробега на момент записи.");
       return;
     }
@@ -79,7 +80,7 @@ export function MaintenanceModal({ open, car, editRecord, onClose, onSaved }: Pr
         mileage: Math.max(0, mileage),
         cost: Math.max(0, cost),
         description: description.trim(),
-        nextMileage: Math.max(0, nextMileage),
+        nextMileage: oilChangeSelected ? Math.max(0, nextMileage) : Math.max(0, mileage),
       };
       if (editRecord) await updateMaintenanceRecord(car.id, editRecord.id, payload);
       else await addMaintenanceRecord(car.id, payload);
@@ -154,17 +155,19 @@ export function MaintenanceModal({ open, car, editRecord, onClose, onSaved }: Pr
               required
             />
           </label>
-          <label className="field">
-            <span className="field-label">Пробег до следующей замены, км</span>
-            <input
-              type="number"
-              className="input"
-              min={0}
-              value={nextMileage}
-              onChange={(e) => setNextMileage(Number(e.target.value))}
-              required
-            />
-          </label>
+          {oilChangeSelected ? (
+            <label className="field">
+              <span className="field-label">Пробег до следующей замены, км</span>
+              <input
+                type="number"
+                className="input"
+                min={0}
+                value={nextMileage}
+                onChange={(e) => setNextMileage(Number(e.target.value))}
+                required
+              />
+            </label>
+          ) : null}
           <label className="field">
             <span className="field-label">Стоимость, ₽</span>
             <input
@@ -184,10 +187,12 @@ export function MaintenanceModal({ open, car, editRecord, onClose, onSaved }: Pr
               onChange={(e) => setDescription(e.target.value)}
             />
           </label>
-          <p className="field-hint admin-car-maint-hint">
-            Интервал ТО по карточке авто: <strong>{interval.toLocaleString("ru-RU")} км</strong>.
-            Укажите целевой пробег для следующей замены вручную.
-          </p>
+          {oilChangeSelected ? (
+            <p className="field-hint admin-car-maint-hint">
+              Интервал ТО по карточке авто: <strong>{interval.toLocaleString("ru-RU")} км</strong>.
+              Укажите целевой пробег для следующей замены вручную.
+            </p>
+          ) : null}
           <div className="admin-car-form-actions">
             <button type="button" className="btn btn-ghost" onClick={onClose} disabled={busy}>
               Отмена
