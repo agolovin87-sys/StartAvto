@@ -13864,6 +13864,33 @@ html[data-theme="light"] .instructor-cabinet-workload-chart-wrap {
   color: var(--theme-muted);
 }
 
+.instructor-cabinet-doc-expiry--urgent {
+  color: #f87171;
+  font-weight: 700;
+  animation: instructor-cabinet-doc-expiry-blink 1.1s ease-in-out infinite;
+}
+
+@keyframes instructor-cabinet-doc-expiry-blink {
+  0%,
+  100% {
+    color: #dc2626;
+    opacity: 1;
+  }
+
+  50% {
+    color: #ef4444;
+    opacity: 0.55;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .instructor-cabinet-doc-expiry--urgent {
+    animation: none;
+    color: #dc2626;
+    opacity: 1;
+  }
+}
+
 .instructor-cabinet-vehicle-docs-label {
   font-size: 0.77rem;
   color: var(--theme-muted);

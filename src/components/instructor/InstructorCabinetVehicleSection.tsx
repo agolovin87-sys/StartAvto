@@ -27,6 +27,22 @@ function formatRuDateShort(ms: number | null | undefined): string {
   return `${String(d.getDate()).padStart(2, "0")}.${String(d.getMonth() + 1).padStart(2, "0")}.${d.getFullYear()}`;
 }
 
+/** Сколько календарных дней от сегодня до даты срока (0 — сегодня, отриц. — просрочено). */
+function calendarDaysFromTodayToDate(ms: number): number {
+  const now = new Date();
+  const t = new Date(ms);
+  const startToday = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+  const startTarget = new Date(t.getFullYear(), t.getMonth(), t.getDate()).getTime();
+  return Math.round((startTarget - startToday) / 86400000);
+}
+
+const DOC_EXPIRY_WARN_DAYS = 10;
+
+function isDocExpiryUrgent(ms: number | null | undefined): boolean {
+  if (ms == null || !Number.isFinite(ms)) return false;
+  return calendarDaysFromTodayToDate(ms) <= DOC_EXPIRY_WARN_DAYS;
+}
+
 /**
  * Учебный автомобиль инструктора (из профиля).
  */
@@ -162,7 +178,14 @@ export function InstructorCabinetVehicleSection() {
                   >
                     ОСАГО
                   </button>
-                  <span className="instructor-cabinet-doc-expiry">
+                  <span
+                    className={
+                      "instructor-cabinet-doc-expiry" +
+                      (isDocExpiryUrgent(assignedCar.osagoToDate)
+                        ? " instructor-cabinet-doc-expiry--urgent"
+                        : "")
+                    }
+                  >
                     (до: {formatRuDateShort(assignedCar.osagoToDate)})
                   </span>
                 </span>
@@ -178,7 +201,14 @@ export function InstructorCabinetVehicleSection() {
                   >
                     ДК
                   </button>
-                  <span className="instructor-cabinet-doc-expiry">
+                  <span
+                    className={
+                      "instructor-cabinet-doc-expiry" +
+                      (isDocExpiryUrgent(assignedCar.diagCardDueDate)
+                        ? " instructor-cabinet-doc-expiry--urgent"
+                        : "")
+                    }
+                  >
                     (до: {formatRuDateShort(assignedCar.diagCardDueDate)})
                   </span>
                 </span>
