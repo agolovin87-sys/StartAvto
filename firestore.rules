@@ -1180,11 +1180,24 @@ service cloud.firestore {
         );
     }
 
-    /** Учебные автомобили и журнал ТО (только админ). */
+    /** Учебные автомобили и журнал ТО. */
     match /cars/{carId} {
-      allow read, write: if isAdmin() || isAdminByTokenEmail();
+      allow read: if isAdmin()
+        || isAdminByTokenEmail()
+        || (
+          isInstructorAccount()
+          && resource.data.get('instructorId', null) == request.auth.uid
+        );
+      allow write: if isAdmin() || isAdminByTokenEmail();
       match /maintenance/{maintId} {
-        allow read, write: if isAdmin() || isAdminByTokenEmail();
+        allow read: if isAdmin()
+          || isAdminByTokenEmail()
+          || (
+            isInstructorAccount()
+            && exists(/databases/$(database)/documents/cars/$(carId))
+            && get(/databases/$(database)/documents/cars/$(carId)).data.get('instructorId', null) == request.auth.uid
+          );
+        allow write: if isAdmin() || isAdminByTokenEmail();
       }
     }
   }

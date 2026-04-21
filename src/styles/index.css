@@ -13532,7 +13532,7 @@ html[data-theme="light"] .instructor-cabinet-rating-badge-value {
 
 .instructor-cabinet-vehicle-layout {
   display: grid;
-  grid-template-columns: 112px minmax(0, 1fr);
+  grid-template-columns: 104px minmax(0, 1fr);
   gap: 0.75rem;
   margin-bottom: 0.6rem;
 }
@@ -13648,11 +13648,12 @@ html[data-theme="light"] .instructor-cabinet-mini-ico {
 
 @media (max-width: 560px) {
   .instructor-cabinet-vehicle-layout {
-    grid-template-columns: 1fr;
+    grid-template-columns: 92px minmax(0, 1fr);
+    align-items: start;
   }
 
   .instructor-cabinet-vehicle-photo-col {
-    max-width: 140px;
+    max-width: none;
   }
 
   .instructor-cabinet-vehicle-history-table {
