@@ -117,13 +117,6 @@ export function InstructorCabinetVehicleSection() {
         </p>
       ) : (
         <>
-          <button
-            type="button"
-            className="btn instructor-cabinet-mileage-btn"
-            onClick={() => setMileageModalOpen(true)}
-          >
-            Показания пробега
-          </button>
           <div className="instructor-cabinet-vehicle-layout">
             <div className="instructor-cabinet-vehicle-photo-col">
               {assignedCar.photoDataUrl ? (
@@ -192,6 +185,13 @@ export function InstructorCabinetVehicleSection() {
               </div>
             </div>
           </div>
+          <button
+            type="button"
+            className="btn instructor-cabinet-mileage-btn"
+            onClick={() => setMileageModalOpen(true)}
+          >
+            Показания пробега
+          </button>
 
           <div className="instructor-cabinet-vehicle-panel">
             <p className="instructor-cabinet-vehicle-line">
