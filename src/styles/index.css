@@ -13638,12 +13638,50 @@ html[data-theme="light"] .instructor-cabinet-rating-badge-value {
   opacity: 0.85;
 }
 
-.instructor-cabinet-workload-bars {
+.instructor-cabinet-workload-line-area {
   position: absolute;
   left: 0;
   right: 0;
   top: 0.5rem;
   bottom: 1.65rem;
+}
+
+.instructor-cabinet-workload-line-svg {
+  position: absolute;
+  inset: 0;
+  overflow: visible;
+}
+
+.instructor-cabinet-workload-line {
+  fill: none;
+  stroke: #0ea5e9;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  filter: drop-shadow(0 0 6px rgba(14, 165, 233, 0.35));
+}
+
+.instructor-cabinet-workload-points {
+  position: absolute;
+  inset: 0;
+}
+
+.instructor-cabinet-workload-point {
+  position: absolute;
+  width: 0.52rem;
+  height: 0.52rem;
+  border-radius: 999px;
+  border: 2px solid #fff;
+  background: #0284c7;
+  transform: translate(-50%, -50%);
+  box-shadow: 0 0 0 1px rgba(2, 132, 199, 0.55);
+}
+
+.instructor-cabinet-workload-x-axis {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
   display: flex;
   align-items: flex-end;
   justify-content: space-between;
@@ -13662,38 +13700,13 @@ html[data-theme="light"] .instructor-cabinet-rating-badge-value {
   height: 100%;
 }
 
-.instructor-cabinet-workload-bar-value {
+.instructor-cabinet-workload-point-value {
   min-height: 1rem;
   font-size: 0.68rem;
   font-weight: 800;
   color: var(--theme-heading);
   line-height: 1;
   margin-bottom: 0.12rem;
-}
-
-.instructor-cabinet-workload-bar-track {
-  width: 100%;
-  max-width: 36px;
-  flex: 1;
-  min-height: 72px;
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-end;
-  border-radius: 0.45rem 0.45rem 0.15rem 0.15rem;
-  background: color-mix(in srgb, var(--theme-bg) 55%, transparent);
-  border: 1px solid color-mix(in srgb, var(--theme-line) 75%, transparent);
-  overflow: hidden;
-}
-
-.instructor-cabinet-workload-bar {
-  width: 100%;
-  border-radius: 0.35rem 0.35rem 0 0;
-  background: linear-gradient(180deg, #38bdf8 0%, #0ea5e9 55%, #0369a1 100%);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.35),
-    0 0 12px rgba(14, 165, 233, 0.35);
-  min-height: 0;
-  transition: height 0.2s ease;
 }
 
 .instructor-cabinet-workload-x-label {
@@ -13736,11 +13749,6 @@ html[data-theme="light"] .instructor-cabinet-workload-chart-wrap {
     min-height: 148px;
   }
 
-  .instructor-cabinet-workload-bar-track {
-    max-width: 28px;
-    min-height: 64px;
-  }
-
   .instructor-cabinet-workload-x-label {
     font-size: 0.66rem;
   }
@@ -13751,9 +13759,14 @@ html[data-theme="light"] .instructor-cabinet-workload-chart-wrap {
     padding-bottom: 1.45rem;
   }
 
-  .instructor-cabinet-workload-bars {
+  .instructor-cabinet-workload-x-axis {
     gap: 0.12rem;
     padding: 0 0.05rem;
+  }
+
+  .instructor-cabinet-workload-point {
+    width: 0.48rem;
+    height: 0.48rem;
   }
 }
 

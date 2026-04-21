@@ -28,8 +28,7 @@ function formatRuDdMmYyyy(dateKey: string): string {
 }
 
 function slotCountsAsWorkload(s: DriveSlot): boolean {
-  if (s.status === "cancelled") return false;
-  return Boolean(s.studentId?.trim());
+  return s.status === "scheduled" && Boolean(s.studentId?.trim()) && Boolean(s.dateKey);
 }
 
 /**
@@ -73,7 +72,7 @@ export function InstructorCabinetWorkloadSection() {
     return out;
   }, [slots, weekKeys]);
 
-  const barValues = useMemo(
+  const lineValues = useMemo(
     () =>
       X_AXIS_DAYS.map(({ weekIndex }) => {
         const dk = weekKeys[weekIndex] ?? "";
@@ -82,7 +81,18 @@ export function InstructorCabinetWorkloadSection() {
     [countsByDateKey, weekKeys]
   );
 
-  const ariaSummary = X_AXIS_DAYS.map((d, i) => `${d.label}: ${barValues[i]}`).join(", ");
+  const ariaSummary = X_AXIS_DAYS.map((d, i) => `${d.label}: ${lineValues[i]}`).join(", ");
+  const linePoints = useMemo(() => {
+    const count = X_AXIS_DAYS.length;
+    if (count === 0) return "";
+    return lineValues
+      .map((v, i) => {
+        const x = count === 1 ? 0 : (i / (count - 1)) * 100;
+        const y = 100 - (Math.max(0, Math.min(Y_MAX, v)) / Y_MAX) * 100;
+        return `${x},${y}`;
+      })
+      .join(" ");
+  }, [lineValues]);
 
   return (
     <section
@@ -120,8 +130,7 @@ export function InstructorCabinetWorkloadSection() {
       </div>
 
       <p className="field-hint instructor-cabinet-block-lead instructor-cabinet-workload-lead">
-        По дням — число разных курсантов с запланированными или прошедшими уроками вождения (не
-        отменёнными).
+        Данные берутся из раздела «Мой график»: подтверждённые вождения с курсантами по дням недели.
       </p>
 
       <div
@@ -143,21 +152,33 @@ export function InstructorCabinetWorkloadSection() {
                 <div key={i} className="instructor-cabinet-workload-grid-line" />
               ))}
             </div>
-            <div className="instructor-cabinet-workload-bars">
-              {X_AXIS_DAYS.map((d, i) => {
+            <div className="instructor-cabinet-workload-line-area">
+              <svg className="instructor-cabinet-workload-line-svg" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden>
+                <polyline className="instructor-cabinet-workload-line" points={linePoints} />
+              </svg>
+              <div className="instructor-cabinet-workload-points">
+                {X_AXIS_DAYS.map((d, i) => {
+                  const v = lineValues[i] ?? 0;
+                  const y = 100 - (Math.max(0, Math.min(Y_MAX, v)) / Y_MAX) * 100;
+                  return (
+                    <span
+                      key={`${d.label}-point`}
+                      className="instructor-cabinet-workload-point"
+                      style={{ left: `${(i / Math.max(1, X_AXIS_DAYS.length - 1)) * 100}%`, top: `${y}%` }}
+                      aria-hidden
+                    />
+                  );
+                })}
+              </div>
+            </div>
+            <div className="instructor-cabinet-workload-x-axis">
+              {X_AXIS_DAYS.map((d) => {
                 const raw = countsByDateKey.get(weekKeys[d.weekIndex] ?? "") ?? 0;
-                const h = barValues[i] / Y_MAX;
                 return (
                   <div key={d.label} className="instructor-cabinet-workload-col">
-                    <span className="instructor-cabinet-workload-bar-value" aria-hidden>
+                    <span className="instructor-cabinet-workload-point-value" aria-hidden>
                       {raw > 0 ? raw : ""}
                     </span>
-                    <div className="instructor-cabinet-workload-bar-track">
-                      <div
-                        className="instructor-cabinet-workload-bar"
-                        style={{ height: `${Math.max(0, Math.min(1, h)) * 100}%` }}
-                      />
-                    </div>
                     <span className="instructor-cabinet-workload-x-label">{d.label}</span>
                   </div>
                 );
