@@ -13256,7 +13256,14 @@ html[data-theme="light"] .instructor-cab-section-ico {
   margin: 0;
   border-radius: 50%;
   overflow: hidden;
-  background: linear-gradient(168deg, #fef08a 0%, #fde047 22%, #facc15 52%, #eab308 78%, #b45309 100%);
+  background: linear-gradient(
+    165deg,
+    #fff59d 0%,
+    #ffeb3b 20%,
+    #fdd835 48%,
+    #ffc400 72%,
+    #f59e0b 100%
+  );
   box-shadow:
     0 0 0 1px #78350f,
     0 0 0 2px rgba(253, 224, 71, 0.35),
@@ -13279,9 +13286,9 @@ html[data-theme="light"] .instructor-cab-section-ico {
   background:
     radial-gradient(
       95% 70% at 32% 14%,
-      rgba(255, 255, 255, 0.92) 0%,
-      rgba(255, 255, 255, 0.35) 18%,
-      rgba(255, 255, 255, 0.08) 36%,
+      rgba(255, 255, 255, 0.72) 0%,
+      rgba(255, 255, 255, 0.28) 18%,
+      rgba(255, 255, 255, 0.06) 36%,
       transparent 58%
     ),
     radial-gradient(
@@ -13310,7 +13317,7 @@ html[data-theme="light"] .instructor-cab-section-ico {
     radial-gradient(ellipse 115% 70% at 50% 108%, rgba(69, 26, 3, 0.38) 0%, transparent 58%),
     radial-gradient(ellipse 80% 50% at 78% 72%, rgba(255, 255, 255, 0.12) 0%, transparent 55%);
   mix-blend-mode: multiply;
-  opacity: 0.85;
+  opacity: 0.62;
 }
 
 .instructor-cabinet-rating-badge-star {
@@ -13333,8 +13340,8 @@ html[data-theme="light"] .instructor-cab-section-ico {
   pointer-events: none;
   user-select: none;
   z-index: 2;
-  /* Глиф ★ в метриках шрифта смещён вниз — поднимаем к визуальному центру круга */
-  transform: translate(-50%, calc(-50% - 0.11em));
+  /* Чуть ниже геометрического центра */
+  transform: translate(-50%, calc(-50% + 0.04em));
 }
 
 .instructor-cabinet-rating-badge-value {
