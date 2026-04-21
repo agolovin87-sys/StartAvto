@@ -13340,8 +13340,8 @@ html[data-theme="light"] .instructor-cab-section-ico {
   pointer-events: none;
   user-select: none;
   z-index: 2;
-  /* Чуть ниже геометрического центра */
-  transform: translate(-50%, calc(-50% + 0.04em));
+  /* Чуть выше, чем +0.04em — ближе к визуальному центру */
+  transform: translate(-50%, calc(-50% - 0.03em));
 }
 
 .instructor-cabinet-rating-badge-value {
