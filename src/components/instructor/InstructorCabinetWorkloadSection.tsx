@@ -31,9 +31,9 @@ function formatRuDdMmYyyy(dateKey: string): string {
   return `${m[3]}.${m[2]}.${m[1]}`;
 }
 
-/** Как `slotsByDateKey` во вкладке «Главная» → «Мой график». */
+/** Для графика берём вождения по дням: прошедшие + будущие (completed + scheduled). */
 function slotCountsAsWorkload(s: DriveSlot): boolean {
-  return s.status === "scheduled" && Boolean(s.dateKey);
+  return (s.status === "scheduled" || s.status === "completed") && Boolean(s.dateKey);
 }
 
 /**
@@ -134,7 +134,7 @@ export function InstructorCabinetWorkloadSection() {
       </div>
 
       <p className="field-hint instructor-cabinet-block-lead instructor-cabinet-workload-lead">
-        {`Данные из «Мой график»: число записей со статусом «подтверждено» (scheduled) по каждому дню; по вертикали — вождений в день, шкала 0–${Y_MAX}.`}
+        {`Данные из «Мой график»: прошедшие (completed) и будущие (scheduled) вождения по каждому дню; по вертикали — вождений в день, шкала 0–${Y_MAX}.`}
       </p>
 
       <div
