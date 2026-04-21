@@ -13540,6 +13540,30 @@ html[data-theme="light"] .instructor-cabinet-rating-badge-value {
   line-height: 1.25;
 }
 
+.instructor-cabinet-workload-week-label--current {
+  color: #22c55e;
+}
+
+.instructor-cabinet-workload-week-label--past {
+  color: #ef4444;
+}
+
+.instructor-cabinet-workload-week-label--future {
+  color: #3b82f6;
+}
+
+html[data-theme="light"] .instructor-cabinet-workload-week-label--current {
+  color: #15803d;
+}
+
+html[data-theme="light"] .instructor-cabinet-workload-week-label--past {
+  color: #b91c1c;
+}
+
+html[data-theme="light"] .instructor-cabinet-workload-week-label--future {
+  color: #1d4ed8;
+}
+
 .instructor-cabinet-workload-nav {
   flex-shrink: 0;
   width: 2.35rem;

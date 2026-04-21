@@ -115,6 +115,14 @@ export function InstructorCabinetWorkloadSection() {
       .join(" ");
   }, [lineValues]);
 
+  const thisWeekMondayKey = scheduleMondayDateKeyForWeekContaining();
+  const weekLabelTone =
+    weekMondayKey < thisWeekMondayKey
+      ? "past"
+      : weekMondayKey > thisWeekMondayKey
+        ? "future"
+        : "current";
+
   return (
     <section
       className="student-cabinet-card instructor-cabinet-block-surface instructor-cabinet-workload-section"
@@ -137,7 +145,10 @@ export function InstructorCabinetWorkloadSection() {
         >
           ‹
         </button>
-        <p className="instructor-cabinet-workload-week-label" role="status">
+        <p
+          className={`instructor-cabinet-workload-week-label instructor-cabinet-workload-week-label--${weekLabelTone}`}
+          role="status"
+        >
           Неделя с {weekRangeLabel}
         </p>
         <button
