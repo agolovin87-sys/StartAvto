@@ -32,7 +32,7 @@ function slotCountsAsWorkload(s: DriveSlot): boolean {
 }
 
 /**
- * График загруженности: число уникальных курсантов с уроками по дням выбранной недели.
+ * График загруженности: число подтверждённых вождений (слотов) по дням — как в «Мой график».
  */
 export function InstructorCabinetWorkloadSection() {
   const { profile } = useAuth();
@@ -54,34 +54,33 @@ export function InstructorCabinetWorkloadSection() {
   const weekSundayKey = weekKeys[6] ?? weekMondayKey;
   const weekRangeLabel = `${formatRuDdMmYyyy(weekMondayKey)} — ${formatRuDdMmYyyy(weekSundayKey)}`;
 
-  const countsByDateKey = useMemo(() => {
-    const setMap = new Map<string, Set<string>>();
+  const drivesByDateKey = useMemo(() => {
+    const countMap = new Map<string, number>();
     for (const dk of weekKeys) {
-      setMap.set(dk, new Set());
+      countMap.set(dk, 0);
     }
     for (const s of slots) {
       if (!slotCountsAsWorkload(s)) continue;
-      const set = setMap.get(s.dateKey);
-      if (!set) continue;
-      set.add(s.studentId.trim());
+      if (!countMap.has(s.dateKey)) continue;
+      countMap.set(s.dateKey, (countMap.get(s.dateKey) ?? 0) + 1);
     }
-    const out = new Map<string, number>();
-    for (const [dk, st] of setMap) {
-      out.set(dk, st.size);
-    }
-    return out;
+    return countMap;
   }, [slots, weekKeys]);
 
   const lineValues = useMemo(
     () =>
       X_AXIS_DAYS.map(({ weekIndex }) => {
         const dk = weekKeys[weekIndex] ?? "";
-        return Math.min(Y_MAX, countsByDateKey.get(dk) ?? 0);
+        return Math.min(Y_MAX, drivesByDateKey.get(dk) ?? 0);
       }),
-    [countsByDateKey, weekKeys]
+    [drivesByDateKey, weekKeys]
   );
 
-  const ariaSummary = X_AXIS_DAYS.map((d, i) => `${d.label}: ${lineValues[i]}`).join(", ");
+  const ariaSummary = X_AXIS_DAYS.map((d) => {
+    const dk = weekKeys[d.weekIndex] ?? "";
+    const n = drivesByDateKey.get(dk) ?? 0;
+    return `${d.label}: ${n}${n > Y_MAX ? ` (на шкале до ${Y_MAX})` : ""}`;
+  }).join(", ");
   const linePoints = useMemo(() => {
     const count = X_AXIS_DAYS.length;
     if (count === 0) return "";
@@ -130,13 +129,13 @@ export function InstructorCabinetWorkloadSection() {
       </div>
 
       <p className="field-hint instructor-cabinet-block-lead instructor-cabinet-workload-lead">
-        Данные берутся из раздела «Мой график»: подтверждённые вождения с курсантами по дням недели.
+        {`Данные из «Мой график»: по вертикали — число подтверждённых вождений (записей) на день; шкала 1–${Y_MAX}.`}
       </p>
 
       <div
         className="instructor-cabinet-workload-chart-wrap"
         role="img"
-        aria-label={`Загруженность за неделю ${weekRangeLabel}. Курсантов по дням: ${ariaSummary}. Шкала до ${Y_MAX}.`}
+        aria-label={`Загруженность за неделю ${weekRangeLabel}. Вождений по дням: ${ariaSummary}. Шкала до ${Y_MAX}.`}
       >
         <div className="instructor-cabinet-workload-chart-body">
           <div className="instructor-cabinet-workload-y-axis" aria-hidden>
@@ -173,7 +172,7 @@ export function InstructorCabinetWorkloadSection() {
             </div>
             <div className="instructor-cabinet-workload-x-axis">
               {X_AXIS_DAYS.map((d) => {
-                const raw = countsByDateKey.get(weekKeys[d.weekIndex] ?? "") ?? 0;
+                const raw = drivesByDateKey.get(weekKeys[d.weekIndex] ?? "") ?? 0;
                 return (
                   <div key={d.label} className="instructor-cabinet-workload-col">
                     <span className="instructor-cabinet-workload-point-value" aria-hidden>
@@ -187,7 +186,7 @@ export function InstructorCabinetWorkloadSection() {
           </div>
         </div>
         <p className="instructor-cabinet-workload-y-cap" aria-hidden>
-          Курсантов (макс. {Y_MAX} на шкале)
+          Вождений (макс. {Y_MAX} на шкале)
         </p>
       </div>
     </section>
