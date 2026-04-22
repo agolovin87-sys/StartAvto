@@ -2280,6 +2280,46 @@ export function AdminChatTab({
   const contactsListLoading =
     contactsLoading || (needsPinnedAdministrator && !primaryAdminTried);
 
+  const trainingGroupNameById = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const g of trainingGroups) {
+      const id = g.id.trim();
+      if (!id) continue;
+      map.set(id, g.name.trim() || "Без названия");
+    }
+    return map;
+  }, [trainingGroups]);
+
+  const adminInstructorContacts = useMemo(
+    () => contactsOrdered.filter((c) => c.role === "instructor"),
+    [contactsOrdered]
+  );
+
+  const adminStudentGroupContacts = useMemo(() => {
+    const buckets = new Map<string, { title: string; students: UserProfile[] }>();
+    for (const c of contactsOrdered) {
+      if (c.role !== "student") continue;
+      const gid = c.groupId?.trim() || "__no_group__";
+      const title =
+        gid === "__no_group__"
+          ? "Без группы"
+          : trainingGroupNameById.get(gid) || "Группа";
+      if (!buckets.has(gid)) {
+        buckets.set(gid, { title, students: [] });
+      }
+      buckets.get(gid)?.students.push(c);
+    }
+    const groups = [...buckets.entries()].map(([id, payload]) => ({
+      id,
+      title: payload.title,
+      students: payload.students.sort((a, b) =>
+        a.displayName.localeCompare(b.displayName, "ru")
+      ),
+    }));
+    groups.sort((a, b) => a.title.localeCompare(b.title, "ru"));
+    return groups;
+  }, [contactsOrdered, trainingGroupNameById]);
+
   const selectedGroupRoom = useMemo(() => {
     const id = selectedGroupChatId;
     if (!id) return null;
@@ -4588,6 +4628,122 @@ export function AdminChatTab({
               Нет активных контактов. Убедитесь, что у пользователей в профиле статус
               «Активен» (или обновите данные в Firestore).
             </div>
+          ) : isAdmin ? (
+            <>
+              <div className="chat-contacts-section-title">Инструкторы:</div>
+              {adminInstructorContacts.length === 0 ? (
+                <div className="chat-contacts-empty">Нет инструкторов.</div>
+              ) : (
+                <ul className="chat-contact-list">
+                  {adminInstructorContacts.map((c) => {
+                    const room = roomMetaByContactUid[c.uid.trim()];
+                    const lastText = room?.lastText ?? "";
+                    const hasLastMsg = Boolean(room?.lastMs);
+                    const draft = draftsMap[c.uid]?.trim() ?? "";
+                    const previewText = draft
+                      ? `Черновик: ${truncatePreviewLine(draft)}`
+                      : lastText || "—";
+                    const me = selfId.trim();
+                    const peer = c.uid.trim();
+                    const dmChatId = me && peer ? chatIdPair(me, peer) : "";
+                    const unreadDm = dmChatId ? (unreadByChatId[dmChatId] ?? 0) : 0;
+                    const dmTypingPeers = dmChatId ? (typingPeersByChatId[dmChatId] ?? []) : [];
+                    return (
+                      <ChatDmContactListItem
+                        key={c.uid}
+                        c={c}
+                        room={room}
+                        draft={draft}
+                        previewText={previewText}
+                        hasLastMsg={hasLastMsg}
+                        isActive={selectedContactId === c.uid}
+                        chatPrivacy={chatPrivacy}
+                        unreadCount={unreadDm}
+                        typingPeerIds={dmTypingPeers}
+                        displayNameForUid={displayNameForUid}
+                        onSelect={() => {
+                          const prevKey = selectedGroupChatId ?? selectedContactId;
+                          if (prevKey) persistDraft(prevKey, composerText);
+                          setSelectedGroupChatId(null);
+                          setPickedGroupSnapshot(null);
+                          setSelectedContactId(c.uid);
+                          setMenuAdjusted(null);
+                          setMenu({ open: false, messageId: null, x: 0, y: 0 });
+                        }}
+                        onAvatarPhotoClick={() =>
+                          setAvatarLightbox({
+                            src: c.avatarDataUrl!,
+                            name: c.displayName,
+                          })
+                        }
+                      />
+                    );
+                  })}
+                </ul>
+              )}
+
+              <div className="chat-contacts-section-title">Курсанты:</div>
+              {adminStudentGroupContacts.length === 0 ? (
+                <div className="chat-contacts-empty">Нет курсантов.</div>
+              ) : (
+                <>
+                  <div className="chat-contacts-section-subtitle">Группы:</div>
+                  {adminStudentGroupContacts.map((group) => (
+                    <div key={group.id}>
+                      <div className="chat-contacts-section-subtitle">
+                        {group.title} ({group.students.length})
+                      </div>
+                      <ul className="chat-contact-list">
+                        {group.students.map((c) => {
+                          const room = roomMetaByContactUid[c.uid.trim()];
+                          const lastText = room?.lastText ?? "";
+                          const hasLastMsg = Boolean(room?.lastMs);
+                          const draft = draftsMap[c.uid]?.trim() ?? "";
+                          const previewText = draft
+                            ? `Черновик: ${truncatePreviewLine(draft)}`
+                            : lastText || "—";
+                          const me = selfId.trim();
+                          const peer = c.uid.trim();
+                          const dmChatId = me && peer ? chatIdPair(me, peer) : "";
+                          const unreadDm = dmChatId ? (unreadByChatId[dmChatId] ?? 0) : 0;
+                          const dmTypingPeers = dmChatId ? (typingPeersByChatId[dmChatId] ?? []) : [];
+                          return (
+                            <ChatDmContactListItem
+                              key={c.uid}
+                              c={c}
+                              room={room}
+                              draft={draft}
+                              previewText={previewText}
+                              hasLastMsg={hasLastMsg}
+                              isActive={selectedContactId === c.uid}
+                              chatPrivacy={chatPrivacy}
+                              unreadCount={unreadDm}
+                              typingPeerIds={dmTypingPeers}
+                              displayNameForUid={displayNameForUid}
+                              onSelect={() => {
+                                const prevKey = selectedGroupChatId ?? selectedContactId;
+                                if (prevKey) persistDraft(prevKey, composerText);
+                                setSelectedGroupChatId(null);
+                                setPickedGroupSnapshot(null);
+                                setSelectedContactId(c.uid);
+                                setMenuAdjusted(null);
+                                setMenu({ open: false, messageId: null, x: 0, y: 0 });
+                              }}
+                              onAvatarPhotoClick={() =>
+                                setAvatarLightbox({
+                                  src: c.avatarDataUrl!,
+                                  name: c.displayName,
+                                })
+                              }
+                            />
+                          );
+                        })}
+                      </ul>
+                    </div>
+                  ))}
+                </>
+              )}
+            </>
           ) : (
             <ul className="chat-contact-list">
               {contactsOrdered.map((c) => {

@@ -8413,6 +8413,13 @@ html[data-theme="light"] .drive-live-session-panel__toolbar {
   margin-bottom: 0.55rem;
 }
 
+.chat-contacts-section-subtitle {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--theme-dim);
+  margin: 0.1rem 0 0.4rem;
+}
+
 .chat-contacts-empty {
   color: var(--theme-dim);
   font-size: 0.9rem;
