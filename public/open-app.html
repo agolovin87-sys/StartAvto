@@ -123,26 +123,20 @@
             chromeBtn.href = intentUrl;
           }
           if (!isChrome) {
-            if (status) status.textContent = "Android: откройте ссылку через Google Chrome для установки.";
-            window.setTimeout(function () {
-              window.location.href = intentUrl;
-            }, 320);
+            if (status) status.textContent = "Android: нажмите «Установить» или откройте в Chrome.";
             return;
           }
-          if (status) status.textContent = "Android (Chrome): открываем страницу установки…";
-          window.location.replace(androidTarget);
+          if (status) status.textContent = "Android (Chrome): нажмите «Установить».";
           return;
         }
 
         if (isIOS) {
           if (installBtn) installBtn.href = iosTarget;
           if (status) status.textContent = "iOS: нажмите «Установить» и следуйте шагам для Safari.";
-          window.location.replace(iosTarget);
           return;
         }
 
-        if (status) status.textContent = "Открываем StartAvto…";
-        window.location.replace(target);
+        if (status) status.textContent = "Нажмите «Установить», чтобы перейти к установке приложения.";
       })();
     </script>
   </body>
