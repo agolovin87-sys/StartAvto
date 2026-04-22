@@ -35,6 +35,9 @@ export function InstructorCabinetDrivingJournalSection() {
   const [errorsBySlot, setErrorsBySlot] = useState<Record<string, string>>({});
   const [selectedGroupId, setSelectedGroupId] = useState("");
   const [selectedStudentId, setSelectedStudentId] = useState("");
+  const [errorsModalOpen, setErrorsModalOpen] = useState(false);
+  const [errorsModalTitle, setErrorsModalTitle] = useState("");
+  const [errorsModalText, setErrorsModalText] = useState("—");
 
   useEffect(() => subscribeTrainingGroups(setGroups, () => setGroups([])), []);
 
@@ -144,21 +147,22 @@ export function InstructorCabinetDrivingJournalSection() {
         <p className="field-hint instructor-cabinet-block-lead">Закреплённые курсанты пока не найдены.</p>
       ) : (
         <>
-          <div className="instructor-cabinet-driving-journal-groups">
-            {groupBuckets.map((g) => (
-              <button
-                key={g.id}
-                type="button"
-                className={
-                  "instructor-cabinet-driving-journal-group-btn" +
-                  (g.id === selectedGroupId ? " is-active" : "")
-                }
-                onClick={() => setSelectedGroupId(g.id)}
-              >
-                {g.name}
-                <span className="instructor-cabinet-driving-journal-group-count">{g.students.length}</span>
-              </button>
-            ))}
+          <div className="instructor-cabinet-driving-journal-group-select-wrap">
+            <label className="instructor-cabinet-driving-journal-label" htmlFor="instructor-driving-group-select">
+              Группа
+            </label>
+            <select
+              id="instructor-driving-group-select"
+              className="select instructor-cabinet-driving-journal-group-select"
+              value={selectedGroupId}
+              onChange={(e) => setSelectedGroupId(e.target.value)}
+            >
+              {groupBuckets.map((g) => (
+                <option key={g.id} value={g.id}>
+                  {g.name} ({g.students.length})
+                </option>
+              ))}
+            </select>
           </div>
 
           <div className="instructor-cabinet-driving-journal-students">
@@ -203,7 +207,24 @@ export function InstructorCabinetDrivingJournalSection() {
                       <td>
                         {dateKeyToRuDisplay(s.dateKey)} · {s.startTime}
                       </td>
-                      <td>{errorsBySlot[s.id] ?? "—"}</td>
+                      <td>
+                        <button
+                          type="button"
+                          className="student-cabinet-text-link instructor-cabinet-driving-journal-errors-btn"
+                          onClick={() => {
+                            const studentLabel = formatShortFio(
+                              s.studentDisplayName || selectedStudentName
+                            );
+                            setErrorsModalTitle(
+                              `${studentLabel} · ${dateKeyToRuDisplay(s.dateKey)} · ${s.startTime}`
+                            );
+                            setErrorsModalText(errorsBySlot[s.id] ?? "—");
+                            setErrorsModalOpen(true);
+                          }}
+                        >
+                          Посмотреть
+                        </button>
+                      </td>
                       <td>{s.instructorRatingStudent ?? "—"}</td>
                     </tr>
                   ))
@@ -213,6 +234,32 @@ export function InstructorCabinetDrivingJournalSection() {
           </div>
         </>
       )}
+      {errorsModalOpen ? (
+        <div className="modal-backdrop" role="presentation" onClick={() => setErrorsModalOpen(false)}>
+          <div
+            className="modal-panel student-cabinet-modal instructor-cabinet-driving-journal-errors-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="instructor-driving-errors-title"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h2 id="instructor-driving-errors-title" className="modal-title">
+              Ошибки вождения
+            </h2>
+            <p className="instructor-cabinet-driving-journal-errors-meta">{errorsModalTitle}</p>
+            <p className="instructor-cabinet-driving-journal-errors-text">{errorsModalText}</p>
+            <div className="modal-actions">
+              <button
+                type="button"
+                className="btn btn-primary"
+                onClick={() => setErrorsModalOpen(false)}
+              >
+                Ок
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </section>
   );
 }

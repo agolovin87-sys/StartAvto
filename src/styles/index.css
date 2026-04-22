@@ -15319,22 +15319,33 @@ html[data-theme="light"] .student-cab-drive-ring-count {
 }
 
 /* Инструктор: журнал вождений в личном кабинете */
-.instructor-cabinet-driving-journal-groups,
 .instructor-cabinet-driving-journal-students {
   display: flex;
   gap: 0.45rem;
   flex-wrap: wrap;
 }
 
-.instructor-cabinet-driving-journal-groups {
+.instructor-cabinet-driving-journal-group-select-wrap {
   margin: 0.15rem 0 0.6rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.28rem;
 }
 
 .instructor-cabinet-driving-journal-students {
   margin: 0 0 0.7rem;
 }
 
-.instructor-cabinet-driving-journal-group-btn,
+.instructor-cabinet-driving-journal-label {
+  font-size: 0.75rem;
+  color: var(--theme-muted);
+  font-weight: 600;
+}
+
+.instructor-cabinet-driving-journal-group-select {
+  min-height: 2.4rem;
+}
+
 .instructor-cabinet-driving-journal-student-btn {
   display: inline-flex;
   align-items: center;
@@ -15350,25 +15361,10 @@ html[data-theme="light"] .student-cab-drive-ring-count {
   line-height: 1.2;
 }
 
-.instructor-cabinet-driving-journal-group-btn.is-active,
 .instructor-cabinet-driving-journal-student-btn.is-active {
   border-color: color-mix(in srgb, var(--theme-accent) 52%, var(--theme-line));
   color: var(--theme-heading);
   background: color-mix(in srgb, var(--theme-accent) 20%, var(--theme-slate-soft));
-}
-
-.instructor-cabinet-driving-journal-group-count {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 1.15rem;
-  height: 1.15rem;
-  border-radius: 999px;
-  padding: 0 0.32rem;
-  font-size: 0.68rem;
-  font-weight: 700;
-  background: color-mix(in srgb, var(--theme-accent) 25%, transparent);
-  color: var(--theme-heading);
 }
 
 .instructor-cabinet-driving-journal-table-wrap {
@@ -15387,4 +15383,62 @@ html[data-theme="light"] .student-cab-drive-ring-count {
   width: 88px;
   text-align: center;
   font-weight: 700;
+}
+
+.instructor-cabinet-driving-journal-errors-btn {
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+.instructor-cabinet-driving-journal-errors-modal {
+  max-width: min(560px, calc(100vw - 20px));
+}
+
+.instructor-cabinet-driving-journal-errors-meta {
+  margin: 0.2rem 0 0.45rem;
+  font-size: 0.75rem;
+  color: var(--theme-muted);
+}
+
+.instructor-cabinet-driving-journal-errors-text {
+  margin: 0;
+  padding: 0.6rem 0.65rem;
+  border-radius: 0.6rem;
+  border: 1px solid var(--theme-line);
+  background: var(--theme-slate-soft);
+  line-height: 1.4;
+  color: var(--theme-soft);
+  max-height: min(42vh, 240px);
+  overflow-y: auto;
+  white-space: pre-wrap;
+}
+
+@media (max-width: 640px) {
+  .instructor-cabinet-driving-journal-group-select-wrap {
+    margin-top: 0.2rem;
+  }
+
+  .instructor-cabinet-driving-journal-group-select {
+    width: 100%;
+    min-height: 2.55rem;
+    font-size: 0.9rem;
+  }
+
+  .instructor-cabinet-driving-journal-students {
+    gap: 0.4rem;
+  }
+
+  .instructor-cabinet-driving-journal-student-btn {
+    min-height: 2.15rem;
+    font-size: 0.8rem;
+    padding: 0.42rem 0.56rem;
+  }
+
+  .instructor-cabinet-driving-journal-table {
+    min-width: 610px;
+  }
+
+  .instructor-cabinet-driving-journal-errors-modal {
+    max-width: min(100vw - 14px, 560px);
+  }
 }
