@@ -15319,6 +15319,10 @@ html[data-theme="light"] .student-cab-drive-ring-count {
 }
 
 /* Инструктор: журнал вождений в личном кабинете */
+.instructor-cabinet-driving-journal-toggle {
+  margin-bottom: 0.55rem;
+}
+
 .instructor-cabinet-driving-journal-students {
   display: flex;
   gap: 0.45rem;

@@ -24,6 +24,14 @@ function slotSortKey(s: DriveSlot): string {
   return `${s.dateKey}T${s.startTime}:00`;
 }
 
+function IconChevron({ open }: { open: boolean }) {
+  return (
+    <svg className={`instr-chevron${open ? " is-open" : ""}`} viewBox="0 0 24 24" aria-hidden>
+      <path fill="currentColor" d="M7 10l5 5 5-5z" />
+    </svg>
+  );
+}
+
 export function InstructorCabinetDrivingJournalSection() {
   const { user, profile } = useAuth();
   const uid = (user?.uid ?? profile?.uid ?? "").trim();
@@ -38,6 +46,7 @@ export function InstructorCabinetDrivingJournalSection() {
   const [errorsModalOpen, setErrorsModalOpen] = useState(false);
   const [errorsModalTitle, setErrorsModalTitle] = useState("");
   const [errorsModalText, setErrorsModalText] = useState("—");
+  const [journalOpen, setJournalOpen] = useState(false);
 
   useEffect(() => subscribeTrainingGroups(setGroups, () => setGroups([])), []);
 
@@ -135,15 +144,23 @@ export function InstructorCabinetDrivingJournalSection() {
       className="student-cabinet-card instructor-cabinet-block-surface instructor-cabinet-driving-journal-section"
       aria-labelledby="instructor-cabinet-driving-journal-title"
     >
-      <h2
+      <button
+        type="button"
         id="instructor-cabinet-driving-journal-title"
-        className="student-cabinet-talon-head-title student-cab-title-with-ico instructor-cabinet-block-heading"
+        className="instructor-home-section-toggle glossy-panel instructor-cabinet-driving-journal-toggle"
+        aria-expanded={journalOpen}
+        onClick={() => setJournalOpen((v) => !v)}
       >
-        <IconInstructorCabinetDrivingJournal className="instructor-cab-section-ico" />
-        <span>Журнал вождений</span>
-      </h2>
+        <span className="instructor-home-section-toggle-label">
+          <span className="student-cab-toggle-label-inner">
+            <IconInstructorCabinetDrivingJournal className="instructor-cab-section-ico" />
+            <span>Журнал вождений</span>
+          </span>
+        </span>
+        <IconChevron open={journalOpen} />
+      </button>
 
-      {groupBuckets.length === 0 ? (
+      {!journalOpen ? null : groupBuckets.length === 0 ? (
         <p className="field-hint instructor-cabinet-block-lead">Закреплённые курсанты пока не найдены.</p>
       ) : (
         <>
