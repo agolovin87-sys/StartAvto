@@ -276,6 +276,7 @@ function formatRuDate(ms: number): string {
 }
 
 const CHAT_DRAFTS_KEY_PREFIX = "startavto.chatDrafts.";
+const ADMIN_CHAT_GROUP_COLLAPSE_KEY_PREFIX = "startavto.adminChatGroupsCollapsed.";
 
 function readDraftMap(userId: string): Record<string, string> {
   if (!userId || typeof localStorage === "undefined") return {};
@@ -298,6 +299,32 @@ function writeDraftMap(userId: string, map: Record<string, string>) {
   if (!userId || typeof localStorage === "undefined") return;
   try {
     localStorage.setItem(CHAT_DRAFTS_KEY_PREFIX + userId, JSON.stringify(map));
+  } catch {
+    // ignore quota
+  }
+}
+
+function readAdminChatGroupsCollapsedMap(userId: string): Record<string, boolean> {
+  if (!userId || typeof localStorage === "undefined") return {};
+  try {
+    const raw = localStorage.getItem(ADMIN_CHAT_GROUP_COLLAPSE_KEY_PREFIX + userId);
+    if (!raw) return {};
+    const parsed = JSON.parse(raw) as unknown;
+    if (!parsed || typeof parsed !== "object") return {};
+    const out: Record<string, boolean> = {};
+    for (const [k, v] of Object.entries(parsed as Record<string, unknown>)) {
+      out[k] = v === true;
+    }
+    return out;
+  } catch {
+    return {};
+  }
+}
+
+function writeAdminChatGroupsCollapsedMap(userId: string, map: Record<string, boolean>) {
+  if (!userId || typeof localStorage === "undefined") return;
+  try {
+    localStorage.setItem(ADMIN_CHAT_GROUP_COLLAPSE_KEY_PREFIX + userId, JSON.stringify(map));
   } catch {
     // ignore quota
   }
@@ -1549,6 +1576,9 @@ export function AdminChatTab({
   const [lightbox, setLightbox] = useState<{ src: string; fileName: string | null } | null>(null);
   const [avatarLightbox, setAvatarLightbox] = useState<{ src: string; name: string } | null>(null);
   const [draftsMap, setDraftsMap] = useState<Record<string, string>>({});
+  const [adminChatGroupCollapsedMap, setAdminChatGroupCollapsedMap] = useState<
+    Record<string, boolean>
+  >({});
   const [showScrollToBottom, setShowScrollToBottom] = useState(false);
   const [typingPeerIds, setTypingPeerIds] = useState<string[]>([]);
   /** Показ ФИО по очереди при нескольких печатающих (шапка группы). */
@@ -1601,6 +1631,19 @@ export function AdminChatTab({
     if (!currentUserId) return;
     setDraftsMap(readDraftMap(currentUserId));
   }, [currentUserId]);
+
+  useEffect(() => {
+    if (!isAdmin || !currentUserId) {
+      setAdminChatGroupCollapsedMap({});
+      return;
+    }
+    setAdminChatGroupCollapsedMap(readAdminChatGroupsCollapsedMap(currentUserId));
+  }, [isAdmin, currentUserId]);
+
+  useEffect(() => {
+    if (!isAdmin || !currentUserId) return;
+    writeAdminChatGroupsCollapsedMap(currentUserId, adminChatGroupCollapsedMap);
+  }, [isAdmin, currentUserId, adminChatGroupCollapsedMap]);
 
   // Контакты: все активные пользователи (админ) или закреплённые курсанты (инструктор).
   useEffect(() => {
@@ -2319,6 +2362,13 @@ export function AdminChatTab({
     groups.sort((a, b) => a.title.localeCompare(b.title, "ru"));
     return groups;
   }, [contactsOrdered, trainingGroupNameById]);
+
+  const toggleAdminStudentGroupCollapsed = useCallback((groupId: string) => {
+    setAdminChatGroupCollapsedMap((prev) => ({
+      ...prev,
+      [groupId]: !prev[groupId],
+    }));
+  }, []);
 
   const selectedGroupRoom = useMemo(() => {
     const id = selectedGroupChatId;
@@ -4690,10 +4740,25 @@ export function AdminChatTab({
                   <div className="chat-contacts-section-subtitle">Группы:</div>
                   {adminStudentGroupContacts.map((group) => (
                     <div key={group.id}>
-                      <div className="chat-contacts-section-subtitle">
-                        {group.title} ({group.students.length})
-                      </div>
-                      <ul className="chat-contact-list">
+                      <button
+                        type="button"
+                        className="chat-contacts-group-toggle"
+                        onClick={() => toggleAdminStudentGroupCollapsed(group.id)}
+                        aria-expanded={!adminChatGroupCollapsedMap[group.id]}
+                        aria-controls={`admin-chat-group-${group.id}`}
+                      >
+                        <span className="chat-contacts-group-toggle-ico" aria-hidden>
+                          {adminChatGroupCollapsedMap[group.id] ? "▸" : "▾"}
+                        </span>
+                        <span className="chat-contacts-group-toggle-title">
+                          {group.title} ({group.students.length})
+                        </span>
+                      </button>
+                      <ul
+                        id={`admin-chat-group-${group.id}`}
+                        className="chat-contact-list"
+                        hidden={adminChatGroupCollapsedMap[group.id]}
+                      >
                         {group.students.map((c) => {
                           const room = roomMetaByContactUid[c.uid.trim()];
                           const lastText = room?.lastText ?? "";
