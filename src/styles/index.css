@@ -3567,6 +3567,18 @@ html[data-theme="light"] .admin-history-talon-op__value--debit {
   color: #86efac;
 }
 
+.instructor-onboarding-list {
+  margin: 0.5rem 0 0;
+  padding-left: 1.1rem;
+  font-size: 0.8rem;
+  line-height: 1.45;
+  color: #86efac;
+}
+
+.instructor-onboarding-list li {
+  margin: 0.18rem 0;
+}
+
 .instructor-onboarding-footer {
   display: flex;
   flex-wrap: wrap;
@@ -3605,6 +3617,7 @@ html[data-theme="light"] .admin-history-talon-op__value--debit {
 
 html[data-theme="light"] .instructor-onboarding-title,
 html[data-theme="light"] .instructor-onboarding-body,
+html[data-theme="light"] .instructor-onboarding-list,
 html[data-theme="light"] .instructor-onboarding-step {
   color: #15803d;
 }
