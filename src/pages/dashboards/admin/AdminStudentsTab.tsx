@@ -287,6 +287,10 @@ function GroupMemberStudentCard({
   const [talonsBusy, setTalonsBusy] = useState(false);
   /** Сразу после сохранения показываем число из ответа, пока не придёт snapshot */
   const [talonsCommittedOverride, setTalonsCommittedOverride] = useState<number | null>(null);
+  const [drivesDelta, setDrivesDelta] = useState(0);
+  const [drivesBusy, setDrivesBusy] = useState(false);
+  /** Сразу после сохранения показываем число из ответа, пока не придёт snapshot */
+  const [drivesCommittedOverride, setDrivesCommittedOverride] = useState<number | null>(null);
 
   const instructorPickList = useMemo(
     () => registeredInstructorsList(instructors),
@@ -298,6 +302,7 @@ function GroupMemberStudentCard({
   const presenceOnline = isPresenceEffectivelyOnline(student.presence);
   const instructorText = instructorShort ?? "не назначен";
   const baseTalons = talonsCommittedOverride ?? student.talons;
+  const baseDrivesCount = drivesCommittedOverride ?? student.drivesCount;
   const telHref = telHrefFromPhone(student.phone);
 
   useEffect(() => {
@@ -312,6 +317,8 @@ function GroupMemberStudentCard({
   useEffect(() => {
     setTalonsDelta(0);
     setTalonsCommittedOverride(null);
+    setDrivesDelta(0);
+    setDrivesCommittedOverride(null);
   }, [student.uid]);
 
   function enterEditMode() {
@@ -375,6 +382,23 @@ function GroupMemberStudentCard({
     }
   }
 
+  async function saveDrivesCount() {
+    const next = Math.max(0, baseDrivesCount + drivesDelta);
+    setDrivesBusy(true);
+    setLocalErr(null);
+    try {
+      await updateUserProfileFields(student.uid, { drivesCount: next });
+      setDrivesCommittedOverride(next);
+      setDrivesDelta(0);
+    } catch (e: unknown) {
+      setLocalErr(
+        e instanceof Error ? e.message : "Не удалось сохранить количество вождений"
+      );
+    } finally {
+      setDrivesBusy(false);
+    }
+  }
+
   async function toggleStudentActivation() {
     const isActive = student.accountStatus === "active";
     if (isActive && !confirm("Деактивировать курсанта? Вход будет закрыт.")) return;
@@ -410,7 +434,9 @@ function GroupMemberStudentCard({
 
   const actionBusy = busy || cardBusy;
   const talonsDisabled = actionBusy || talonsBusy;
+  const drivesDisabled = actionBusy || drivesBusy;
   const effectiveTalons = Math.max(0, baseTalons + talonsDelta);
+  const effectiveDrivesCount = Math.max(0, baseDrivesCount + drivesDelta);
   const zeroTalonsWarning = effectiveTalons === 0;
 
   return (
@@ -493,7 +519,7 @@ function GroupMemberStudentCard({
                 title="Количество завершённых вождений"
               >
                 <IconDrives />
-                <span>Вождение: {student.drivesCount}</span>
+                <span>Вождение: {effectiveDrivesCount}</span>
               </span>
             </span>
             <IconChevron open={open} />
@@ -703,16 +729,52 @@ function GroupMemberStudentCard({
                   </span>
                 </dd>
               </div>
-              <div className="instr-row">
+              <div className="instr-row instr-row-talons">
                 <dt>
                   <span className="instr-dt-inner">
                     <IconDrives />
                     <span className="instr-dt-text">Количество вождений:</span>
                   </span>
                 </dt>
-                <dd className="instr-dd-fixed">
-                  <span className="instr-field-readonly">
-                    {student.drivesCount}
+                <dd className="instr-dd-talons">
+                  <span className="instr-talons-main instr-field-readonly">
+                    {baseDrivesCount}
+                    {drivesDelta !== 0 ? (
+                      <span className="instr-talons-delta">
+                        {" "}
+                        ({drivesDelta > 0 ? "+" : ""}
+                        {drivesDelta})
+                      </span>
+                    ) : null}
+                  </span>
+                  <span className="instr-talons-actions">
+                    <button
+                      type="button"
+                      className="icon-pill icon-pill-talons-minus glossy-btn"
+                      disabled={drivesDisabled}
+                      title="Убавить вождения"
+                      onClick={() => setDrivesDelta((d) => d - 1)}
+                    >
+                      <IconMinus />
+                    </button>
+                    <button
+                      type="button"
+                      className="icon-pill icon-pill-talons-plus glossy-btn"
+                      disabled={drivesDisabled}
+                      title="Добавить вождение"
+                      onClick={() => setDrivesDelta((d) => d + 1)}
+                    >
+                      <IconPlus />
+                    </button>
+                    <button
+                      type="button"
+                      className="icon-pill icon-pill-talons-save glossy-btn"
+                      disabled={drivesDisabled || drivesDelta === 0}
+                      title="Сохранить количество вождений"
+                      onClick={() => void saveDrivesCount()}
+                    >
+                      <IconSave />
+                    </button>
                   </span>
                 </dd>
               </div>
