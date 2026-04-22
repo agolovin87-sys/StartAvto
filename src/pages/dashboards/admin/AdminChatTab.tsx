@@ -4757,9 +4757,10 @@ export function AdminChatTab({
                       <ul
                         id={`admin-chat-group-${group.id}`}
                         className="chat-contact-list"
-                        hidden={adminChatGroupCollapsedMap[group.id]}
                       >
-                        {group.students.map((c) => {
+                        {adminChatGroupCollapsedMap[group.id]
+                          ? null
+                          : group.students.map((c) => {
                           const room = roomMetaByContactUid[c.uid.trim()];
                           const lastText = room?.lastText ?? "";
                           const hasLastMsg = Boolean(room?.lastMs);
@@ -4772,37 +4773,37 @@ export function AdminChatTab({
                           const dmChatId = me && peer ? chatIdPair(me, peer) : "";
                           const unreadDm = dmChatId ? (unreadByChatId[dmChatId] ?? 0) : 0;
                           const dmTypingPeers = dmChatId ? (typingPeersByChatId[dmChatId] ?? []) : [];
-                          return (
-                            <ChatDmContactListItem
-                              key={c.uid}
-                              c={c}
-                              room={room}
-                              draft={draft}
-                              previewText={previewText}
-                              hasLastMsg={hasLastMsg}
-                              isActive={selectedContactId === c.uid}
-                              chatPrivacy={chatPrivacy}
-                              unreadCount={unreadDm}
-                              typingPeerIds={dmTypingPeers}
-                              displayNameForUid={displayNameForUid}
-                              onSelect={() => {
-                                const prevKey = selectedGroupChatId ?? selectedContactId;
-                                if (prevKey) persistDraft(prevKey, composerText);
-                                setSelectedGroupChatId(null);
-                                setPickedGroupSnapshot(null);
-                                setSelectedContactId(c.uid);
-                                setMenuAdjusted(null);
-                                setMenu({ open: false, messageId: null, x: 0, y: 0 });
-                              }}
-                              onAvatarPhotoClick={() =>
-                                setAvatarLightbox({
-                                  src: c.avatarDataUrl!,
-                                  name: c.displayName,
-                                })
-                              }
-                            />
-                          );
-                        })}
+                            return (
+                              <ChatDmContactListItem
+                                key={c.uid}
+                                c={c}
+                                room={room}
+                                draft={draft}
+                                previewText={previewText}
+                                hasLastMsg={hasLastMsg}
+                                isActive={selectedContactId === c.uid}
+                                chatPrivacy={chatPrivacy}
+                                unreadCount={unreadDm}
+                                typingPeerIds={dmTypingPeers}
+                                displayNameForUid={displayNameForUid}
+                                onSelect={() => {
+                                  const prevKey = selectedGroupChatId ?? selectedContactId;
+                                  if (prevKey) persistDraft(prevKey, composerText);
+                                  setSelectedGroupChatId(null);
+                                  setPickedGroupSnapshot(null);
+                                  setSelectedContactId(c.uid);
+                                  setMenuAdjusted(null);
+                                  setMenu({ open: false, messageId: null, x: 0, y: 0 });
+                                }}
+                                onAvatarPhotoClick={() =>
+                                  setAvatarLightbox({
+                                    src: c.avatarDataUrl!,
+                                    name: c.displayName,
+                                  })
+                                }
+                              />
+                            );
+                          })}
                       </ul>
                     </div>
                   ))}
