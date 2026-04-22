@@ -375,11 +375,12 @@ function GroupMemberStudentCard({
     }
   }
 
-  async function deactivateStudent() {
-    if (!confirm("Деактивировать курсанта? Вход будет закрыт.")) return;
+  async function toggleStudentActivation() {
+    const isActive = student.accountStatus === "active";
+    if (isActive && !confirm("Деактивировать курсанта? Вход будет закрыт.")) return;
     setCardBusy(true);
     try {
-      await setUserAccountStatus(student.uid, "inactive");
+      await setUserAccountStatus(student.uid, isActive ? "inactive" : "active");
     } finally {
       setCardBusy(false);
     }
@@ -770,11 +771,13 @@ function GroupMemberStudentCard({
               <div className="instructor-card-actions-left">
                 <button
                   type="button"
-                  className="btn btn-ghost btn-sm glossy-btn"
-                  disabled={actionBusy || student.accountStatus !== "active"}
-                  onClick={() => void deactivateStudent()}
+                  className={`btn btn-sm glossy-btn ${
+                    student.accountStatus === "active" ? "btn-ghost" : "btn-primary"
+                  }`}
+                  disabled={actionBusy}
+                  onClick={() => void toggleStudentActivation()}
                 >
-                  Деактивировать
+                  {student.accountStatus === "active" ? "Деактивировать" : "Активировать"}
                 </button>
                 <button
                   type="button"

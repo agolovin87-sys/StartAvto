@@ -311,11 +311,12 @@ function InstructorCard({
     setEditMode(true);
   }
 
-  async function deactivate() {
-    if (!confirm("Деактивировать инструктора? Вход будет закрыт.")) return;
+  async function toggleActivation() {
+    const isActive = instructor.accountStatus === "active";
+    if (isActive && !confirm("Деактивировать инструктора? Вход будет закрыт.")) return;
     setBusy(true);
     try {
-      await setUserAccountStatus(instructor.uid, "inactive");
+      await setUserAccountStatus(instructor.uid, isActive ? "inactive" : "active");
     } finally {
       setBusy(false);
     }
@@ -824,11 +825,13 @@ function InstructorCard({
               <div className="instructor-card-actions-left">
                 <button
                   type="button"
-                  className="btn btn-ghost btn-sm glossy-btn"
-                  disabled={busy || instructor.accountStatus !== "active"}
-                  onClick={deactivate}
+                  className={`btn btn-sm glossy-btn ${
+                    instructor.accountStatus === "active" ? "btn-ghost" : "btn-primary"
+                  }`}
+                  disabled={busy}
+                  onClick={toggleActivation}
                 >
-                  Деактивировать
+                  {instructor.accountStatus === "active" ? "Деактивировать" : "Активировать"}
                 </button>
                 <button
                   type="button"
