@@ -1,6 +1,6 @@
 {
   "name": "StartAvto — Автошкола",
-  "short_name": "\u2060",
+  "short_name": "StartAvto",
   "description": "Кабинет автошколы: администратор, инструктор, курсант",
   "start_url": "/",
   "scope": "/",
