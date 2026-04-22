@@ -128,6 +128,7 @@ function InstructorDashboardShell() {
   const instructorUid = (user?.uid ?? profile?.uid ?? "").trim();
   const [tab, setTab] = useState<InstructorNavTab>("home");
   useDashboardTabHistory(tab, setTab, INSTRUCTOR_DASH_TABS);
+  const prevNonChatTabRef = useRef<InstructorNavTab>("home");
 
   useEffect(() => {
     const s = location.state as {
@@ -177,10 +178,23 @@ function InstructorDashboardShell() {
 
   useEffect(() => {
     if (tab !== "chat") {
+      prevNonChatTabRef.current = tab;
       setChatThreadOpen(false);
       setShellHeaderHidden(false);
     }
   }, [tab, setShellHeaderHidden]);
+
+  useEffect(() => {
+    const onPop = () => {
+      if (tab !== "chat") return;
+      const fallback = prevNonChatTabRef.current;
+      if (fallback && fallback !== "chat") {
+        setTab(fallback);
+      }
+    };
+    window.addEventListener("popstate", onPop);
+    return () => window.removeEventListener("popstate", onPop);
+  }, [tab]);
 
   useEffect(() => {
     reportDashboardTab(tab === "chat" ? "chat" : "other");

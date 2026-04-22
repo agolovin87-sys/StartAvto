@@ -603,6 +603,7 @@ function StudentDashboardShell() {
   const [historyFocusBalance, setHistoryFocusBalance] = useState(false);
   const clearHistoryBalanceFocus = useCallback(() => setHistoryFocusBalance(false), []);
   useDashboardTabHistory(tab, setTab, STUDENT_DASH_TABS);
+  const prevNonChatTabRef = useRef<StudentNavTab>("home");
 
   useEffect(() => {
     const s = location.state as {
@@ -710,10 +711,23 @@ function StudentDashboardShell() {
 
   useEffect(() => {
     if (tab !== "chat") {
+      prevNonChatTabRef.current = tab;
       setChatThreadOpen(false);
       setShellHeaderHidden(false);
     }
   }, [tab, setShellHeaderHidden]);
+
+  useEffect(() => {
+    const onPop = () => {
+      if (tab !== "chat") return;
+      const fallback = prevNonChatTabRef.current;
+      if (fallback && fallback !== "chat") {
+        setTab(fallback);
+      }
+    };
+    window.addEventListener("popstate", onPop);
+    return () => window.removeEventListener("popstate", onPop);
+  }, [tab]);
 
   useEffect(() => {
     reportDashboardTab(tab === "chat" ? "chat" : "other");
