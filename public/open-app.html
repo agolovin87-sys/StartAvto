@@ -40,6 +40,29 @@
       a {
         color: #7dd3fc;
       }
+      .actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-top: 10px;
+      }
+      .btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 38px;
+        border-radius: 10px;
+        padding: 0 14px;
+        border: 1px solid rgba(125, 211, 252, 0.45);
+        background: rgba(14, 165, 233, 0.18);
+        color: #e0f2fe;
+        text-decoration: none;
+        font-weight: 600;
+      }
+      .btn-ghost {
+        border-color: rgba(148, 163, 184, 0.5);
+        background: rgba(148, 163, 184, 0.1);
+      }
       .head {
         display: flex;
         align-items: center;
@@ -67,6 +90,10 @@
         Если переход не сработал, нажмите:
         <a id="fallback" href="https://startavto-cf419.web.app/install">Открыть StartAvto</a>
       </p>
+      <div class="actions">
+        <a id="installBtn" class="btn" href="https://startavto-cf419.web.app/install">Установить</a>
+        <a id="chromeBtn" class="btn btn-ghost" href="#" hidden>Открыть в Chrome</a>
+      </div>
     </div>
 
     <script>
@@ -75,23 +102,42 @@
         var ua = navigator.userAgent || "";
         var isAndroid = /Android/i.test(ua);
         var isIOS = /iPhone|iPad|iPod/i.test(ua);
+        var isChrome = /Chrome\/|CriOS\//i.test(ua) && !/EdgA\/|OPR\//i.test(ua);
         var status = document.getElementById("status");
         var fallback = document.getElementById("fallback");
+        var installBtn = document.getElementById("installBtn");
+        var chromeBtn = document.getElementById("chromeBtn");
         if (fallback) fallback.href = target;
+        if (installBtn) installBtn.href = target;
+        var androidTarget = target + "?tab=android";
+        var iosTarget = target + "?tab=ios";
 
         if (isAndroid) {
-          if (status) status.textContent = "Android: пытаемся открыть через Google Chrome…";
+          if (installBtn) installBtn.href = androidTarget;
           var intentUrl =
             "intent://startavto-cf419.web.app/install#Intent;scheme=https;package=com.android.chrome;S.browser_fallback_url=" +
-            encodeURIComponent(target) +
+            encodeURIComponent(androidTarget) +
             ";end";
-          window.location.replace(intentUrl);
+          if (chromeBtn) {
+            chromeBtn.hidden = false;
+            chromeBtn.href = intentUrl;
+          }
+          if (!isChrome) {
+            if (status) status.textContent = "Android: откройте ссылку через Google Chrome для установки.";
+            window.setTimeout(function () {
+              window.location.href = intentUrl;
+            }, 320);
+            return;
+          }
+          if (status) status.textContent = "Android (Chrome): открываем страницу установки…";
+          window.location.replace(androidTarget);
           return;
         }
 
         if (isIOS) {
-          if (status) status.textContent = "iOS: открываем ссылку (Safari)…";
-          window.location.replace(target);
+          if (installBtn) installBtn.href = iosTarget;
+          if (status) status.textContent = "iOS: нажмите «Установить» и следуйте шагам для Safari.";
+          window.location.replace(iosTarget);
           return;
         }
 

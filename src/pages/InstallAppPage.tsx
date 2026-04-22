@@ -128,7 +128,12 @@ export function InstallAppPage() {
           {tab === "ios" ? (
             <IosInstructions />
           ) : tab === "android" ? (
-            <AndroidInstructions />
+            <AndroidInstructions
+              deferred={deferred}
+              installBusy={installBusy}
+              installHint={installHint}
+              onInstall={runInstall}
+            />
           ) : (
             <PcInstructions
               deferred={deferred}
@@ -164,24 +169,56 @@ function IosInstructions() {
   );
 }
 
-function AndroidInstructions() {
+function AndroidInstructions({
+  deferred,
+  installBusy,
+  installHint,
+  onInstall,
+}: {
+  deferred: BeforeInstallPromptEvent | null;
+  installBusy: boolean;
+  installHint: string | null;
+  onInstall: () => void;
+}) {
   return (
-    <ol className="install-app-steps">
-      <li>
-        Откройте сайт в <strong>Google Chrome</strong> (рекомендуется) или другом браузере на Android.
-      </li>
-      <li>
-        Откройте меню браузера <strong>три точки ⋮</strong> в правом верхнем углу.
-      </li>
-      <li>
-        Выберите <strong>«Установить приложение»</strong>, <strong>«Добавить на главный экран»</strong> или
-        похожий пункт.
-      </li>
-      <li>Подтвердите установку — на рабочем столе или в списке приложений появится ярлык StartAvto.</li>
-      <li>
-        Если пункта установки нет: в Chrome откройте меню → <strong>«Добавить на главный экран»</strong> вручную.
-      </li>
-    </ol>
+    <>
+      {deferred ? (
+        <div className="install-app-pc-action">
+          <button
+            type="button"
+            className="btn btn-primary"
+            disabled={installBusy}
+            onClick={() => void onInstall()}
+          >
+            {installBusy ? "Установка…" : "Установить StartAvto"}
+          </button>
+          <p className="field-hint install-app-hint">
+            Если кнопка не сработала, используйте ручные шаги ниже.
+          </p>
+        </div>
+      ) : null}
+      {installHint ? (
+        <p className="install-app-result" role="status">
+          {installHint}
+        </p>
+      ) : null}
+      <ol className="install-app-steps">
+        <li>
+          Откройте сайт в <strong>Google Chrome</strong> (рекомендуется) или другом браузере на Android.
+        </li>
+        <li>
+          Откройте меню браузера <strong>три точки ⋮</strong> в правом верхнем углу.
+        </li>
+        <li>
+          Выберите <strong>«Установить приложение»</strong>, <strong>«Добавить на главный экран»</strong> или
+          похожий пункт.
+        </li>
+        <li>Подтвердите установку — на рабочем столе или в списке приложений появится ярлык StartAvto.</li>
+        <li>
+          Если пункта установки нет: в Chrome откройте меню → <strong>«Добавить на главный экран»</strong> вручную.
+        </li>
+      </ol>
+    </>
   );
 }
 
