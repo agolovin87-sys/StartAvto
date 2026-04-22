@@ -1,0 +1,218 @@
+import { useEffect, useMemo, useState } from "react";
+import { formatShortFio } from "@/admin/formatShortFio";
+import { dateKeyToRuDisplay } from "@/admin/scheduleFormat";
+import { useAuth } from "@/context/AuthContext";
+import { subscribeTrainingGroups } from "@/firebase/admin";
+import { subscribeDriveSlotsForInstructor } from "@/firebase/drives";
+import { subscribeUsersByIds } from "@/firebase/instructorData";
+import { IconInstructorCabinetDrivingJournal } from "@/components/instructor/instructorCabinetSectionIcons";
+import { loadDriveSlotLessonErrors } from "@/services/errorTemplateService";
+import type { DriveSlot, TrainingGroup, UserProfile } from "@/types";
+
+type StudentGroupBucket = {
+  id: string;
+  name: string;
+  students: UserProfile[];
+};
+
+function groupNameById(groups: TrainingGroup[], groupId: string): string {
+  const found = groups.find((g) => g.id === groupId);
+  return found?.name?.trim() || "Без группы";
+}
+
+function slotSortKey(s: DriveSlot): string {
+  return `${s.dateKey}T${s.startTime}:00`;
+}
+
+export function InstructorCabinetDrivingJournalSection() {
+  const { user, profile } = useAuth();
+  const uid = (user?.uid ?? profile?.uid ?? "").trim();
+  const attachedIds = useMemo(() => profile?.attachedStudentIds ?? [], [profile?.attachedStudentIds]);
+
+  const [groups, setGroups] = useState<TrainingGroup[]>([]);
+  const [students, setStudents] = useState<UserProfile[]>([]);
+  const [slots, setSlots] = useState<DriveSlot[]>([]);
+  const [errorsBySlot, setErrorsBySlot] = useState<Record<string, string>>({});
+  const [selectedGroupId, setSelectedGroupId] = useState("");
+  const [selectedStudentId, setSelectedStudentId] = useState("");
+
+  useEffect(() => subscribeTrainingGroups(setGroups, () => setGroups([])), []);
+
+  useEffect(() => subscribeUsersByIds(attachedIds, setStudents), [attachedIds]);
+
+  useEffect(() => {
+    if (!uid) {
+      setSlots([]);
+      return;
+    }
+    return subscribeDriveSlotsForInstructor(uid, setSlots, () => setSlots([]));
+  }, [uid]);
+
+  const groupBuckets = useMemo<StudentGroupBucket[]>(() => {
+    const map = new Map<string, UserProfile[]>();
+    for (const s of students) {
+      const gid = s.groupId?.trim() || "__no_group__";
+      if (!map.has(gid)) map.set(gid, []);
+      map.get(gid)?.push(s);
+    }
+    const buckets: StudentGroupBucket[] = [];
+    for (const [id, list] of map.entries()) {
+      buckets.push({
+        id,
+        name: id === "__no_group__" ? "Без группы" : groupNameById(groups, id),
+        students: [...list].sort((a, b) => a.displayName.localeCompare(b.displayName, "ru")),
+      });
+    }
+    buckets.sort((a, b) => a.name.localeCompare(b.name, "ru"));
+    return buckets;
+  }, [groups, students]);
+
+  useEffect(() => {
+    if (groupBuckets.length === 0) {
+      setSelectedGroupId("");
+      return;
+    }
+    if (groupBuckets.some((g) => g.id === selectedGroupId)) return;
+    setSelectedGroupId(groupBuckets[0]?.id ?? "");
+  }, [groupBuckets, selectedGroupId]);
+
+  const studentsInGroup = useMemo(
+    () => groupBuckets.find((g) => g.id === selectedGroupId)?.students ?? [],
+    [groupBuckets, selectedGroupId]
+  );
+
+  useEffect(() => {
+    if (studentsInGroup.length === 0) {
+      setSelectedStudentId("");
+      return;
+    }
+    if (studentsInGroup.some((s) => s.uid === selectedStudentId)) return;
+    setSelectedStudentId(studentsInGroup[0]?.uid ?? "");
+  }, [studentsInGroup, selectedStudentId]);
+
+  const studentSlots = useMemo(
+    () =>
+      slots
+        .filter((s) => s.studentId === selectedStudentId && s.status === "completed")
+        .sort((a, b) => slotSortKey(b).localeCompare(slotSortKey(a))),
+    [slots, selectedStudentId]
+  );
+  const selectedStudentName = useMemo(
+    () => studentsInGroup.find((s) => s.uid === selectedStudentId)?.displayName ?? "—",
+    [studentsInGroup, selectedStudentId]
+  );
+
+  useEffect(() => {
+    const ids = studentSlots.map((s) => s.id);
+    if (ids.length === 0) {
+      setErrorsBySlot({});
+      return;
+    }
+    let cancelled = false;
+    void (async () => {
+      const patch: Record<string, string> = {};
+      for (const id of ids) {
+        try {
+          const rows = await loadDriveSlotLessonErrors(id);
+          const names = [...new Set(rows.map((r) => r.name.trim()).filter(Boolean))];
+          patch[id] = names.length > 0 ? names.join(", ") : "—";
+        } catch {
+          patch[id] = "—";
+        }
+      }
+      if (!cancelled) setErrorsBySlot(patch);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [studentSlots]);
+
+  return (
+    <section
+      className="student-cabinet-card instructor-cabinet-block-surface instructor-cabinet-driving-journal-section"
+      aria-labelledby="instructor-cabinet-driving-journal-title"
+    >
+      <h2
+        id="instructor-cabinet-driving-journal-title"
+        className="student-cabinet-talon-head-title student-cab-title-with-ico instructor-cabinet-block-heading"
+      >
+        <IconInstructorCabinetDrivingJournal className="instructor-cab-section-ico" />
+        <span>Журнал вождений</span>
+      </h2>
+
+      {groupBuckets.length === 0 ? (
+        <p className="field-hint instructor-cabinet-block-lead">Закреплённые курсанты пока не найдены.</p>
+      ) : (
+        <>
+          <div className="instructor-cabinet-driving-journal-groups">
+            {groupBuckets.map((g) => (
+              <button
+                key={g.id}
+                type="button"
+                className={
+                  "instructor-cabinet-driving-journal-group-btn" +
+                  (g.id === selectedGroupId ? " is-active" : "")
+                }
+                onClick={() => setSelectedGroupId(g.id)}
+              >
+                {g.name}
+                <span className="instructor-cabinet-driving-journal-group-count">{g.students.length}</span>
+              </button>
+            ))}
+          </div>
+
+          <div className="instructor-cabinet-driving-journal-students">
+            {studentsInGroup.map((s) => (
+              <button
+                key={s.uid}
+                type="button"
+                className={
+                  "instructor-cabinet-driving-journal-student-btn" +
+                  (s.uid === selectedStudentId ? " is-active" : "")
+                }
+                onClick={() => setSelectedStudentId(s.uid)}
+              >
+                {formatShortFio(s.displayName)}
+              </button>
+            ))}
+          </div>
+
+          <div className="instructor-cabinet-driving-journal-table-wrap">
+            <table className="student-cabinet-talon-table instructor-cabinet-driving-journal-table">
+              <thead>
+                <tr>
+                  <th>№ п/п</th>
+                  <th>Фамилия И.О.</th>
+                  <th>Дата и время</th>
+                  <th>Ошибки</th>
+                  <th>Оценка</th>
+                </tr>
+              </thead>
+              <tbody>
+                {studentSlots.length === 0 ? (
+                  <tr>
+                    <td colSpan={5} className="student-cabinet-talon-table-empty">
+                      По выбранному курсанту завершённых вождений пока нет.
+                    </td>
+                  </tr>
+                ) : (
+                  studentSlots.map((s, idx) => (
+                    <tr key={s.id}>
+                      <td>{idx + 1}</td>
+                      <td>{formatShortFio(s.studentDisplayName || selectedStudentName)}</td>
+                      <td>
+                        {dateKeyToRuDisplay(s.dateKey)} · {s.startTime}
+                      </td>
+                      <td>{errorsBySlot[s.id] ?? "—"}</td>
+                      <td>{s.instructorRatingStudent ?? "—"}</td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        </>
+      )}
+    </section>
+  );
+}

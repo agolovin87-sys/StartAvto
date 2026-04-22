@@ -84,3 +84,20 @@ export function IconInstructorCabinetWorkload(props: { className?: string }) {
     </svg>
   );
 }
+
+export function IconInstructorCabinetDrivingJournal(props: { className?: string }) {
+  return (
+    <svg
+      className={props.className ?? "instructor-cab-section-ico"}
+      viewBox="0 0 24 24"
+      width={22}
+      height={22}
+      aria-hidden
+    >
+      <path
+        fill="currentColor"
+        d="M19 3h-1V1h-2v2H8V1H6v2H5a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2V5a2 2 0 00-2-2zm0 16H5V9h14v10zm-9-8H7v2h3v-2zm7 0h-6v2h6v-2zm-7 4H7v2h3v-2zm7 0h-6v2h6v-2z"
+      />
+    </svg>
+  );
+}

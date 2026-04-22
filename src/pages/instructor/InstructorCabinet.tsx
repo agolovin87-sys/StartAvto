@@ -3,6 +3,7 @@ import { CabinetBackToDashboardButton } from "@/components/CabinetBackToDashboar
 import { InstructorCabinetRatingSection } from "@/components/instructor/InstructorCabinetRatingSection";
 import { InstructorCabinetWorkloadSection } from "@/components/instructor/InstructorCabinetWorkloadSection";
 import { InstructorCabinetTalonSection } from "@/components/instructor/InstructorCabinetTalonSection";
+import { InstructorCabinetDrivingJournalSection } from "@/components/instructor/InstructorCabinetDrivingJournalSection";
 import { InstructorCabinetVehicleSection } from "@/components/instructor/InstructorCabinetVehicleSection";
 
 /**
@@ -29,6 +30,7 @@ export function InstructorCabinet() {
           <InstructorCabinetTalonSection />
           <InstructorCabinetRatingSection />
           <InstructorCabinetWorkloadSection />
+          <InstructorCabinetDrivingJournalSection />
           <InstructorCabinetVehicleSection />
         </div>
 

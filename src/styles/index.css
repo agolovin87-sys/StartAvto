@@ -15317,3 +15317,74 @@ html[data-theme="light"] .student-cab-drive-ring-count {
 .student-cab-drive-errors-dialog-item:last-child {
   margin-bottom: 0;
 }
+
+/* Инструктор: журнал вождений в личном кабинете */
+.instructor-cabinet-driving-journal-groups,
+.instructor-cabinet-driving-journal-students {
+  display: flex;
+  gap: 0.45rem;
+  flex-wrap: wrap;
+}
+
+.instructor-cabinet-driving-journal-groups {
+  margin: 0.15rem 0 0.6rem;
+}
+
+.instructor-cabinet-driving-journal-students {
+  margin: 0 0 0.7rem;
+}
+
+.instructor-cabinet-driving-journal-group-btn,
+.instructor-cabinet-driving-journal-student-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  cursor: pointer;
+  border-radius: 0.6rem;
+  border: 1px solid var(--theme-line);
+  background: var(--theme-slate-soft);
+  color: var(--theme-soft);
+  padding: 0.38rem 0.58rem;
+  font-size: 0.76rem;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.instructor-cabinet-driving-journal-group-btn.is-active,
+.instructor-cabinet-driving-journal-student-btn.is-active {
+  border-color: color-mix(in srgb, var(--theme-accent) 52%, var(--theme-line));
+  color: var(--theme-heading);
+  background: color-mix(in srgb, var(--theme-accent) 20%, var(--theme-slate-soft));
+}
+
+.instructor-cabinet-driving-journal-group-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.15rem;
+  height: 1.15rem;
+  border-radius: 999px;
+  padding: 0 0.32rem;
+  font-size: 0.68rem;
+  font-weight: 700;
+  background: color-mix(in srgb, var(--theme-accent) 25%, transparent);
+  color: var(--theme-heading);
+}
+
+.instructor-cabinet-driving-journal-table-wrap {
+  overflow-x: auto;
+}
+
+.instructor-cabinet-driving-journal-table {
+  min-width: 680px;
+}
+
+.instructor-cabinet-driving-journal-table td:nth-child(1) {
+  width: 62px;
+}
+
+.instructor-cabinet-driving-journal-table td:nth-child(5) {
+  width: 88px;
+  text-align: center;
+  font-weight: 700;
+}
