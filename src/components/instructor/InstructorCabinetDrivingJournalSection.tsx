@@ -225,22 +225,26 @@ export function InstructorCabinetDrivingJournalSection() {
                         {dateKeyToRuDisplay(s.dateKey)} · {s.startTime}
                       </td>
                       <td>
-                        <button
-                          type="button"
-                          className="student-cabinet-text-link instructor-cabinet-driving-journal-errors-btn"
-                          onClick={() => {
-                            const studentLabel = formatShortFio(
-                              s.studentDisplayName || selectedStudentName
-                            );
-                            setErrorsModalTitle(
-                              `${studentLabel} · ${dateKeyToRuDisplay(s.dateKey)} · ${s.startTime}`
-                            );
-                            setErrorsModalText(errorsBySlot[s.id] ?? "—");
-                            setErrorsModalOpen(true);
-                          }}
-                        >
-                          Посмотреть
-                        </button>
+                        {(errorsBySlot[s.id] ?? "—") === "—" ? (
+                          "—"
+                        ) : (
+                          <button
+                            type="button"
+                            className="student-cabinet-text-link instructor-cabinet-driving-journal-errors-btn"
+                            onClick={() => {
+                              const studentLabel = formatShortFio(
+                                s.studentDisplayName || selectedStudentName
+                              );
+                              setErrorsModalTitle(
+                                `${studentLabel} · ${dateKeyToRuDisplay(s.dateKey)} · ${s.startTime}`
+                              );
+                              setErrorsModalText(errorsBySlot[s.id] ?? "—");
+                              setErrorsModalOpen(true);
+                            }}
+                          >
+                            Посмотреть
+                          </button>
+                        )}
                       </td>
                       <td>{s.instructorRatingStudent ?? "—"}</td>
                     </tr>
