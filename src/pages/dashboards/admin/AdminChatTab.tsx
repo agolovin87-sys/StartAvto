@@ -1575,6 +1575,7 @@ export function AdminChatTab({
   } | null>(null);
   const [lightbox, setLightbox] = useState<{ src: string; fileName: string | null } | null>(null);
   const [avatarLightbox, setAvatarLightbox] = useState<{ src: string; name: string } | null>(null);
+  const [groupParticipantsViewerOpen, setGroupParticipantsViewerOpen] = useState(false);
   const [draftsMap, setDraftsMap] = useState<Record<string, string>>({});
   const [adminChatGroupCollapsedMap, setAdminChatGroupCollapsedMap] = useState<
     Record<string, boolean>
@@ -2660,6 +2661,10 @@ export function AdminChatTab({
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [avatarLightbox]);
+
+  useEffect(() => {
+    setGroupParticipantsViewerOpen(false);
+  }, [selectedGroupChatId]);
 
   const closeCorrespondenceModal = useCallback(() => {
     setCorrespondenceModalOpen(false);
@@ -4485,6 +4490,88 @@ export function AdminChatTab({
       document.body
     );
 
+  const groupParticipantsForViewer = useMemo(() => {
+    if (!selectedGroupRoom) return [];
+    const ids = [...new Set(selectedGroupRoom.participantIds.map((x) => x.trim()).filter(Boolean))];
+    const list = ids.map((uid) => {
+      const hit = profileByUidForChat.get(uid);
+      if (hit) {
+        return {
+          uid: hit.uid,
+          displayName: hit.displayName,
+          avatarDataUrl: hit.avatarDataUrl ?? null,
+        };
+      }
+      if (uid === currentUserId && profile) {
+        return {
+          uid,
+          displayName: profile.displayName,
+          avatarDataUrl: profile.avatarDataUrl ?? null,
+        };
+      }
+      return {
+        uid,
+        displayName: displayNameForUid(uid),
+        avatarDataUrl: null,
+      };
+    });
+    list.sort((a, b) =>
+      formatShortFio(a.displayName).localeCompare(formatShortFio(b.displayName), "ru")
+    );
+    return list;
+  }, [selectedGroupRoom, profileByUidForChat, currentUserId, profile, displayNameForUid]);
+
+  const groupParticipantsOverlayPortal =
+    groupParticipantsViewerOpen &&
+    selectedGroupRoom &&
+    typeof document !== "undefined" &&
+    createPortal(
+      <div className="chat-forward-overlay">
+        <div
+          className="chat-forward-backdrop"
+          role="presentation"
+          onClick={() => setGroupParticipantsViewerOpen(false)}
+        />
+        <div
+          className="chat-forward-dialog chat-group-participants-viewer"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="chat-group-participants-viewer-title"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <h2 id="chat-group-participants-viewer-title" className="chat-forward-title">
+            Участники группы
+          </h2>
+          <div className="chat-group-participants-viewer-list-wrap">
+            {groupParticipantsForViewer.length === 0 ? (
+              <div className="chat-forward-empty">Список участников пуст.</div>
+            ) : (
+              <ul className="chat-group-participants-viewer-list">
+                {groupParticipantsForViewer.map((p) => (
+                  <li key={p.uid} className="chat-group-participants-viewer-item">
+                    <UserChatAvatar profile={p} size="list" />
+                    <span className="chat-group-participants-viewer-name">
+                      {formatShortFio(p.displayName)}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+          <div className="chat-forward-actions">
+            <button
+              type="button"
+              className="btn btn-primary"
+              onClick={() => setGroupParticipantsViewerOpen(false)}
+            >
+              Закрыть
+            </button>
+          </div>
+        </div>
+      </div>,
+      document.body
+    );
+
   return (
     <div
       className={threadOpen ? "chat-tab chat-tab--thread" : "chat-tab"}
@@ -4918,9 +5005,13 @@ export function AdminChatTab({
                         </span>
                         <div className="chat-room-user-meta">
                           <div className="chat-room-user-name">{selectedGroupRoom.title}</div>
-                          <div className="chat-room-user-sub">
+                          <button
+                            type="button"
+                            className="chat-room-user-sub chat-room-user-sub-btn"
+                            onClick={() => setGroupParticipantsViewerOpen(true)}
+                          >
                             Группа · {selectedGroupRoom.participantIds.length} участников
-                          </div>
+                          </button>
                           {chatHeaderTypingLine}
                         </div>
                         {isAdmin ? (
@@ -5007,9 +5098,13 @@ export function AdminChatTab({
                         </span>
                         <div className="chat-room-user-meta">
                           <div className="chat-room-user-name">{selectedGroupRoom.title}</div>
-                          <div className="chat-room-user-sub">
+                          <button
+                            type="button"
+                            className="chat-room-user-sub chat-room-user-sub-btn"
+                            onClick={() => setGroupParticipantsViewerOpen(true)}
+                          >
                             Группа · {selectedGroupRoom.participantIds.length} участников
-                          </div>
+                          </button>
                           {chatHeaderTypingLine}
                         </div>
                         {isAdmin ? (
@@ -6032,6 +6127,7 @@ export function AdminChatTab({
             document.body
           )
         : null}
+      {groupParticipantsOverlayPortal ? groupParticipantsOverlayPortal : null}
       {forwardOverlayPortal ? forwardOverlayPortal : null}
       {correspondenceOverlayPortal ? correspondenceOverlayPortal : null}
       <CreateGroupChatModal
