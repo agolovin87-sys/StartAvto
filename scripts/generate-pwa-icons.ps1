@@ -36,8 +36,9 @@ function New-SquarePng {
   } finally { $src.Dispose() }
 }
 
+New-SquarePng -SourcePath $srcPath -OutPath (Join-Path $pub "apple-touch-icon.png") -Size 180 -ContentScale 0.92
 New-SquarePng -SourcePath $srcPath -OutPath (Join-Path $pub "app-icon-192.png") -Size 192 -ContentScale 0.92
 New-SquarePng -SourcePath $srcPath -OutPath (Join-Path $pub "app-icon-v6.png") -Size 512 -ContentScale 0.92
 New-SquarePng -SourcePath $srcPath -OutPath (Join-Path $pub "app-icon-maskable-512.png") -Size 512 -ContentScale 0.62
 
-Write-Host "OK: app-icon-192.png, app-icon-v6.png, app-icon-maskable-512.png"
+Write-Host "OK: apple-touch-icon.png, app-icon-192.png, app-icon-v6.png, app-icon-maskable-512.png"

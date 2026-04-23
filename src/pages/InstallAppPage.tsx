@@ -152,7 +152,11 @@ function IosInstructions() {
   return (
     <ol className="install-app-steps">
       <li>
-        Откройте сайт <strong>в браузере Safari</strong> (не внутри других приложений).
+        Нужны <strong>iOS / iPadOS 16.4 или новее</strong> и открытие <strong>в Safari</strong> (не во встроенном браузере
+        Telegram, Instagram и т.п. — там пункта «На экран „Домой“» может не быть).
+      </li>
+      <li>
+        Откройте сайт <strong>в Safari</strong> по обычной ссылке (лучше скопировать адрес из чата и вставить в Safari).
       </li>
       <li>
         Нажмите кнопку <strong>Поделиться</strong> внизу экрана (квадрат со стрелкой вверх).

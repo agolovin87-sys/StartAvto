@@ -112,34 +112,48 @@ function firebaseMessagingSwPlugin(mode: string): Plugin {
       const outDir = path.resolve(__dirname, "dist");
       const json = JSON.stringify(cfg);
       const fbVer = firebaseJsVersionForSw();
-      const src = `importScripts("https://www.gstatic.com/firebasejs/${fbVer}/firebase-app-compat.js");
-importScripts("https://www.gstatic.com/firebasejs/${fbVer}/firebase-messaging-compat.js");
-firebase.initializeApp(${json});
-const messaging = firebase.messaging();
-messaging.onBackgroundMessage((payload) => {
-  const d = payload.data || {};
-  const title =
-    (typeof d.title === "string" && d.title) ||
-    (payload.notification && payload.notification.title) ||
-    "\u2060";
-  const body =
-    (typeof d.body === "string" && d.body) ||
-    (payload.notification && payload.notification.body) ||
-    "";
-  const opts = {
-    body,
-    icon: "/app-icon-v6.png",
-    badge: "/favicon.svg",
-    data: d,
-    tag:
-      d.kind === "chat" && typeof d.chatId === "string" && d.chatId
-        ? "chat-" + d.chatId
-        : "startavto-" + (typeof d.kind === "string" ? d.kind : "msg"),
-  };
-  return self.registration.showNotification(title, opts);
+      const src = `try {
+  importScripts("https://www.gstatic.com/firebasejs/${fbVer}/firebase-app-compat.js");
+} catch (e) {}
+try {
+  importScripts("https://www.gstatic.com/firebasejs/${fbVer}/firebase-messaging-compat.js");
+} catch (e) {}
+try {
+  if (typeof firebase !== "undefined" && firebase.initializeApp) {
+    firebase.initializeApp(${json});
+    var messaging = typeof firebase.messaging === "function" ? firebase.messaging() : null;
+    if (messaging && typeof messaging.onBackgroundMessage === "function") {
+      messaging.onBackgroundMessage(function (payload) {
+        var d = payload.data || {};
+        var title =
+          (typeof d.title === "string" && d.title) ||
+          (payload.notification && payload.notification.title) ||
+          "\u2060";
+        var body =
+          (typeof d.body === "string" && d.body) ||
+          (payload.notification && payload.notification.body) ||
+          "";
+        var opts = {
+          body: body,
+          icon: "/app-icon-v6.png",
+          badge: "/app-icon-192.png",
+          data: d,
+          tag:
+            d.kind === "chat" && typeof d.chatId === "string" && d.chatId
+              ? "chat-" + d.chatId
+              : "startavto-" + (typeof d.kind === "string" ? d.kind : "msg"),
+        };
+        return self.registration.showNotification(title, opts);
+      });
+    }
+  }
+} catch (e) {}
+self.addEventListener("install", function (e) {
+  e.waitUntil(self.skipWaiting());
 });
-self.addEventListener("install", (e) => e.waitUntil(self.skipWaiting()));
-self.addEventListener("activate", (e) => e.waitUntil(self.clients.claim()));
+self.addEventListener("activate", function (e) {
+  e.waitUntil(self.clients.claim());
+});
 `;
       fs.mkdirSync(outDir, { recursive: true });
       fs.writeFileSync(path.join(outDir, "firebase-messaging-sw.js"), src, "utf8");
@@ -163,6 +177,7 @@ export default defineConfig(({ mode }) => {
       filename: "sw.js",
       includeAssets: [
         "favicon.ico",
+        "apple-touch-icon.png",
         "app-icon-192.png",
         "app-icon-maskable-512.png",
         "app-icon-v6.png",
@@ -176,6 +191,8 @@ export default defineConfig(({ mode }) => {
        */
       workbox: {
         globPatterns: ["**/*.{js,css,html,ico,png,svg,woff2,webmanifest}"],
+        /** `app-icon-source.png` не выкладываем на Hosting — не должен попадать в precache. */
+        globIgnores: ["**/app-icon-source.png"],
         maximumFileSizeToCacheInBytes: 6 * 1024 * 1024,
         navigateFallback: "/index.html",
         navigateFallbackDenylist: [/^\/api\//],

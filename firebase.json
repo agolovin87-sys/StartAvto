@@ -70,7 +70,7 @@
         "headers": [
           {
             "key": "Content-Type",
-            "value": "application/manifest+json; charset=utf-8"
+            "value": "application/manifest+json"
           },
           {
             "key": "Cache-Control",
