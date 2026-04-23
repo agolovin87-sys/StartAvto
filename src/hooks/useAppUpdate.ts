@@ -1,12 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
-  APP_VERSION,
   fetchServerVersion,
   forceUpdateApp,
   isUpdateAvailable,
   isUpdateSkipped,
   markNotificationShown,
-  saveCurrentVersion,
   showUpdateBanner,
   skipUpdate,
   wasNotificationShown,
@@ -38,24 +36,6 @@ export const useAppUpdate = (): UseAppUpdateReturn => {
 
   const checkInProgress = useRef(false);
   const bannerRef = useRef<HTMLElement | null>(null);
-
-  // На первом запуске сохраняем базовую версию, чтобы было с чем сравнивать.
-  useEffect(() => {
-    const storedVersion = localStorage.getItem("app_version");
-    const storedBuild = localStorage.getItem("app_build");
-    if (!storedVersion || !storedBuild) {
-      void fetchServerVersion()
-        .then((server) => {
-          saveCurrentVersion({
-            version: server?.version || APP_VERSION,
-            buildHash: server?.buildHash || "initial",
-          });
-        })
-        .catch(() => {
-          saveCurrentVersion({ version: APP_VERSION, buildHash: "initial" });
-        });
-    }
-  }, []);
 
   const forceUpdate = useCallback(async () => {
     if (isUpdating) return;
@@ -111,11 +91,11 @@ export const useAppUpdate = (): UseAppUpdateReturn => {
     [forceUpdate]
   );
 
-  // Фоновая проверка: через 10 секунд после входа и далее раз в сутки.
+  // Фоновая проверка: не сразу после старта (не конкурируем с Auth/Firestore), затем раз в сутки.
   useEffect(() => {
     const initialTimer = window.setTimeout(() => {
       void checkForUpdates(true);
-    }, 10_000);
+    }, 60_000);
     const interval = window.setInterval(() => {
       void checkForUpdates(true);
     }, AUTO_CHECK_INTERVAL);

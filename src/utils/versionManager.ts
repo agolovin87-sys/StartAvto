@@ -31,27 +31,43 @@ export const getStoredVersion = (): { version: string; buildHash: string } | nul
   return { version, buildHash };
 };
 
+const VERSION_FETCH_TIMEOUT_MS = 10_000;
+
 // Получение версии с сервера (из public/version.json).
 export const fetchServerVersion = async (): Promise<VersionInfo | null> => {
+  const controller = new AbortController();
+  const timer = window.setTimeout(() => controller.abort(), VERSION_FETCH_TIMEOUT_MS);
   try {
     const response = await fetch(`/version.json?t=${Date.now()}`, {
       cache: "no-store",
       headers: { "Cache-Control": "no-cache" },
+      signal: controller.signal,
     });
     if (!response.ok) return null;
     return (await response.json()) as VersionInfo;
   } catch (error) {
-    console.error("Ошибка получения версии с сервера:", error);
+    if (import.meta.env.DEV) {
+      console.warn("Не удалось получить version.json (сеть/таймаут):", error);
+    }
     return null;
+  } finally {
+    window.clearTimeout(timer);
   }
 };
 
 // Проверка наличия обновления относительно сохраненной версии.
 export const isUpdateAvailable = async (): Promise<boolean> => {
   const serverVersion = await fetchServerVersion();
-  const storedVersion = getStoredVersion();
   if (!serverVersion) return false;
-  if (!storedVersion) return true;
+  const storedVersion = getStoredVersion();
+  // Первый запуск: не считаем это «доступно обновление», иначе ложные срабатывания и лишняя нагрузка.
+  if (!storedVersion) {
+    saveCurrentVersion({
+      version: serverVersion.version,
+      buildHash: serverVersion.buildHash,
+    });
+    return false;
+  }
   return (
     storedVersion.version !== serverVersion.version ||
     storedVersion.buildHash !== serverVersion.buildHash
