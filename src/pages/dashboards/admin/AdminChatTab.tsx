@@ -251,14 +251,10 @@ function buildDeleteParticles(mine: boolean): DeleteParticleItem[] {
   return out;
 }
 
-function startOfLocalDayMs(ms: number, offsetMinutes: number): number {
-  // ms -> local day start in same "local" time zone as user's offset.
-  const d = new Date(ms + offsetMinutes * 60_000);
-  const y = d.getUTCFullYear();
-  const m = d.getUTCMonth();
-  const day = d.getUTCDate();
-  const start = Date.UTC(y, m, day) - offsetMinutes * 60_000;
-  return start;
+function startOfLocalDayMs(ms: number): number {
+  // Старт календарного дня в локальной TZ браузера.
+  const d = new Date(ms);
+  return new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
 }
 
 function pad2(n: number): string {
@@ -345,9 +341,8 @@ function formatVoiceRecClock(ms: number): string {
 
 function formatPreviewDateTime(lastMs: number): string {
   const now = Date.now();
-  const offsetMin = new Date().getTimezoneOffset();
-  const startToday = startOfLocalDayMs(now, offsetMin);
-  const startMsgDay = startOfLocalDayMs(lastMs, offsetMin);
+  const startToday = startOfLocalDayMs(now);
+  const startMsgDay = startOfLocalDayMs(lastMs);
   const diffDays = Math.round((startMsgDay - startToday) / 86_400_000);
   if (diffDays === 0) return formatRuTime(lastMs);
   if (diffDays === -1) return `${formatRuDate(lastMs)} ${formatRuTime(lastMs)}`;
@@ -372,9 +367,8 @@ function adminContactOfflinePresenceMs(
 function formatAdminContactLastSeenWhenOffline(lastSeenMs: number): string | null {
   if (!Number.isFinite(lastSeenMs) || lastSeenMs <= 0) return null;
   const now = Date.now();
-  const offsetMin = new Date().getTimezoneOffset();
-  const startToday = startOfLocalDayMs(now, offsetMin);
-  const startDay = startOfLocalDayMs(lastSeenMs, offsetMin);
+  const startToday = startOfLocalDayMs(now);
+  const startDay = startOfLocalDayMs(lastSeenMs);
   if (startDay === startToday) {
     return formatRuTime(lastSeenMs);
   }
@@ -422,6 +416,14 @@ function useDebouncedPresenceOnline(
   }, [raw, resetKey]);
 
   return stable;
+}
+
+function canShowInChatContacts(u: UserProfile): boolean {
+  if (u.accountStatus === "rejected") return false;
+  if (u.role === "student" || u.role === "instructor") {
+    return u.accountStatus === "active" || u.accountStatus === "pending";
+  }
+  return u.accountStatus === "active";
 }
 
 /** Превью «печатает» в списке контактов (та же анимация, что в шапке открытого чата). */
@@ -2155,14 +2157,23 @@ export function AdminChatTab({
   const contactsForChatList = useMemo(() => {
     const byUid = new Map<string, UserProfile>();
     for (const c of contactsForUi) {
+      if (!canShowInChatContacts(c)) continue;
       byUid.set(c.uid.trim(), c);
     }
     for (const c of extraChatContacts) {
+      if (!canShowInChatContacts(c)) continue;
       const id = c.uid.trim();
       if (id && !byUid.has(id)) byUid.set(id, c);
     }
     return Array.from(byUid.values());
   }, [contactsForUi, extraChatContacts]);
+
+  useEffect(() => {
+    if (!selectedContactId) return;
+    const exists = contactsForChatList.some((c) => c.uid === selectedContactId);
+    if (exists) return;
+    setSelectedContactId(null);
+  }, [selectedContactId, contactsForChatList]);
 
   const profileByUidForChat = useMemo(() => {
     const map = new Map<string, UserProfile>();
