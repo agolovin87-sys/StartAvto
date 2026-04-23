@@ -354,6 +354,20 @@ function formatPreviewDateTime(lastMs: number): string {
   return `${formatRuDate(lastMs)} ${formatRuTime(lastMs)}`;
 }
 
+/**
+ * Метка времени для «не в сети» у админа: сначала lastSeenAt (уход/приватность),
+ * иначе heartbeat — когда в Firestore ещё «online», но UI уже считает офлайн по stale heartbeat
+ * (закрытие вкладки без beforeunload и т.п.).
+ */
+function adminContactOfflinePresenceMs(
+  p: UserProfile["presence"] | undefined
+): number | null {
+  if (!p) return null;
+  if (typeof p.lastSeenAt === "number" && p.lastSeenAt > 0) return p.lastSeenAt;
+  if (typeof p.heartbeatAt === "number" && p.heartbeatAt > 0) return p.heartbeatAt;
+  return null;
+}
+
 /** Только текст в скобках после «не в сети»: сегодня — время; иначе — «22.04. 10:00». */
 function formatAdminContactLastSeenWhenOffline(lastSeenMs: number): string | null {
   if (!Number.isFinite(lastSeenMs) || lastSeenMs <= 0) return null;
@@ -496,16 +510,16 @@ function ChatDmContactListItem({
   showAdminContactLastSeen,
 }: ChatDmContactListItemProps) {
   const presenceOnline = useDebouncedPresenceOnline(c.presence, chatPrivacy, c.uid);
-  const lastSeenMs =
-    c.presence?.lastSeenAt != null && c.presence.lastSeenAt > 0
-      ? c.presence.lastSeenAt
+  const offlinePresenceMs =
+    showAdminContactLastSeen && !presenceOnline
+      ? adminContactOfflinePresenceMs(c.presence)
       : null;
   const offlineLastSeenLabel =
     showAdminContactLastSeen &&
     chatPrivacy.showPresenceInChatUi &&
     !presenceOnline &&
-    lastSeenMs != null
-      ? formatAdminContactLastSeenWhenOffline(lastSeenMs)
+    offlinePresenceMs != null
+      ? formatAdminContactLastSeenWhenOffline(offlinePresenceMs)
       : null;
 
   return (
@@ -2546,6 +2560,18 @@ export function AdminChatTab({
   const dmChatHeaderSubtitle = useMemo(() => {
     if (!selectedContact) return null;
     if (!chatPrivacy.showPresenceInChatUi) return null;
+    const ms =
+      isAdmin && !debouncedDmPeerPresenceOnline
+        ? adminContactOfflinePresenceMs(selectedContact.presence)
+        : null;
+    const offlineLabel =
+      ms != null ? formatAdminContactLastSeenWhenOffline(ms) : null;
+    const offlineText =
+      debouncedDmPeerPresenceOnline
+        ? "в сети"
+        : offlineLabel
+          ? `не в сети (${offlineLabel})`
+          : "не в сети";
     return (
       <span
         className={
@@ -2554,13 +2580,14 @@ export function AdminChatTab({
             : "chat-room-presence"
         }
       >
-        {debouncedDmPeerPresenceOnline ? "в сети" : "не в сети"}
+        {offlineText}
       </span>
     );
   }, [
     selectedContact,
     chatPrivacy.showPresenceInChatUi,
     debouncedDmPeerPresenceOnline,
+    isAdmin,
   ]);
 
   const typingPeerIdsOrdered = useMemo(
