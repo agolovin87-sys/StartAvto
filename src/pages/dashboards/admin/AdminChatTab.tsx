@@ -2457,7 +2457,9 @@ export function AdminChatTab({
       return;
     }
     const ids = groupParticipantIdsKey.split(",").filter(Boolean);
-    return subscribeUsersByIds(ids, setGroupParticipantProfiles);
+    return subscribeUsersByIds(ids, (users) => {
+      setGroupParticipantProfiles(users.filter((u) => u.accountStatus !== "rejected"));
+    });
   }, [selectedGroupChatId, groupParticipantIdsKey]);
 
   const displayNameForUid = useCallback(
@@ -4568,9 +4570,11 @@ export function AdminChatTab({
   const groupParticipantsForViewer = useMemo(() => {
     if (!selectedGroupRoom) return [];
     const ids = [...new Set(selectedGroupRoom.participantIds.map((x) => x.trim()).filter(Boolean))];
-    const list = ids.map((uid) => {
+    const list = ids
+      .map((uid) => {
       const hit = profileByUidForChat.get(uid);
       if (hit) {
+        if (hit.accountStatus === "rejected") return null;
         return {
           uid: hit.uid,
           displayName: hit.displayName,
@@ -4589,7 +4593,8 @@ export function AdminChatTab({
         displayName: displayNameForUid(uid),
         avatarDataUrl: null,
       };
-    });
+      })
+      .filter((x): x is { uid: string; displayName: string; avatarDataUrl: string | null } => x != null);
     list.sort((a, b) =>
       formatShortFio(a.displayName).localeCompare(formatShortFio(b.displayName), "ru")
     );
