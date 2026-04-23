@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "vite",
     "dev:force": "vite --force",
-    "build": "tsc -b && vite build",
+    "generate:version": "node scripts/generate-version.js",
+    "build": "npm run generate:version && tsc -b && vite build",
     "preview": "vite preview",
     "hosting:preview": "npm run build && firebase hosting:channel:deploy temp --expires 7d",
     "deploy": "node scripts/deploy-with-backup.mjs",
