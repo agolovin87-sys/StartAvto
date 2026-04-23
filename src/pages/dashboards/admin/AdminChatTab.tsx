@@ -9,6 +9,7 @@ import type {
   ChatRoom,
   TrainingGroup,
   UserProfile,
+  UserRole,
 } from "@/types";
 import { formatShortFio } from "@/admin/formatShortFio";
 import { groupChatMessagesByDay } from "@/utils/chatDateUtils";
@@ -494,7 +495,24 @@ type ChatDmContactListItemProps = {
   onAvatarPhotoClick: () => void;
   /** Только админ: в списке контактов после «не в сети» — последний визит в скобках. */
   showAdminContactLastSeen?: boolean;
+  viewerRole: UserRole | undefined;
 };
+
+function shouldShowContactLastSeenInSidebar(
+  viewerRole: UserRole | undefined,
+  contactRole: UserRole,
+  chatPrivacy: ChatPrivacySettings,
+  showAdminContactLastSeen?: boolean
+): boolean {
+  if (viewerRole === "admin") return showAdminContactLastSeen === true;
+  if (viewerRole === "instructor") {
+    return (
+      chatPrivacy.showLastSeenForInstructorContacts &&
+      (contactRole === "student" || contactRole === "instructor")
+    );
+  }
+  return false;
+}
 
 function ChatDmContactListItem({
   c,
@@ -510,14 +528,21 @@ function ChatDmContactListItem({
   onSelect,
   onAvatarPhotoClick,
   showAdminContactLastSeen,
+  viewerRole,
 }: ChatDmContactListItemProps) {
   const presenceOnline = useDebouncedPresenceOnline(c.presence, chatPrivacy, c.uid);
+  const showContactLastSeen = shouldShowContactLastSeenInSidebar(
+    viewerRole,
+    c.role,
+    chatPrivacy,
+    showAdminContactLastSeen
+  );
   const offlinePresenceMs =
-    showAdminContactLastSeen && !presenceOnline
+    showContactLastSeen && !presenceOnline
       ? adminContactOfflinePresenceMs(c.presence)
       : null;
   const offlineLastSeenLabel =
-    showAdminContactLastSeen &&
+    showContactLastSeen &&
     chatPrivacy.showPresenceInChatUi &&
     !presenceOnline &&
     offlinePresenceMs != null
@@ -2573,8 +2598,13 @@ export function AdminChatTab({
   const dmChatHeaderSubtitle = useMemo(() => {
     if (!selectedContact) return null;
     if (!chatPrivacy.showPresenceInChatUi) return null;
+    const canShowLastSeenInHeader =
+      (isAdmin && selectedContact.role !== "admin") ||
+      (profile?.role === "instructor" &&
+        chatPrivacy.showLastSeenForInstructorContacts &&
+        (selectedContact.role === "student" || selectedContact.role === "instructor"));
     const ms =
-      isAdmin && !debouncedDmPeerPresenceOnline
+      canShowLastSeenInHeader && !debouncedDmPeerPresenceOnline
         ? adminContactOfflinePresenceMs(selectedContact.presence)
         : null;
     const offlineLabel =
@@ -2599,8 +2629,10 @@ export function AdminChatTab({
   }, [
     selectedContact,
     chatPrivacy.showPresenceInChatUi,
+    chatPrivacy.showLastSeenForInstructorContacts,
     debouncedDmPeerPresenceOnline,
     isAdmin,
+    profile?.role,
   ]);
 
   const typingPeerIdsOrdered = useMemo(
@@ -4480,6 +4512,7 @@ export function AdminChatTab({
                             unreadCount={0}
                             typingPeerIds={[]}
                             displayNameForUid={displayNameForUid}
+                            viewerRole={profile?.role}
                             onSelect={() => {
                               setCorrespondenceViewerU1(c);
                               setCorrespondenceSecondPeersLoading(true);
@@ -4879,6 +4912,7 @@ export function AdminChatTab({
                         typingPeerIds={dmTypingPeers}
                         displayNameForUid={displayNameForUid}
                         showAdminContactLastSeen
+                        viewerRole={profile?.role}
                         onSelect={() => {
                           const prevKey = selectedGroupChatId ?? selectedContactId;
                           if (prevKey) persistDraft(prevKey, composerText);
@@ -4955,6 +4989,7 @@ export function AdminChatTab({
                                 typingPeerIds={dmTypingPeers}
                                 displayNameForUid={displayNameForUid}
                                 showAdminContactLastSeen
+                                viewerRole={profile?.role}
                                 onSelect={() => {
                                   const prevKey = selectedGroupChatId ?? selectedContactId;
                                   if (prevKey) persistDraft(prevKey, composerText);
@@ -5007,6 +5042,7 @@ export function AdminChatTab({
                     unreadCount={unreadDm}
                     typingPeerIds={dmTypingPeers}
                     displayNameForUid={displayNameForUid}
+                    viewerRole={profile?.role}
                     onSelect={() => {
                       const prevKey = selectedGroupChatId ?? selectedContactId;
                       if (prevKey) persistDraft(prevKey, composerText);

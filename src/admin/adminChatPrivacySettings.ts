@@ -13,6 +13,8 @@ export type ChatPrivacySettings = {
   treatStaleHeartbeatAsOffline: boolean;
   /** Показывать в списке контактов и шапке статус и точку. */
   showPresenceInChatUi: boolean;
+  /** Для инструктора: показывать «был в сети» у контактов курсант/инструктор. */
+  showLastSeenForInstructorContacts: boolean;
   /** Показывать в меню «Удалить у меня». */
   allowDeleteForMeInMenu: boolean;
   /** Показывать в меню «Удалить у всех». */
@@ -25,6 +27,7 @@ export const DEFAULT_CHAT_PRIVACY_SETTINGS: ChatPrivacySettings = {
   shareOnlineWithContacts: true,
   treatStaleHeartbeatAsOffline: true,
   showPresenceInChatUi: true,
+  showLastSeenForInstructorContacts: true,
   allowDeleteForMeInMenu: true,
   allowDeleteForAllInMenu: true,
   confirmBeforeDelete: false,
