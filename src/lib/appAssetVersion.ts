@@ -1,7 +1,7 @@
 /**
- * Иконка PWA: при смене картинки скопируйте файл в public с новым именем
- * (например app-icon-v7.png) и обновите APP_ICON_FILE здесь и в index.html + manifest.webmanifest.
- * Уникальное имя файла нужно, т.к. телефоны часто кэшируют /app-icon.png и игнорируют ?v= в манифесте.
+ * Иконка PWA: положите мастер в `public/app-icon-source.png`, затем
+ * `powershell -File scripts/generate-pwa-icons.ps1` — соберётся 192 / v6 (512) / maskable.
+ * При смене имени файла в публичной ссылке обновите APP_ICON_FILE и manifest + index.html.
  */
 export const APP_ASSET_VERSION = "6";
 

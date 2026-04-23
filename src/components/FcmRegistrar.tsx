@@ -61,7 +61,7 @@ export function FcmRegistrar() {
       if (typeof Notification === "undefined" || Notification.permission !== "granted") return;
       if (document.visibilityState !== "visible") return;
       try {
-        new Notification(title, { body, icon: "/app-icon-v6.png", silent: false });
+        new Notification(title, { body, icon: "/app-icon-192.png", silent: false });
       } catch {
         /* */
       }

@@ -161,7 +161,15 @@ export default defineConfig(({ mode }) => {
       registerType: "autoUpdate",
       manifest: false,
       filename: "sw.js",
-      includeAssets: ["favicon.ico", "app-icon-v6.png", "favicon.svg", "robots.txt", "offline.html"],
+      includeAssets: [
+        "favicon.ico",
+        "app-icon-192.png",
+        "app-icon-maskable-512.png",
+        "app-icon-v6.png",
+        "favicon.svg",
+        "robots.txt",
+        "offline.html",
+      ],
       /**
        * Не кладите `public/sw.js`: при копировании public в dist он перезаписал бы сгенерированный SW.
        * Кэш-стратегии задаются здесь (Workbox).

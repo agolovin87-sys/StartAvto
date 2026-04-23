@@ -12,7 +12,7 @@
   "lang": "ru",
   "icons": [
     {
-      "src": "/app-icon-v6.png",
+      "src": "/app-icon-192.png",
       "type": "image/png",
       "sizes": "192x192",
       "purpose": "any"
@@ -24,7 +24,7 @@
       "purpose": "any"
     },
     {
-      "src": "/app-icon-v6.png",
+      "src": "/app-icon-maskable-512.png",
       "type": "image/png",
       "sizes": "512x512",
       "purpose": "maskable"

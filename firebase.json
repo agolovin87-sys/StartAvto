@@ -22,7 +22,12 @@
   "hosting": {
     "site": "startavto-cf419",
     "public": "dist",
-    "ignore": ["firebase.json", "**/.*", "**/node_modules/**"],
+    "ignore": [
+      "firebase.json",
+      "**/.*",
+      "**/node_modules/**",
+      "**/app-icon-source.png"
+    ],
     "headers": [
       {
         "source": "/assets/**",
@@ -74,7 +79,7 @@
         ]
       },
       {
-        "source": "/app-icon-v*.png",
+        "source": "/app-icon*.png",
         "headers": [
           {
             "key": "Cache-Control",
