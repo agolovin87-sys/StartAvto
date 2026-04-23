@@ -354,6 +354,25 @@ function formatPreviewDateTime(lastMs: number): string {
   return `${formatRuDate(lastMs)} ${formatRuTime(lastMs)}`;
 }
 
+/** Только текст в скобках после «не в сети»: сегодня — время; иначе — «22.04. 10:00». */
+function formatAdminContactLastSeenWhenOffline(lastSeenMs: number): string | null {
+  if (!Number.isFinite(lastSeenMs) || lastSeenMs <= 0) return null;
+  const now = Date.now();
+  const offsetMin = new Date().getTimezoneOffset();
+  const startToday = startOfLocalDayMs(now, offsetMin);
+  const startDay = startOfLocalDayMs(lastSeenMs, offsetMin);
+  if (startDay === startToday) {
+    return formatRuTime(lastSeenMs);
+  }
+  const d = new Date(lastSeenMs);
+  const dd = pad2(d.getDate());
+  const mm = pad2(d.getMonth() + 1);
+  const yy = d.getFullYear();
+  const nowY = new Date(now).getFullYear();
+  const datePart = yy === nowY ? `${dd}.${mm}.` : `${dd}.${mm}.${yy}.`;
+  return `${datePart} ${formatRuTime(lastSeenMs)}`;
+}
+
 function effectiveContactOnline(
   p: UserProfile["presence"] | undefined,
   privacy: ChatPrivacySettings
@@ -457,6 +476,8 @@ type ChatDmContactListItemProps = {
   displayNameForUid: (uid: string) => string;
   onSelect: () => void;
   onAvatarPhotoClick: () => void;
+  /** Только админ: в списке контактов после «не в сети» — последний визит в скобках. */
+  showAdminContactLastSeen?: boolean;
 };
 
 function ChatDmContactListItem({
@@ -472,8 +493,20 @@ function ChatDmContactListItem({
   displayNameForUid,
   onSelect,
   onAvatarPhotoClick,
+  showAdminContactLastSeen,
 }: ChatDmContactListItemProps) {
   const presenceOnline = useDebouncedPresenceOnline(c.presence, chatPrivacy, c.uid);
+  const lastSeenMs =
+    c.presence?.lastSeenAt != null && c.presence.lastSeenAt > 0
+      ? c.presence.lastSeenAt
+      : null;
+  const offlineLastSeenLabel =
+    showAdminContactLastSeen &&
+    chatPrivacy.showPresenceInChatUi &&
+    !presenceOnline &&
+    lastSeenMs != null
+      ? formatAdminContactLastSeenWhenOffline(lastSeenMs)
+      : null;
 
   return (
     <li>
@@ -521,7 +554,11 @@ function ChatDmContactListItem({
                     presenceOnline ? "chat-presence chat-presence--online" : "chat-presence"
                   }
                 >
-                  {presenceOnline ? "в сети" : "не в сети"}
+                  {presenceOnline
+                    ? "в сети"
+                    : offlineLastSeenLabel
+                      ? `не в сети (${offlineLastSeenLabel})`
+                      : "не в сети"}
                 </span>
               </>
             ) : null}
@@ -4798,6 +4835,7 @@ export function AdminChatTab({
                         unreadCount={unreadDm}
                         typingPeerIds={dmTypingPeers}
                         displayNameForUid={displayNameForUid}
+                        showAdminContactLastSeen
                         onSelect={() => {
                           const prevKey = selectedGroupChatId ?? selectedContactId;
                           if (prevKey) persistDraft(prevKey, composerText);
@@ -4873,6 +4911,7 @@ export function AdminChatTab({
                                 unreadCount={unreadDm}
                                 typingPeerIds={dmTypingPeers}
                                 displayNameForUid={displayNameForUid}
+                                showAdminContactLastSeen
                                 onSelect={() => {
                                   const prevKey = selectedGroupChatId ?? selectedContactId;
                                   if (prevKey) persistDraft(prevKey, composerText);
