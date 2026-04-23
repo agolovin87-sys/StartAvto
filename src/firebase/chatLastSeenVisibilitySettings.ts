@@ -1,23 +1,38 @@
-import { doc, onSnapshot, serverTimestamp, setDoc } from "firebase/firestore";
+import { deleteField, doc, onSnapshot, serverTimestamp, setDoc } from "firebase/firestore";
 import { getFirebase, isFirebaseConfigured } from "@/firebase/config";
 
 const COLLECTION = "appSettings";
 const DOC_ID = "chatLastSeenVisibility";
 
 export type ChatLastSeenVisibilitySettings = {
-  allowForInstructorAndStudent: boolean;
+  /** Админ разрешает инструкторам видеть «был в сети» у курсантов/инструкторов в чате. */
+  allowForInstructor: boolean;
+  /** Админ разрешает курсантам видеть «был в сети» у курсантов/инструкторов в чате. */
+  allowForStudent: boolean;
 };
 
 export const DEFAULT_CHAT_LAST_SEEN_VISIBILITY_SETTINGS: ChatLastSeenVisibilitySettings = {
-  allowForInstructorAndStudent: false,
+  allowForInstructor: false,
+  allowForStudent: false,
 };
 
 function normalize(
   data: Record<string, unknown> | undefined
 ): ChatLastSeenVisibilitySettings {
   if (!data) return { ...DEFAULT_CHAT_LAST_SEEN_VISIBILITY_SETTINGS };
+  const hasNew =
+    typeof data.allowForInstructor === "boolean" ||
+    typeof data.allowForStudent === "boolean";
+  if (hasNew) {
+    return {
+      allowForInstructor: data.allowForInstructor === true,
+      allowForStudent: data.allowForStudent === true,
+    };
+  }
+  const legacy = data.allowForInstructorAndStudent === true;
   return {
-    allowForInstructorAndStudent: data.allowForInstructorAndStudent === true,
+    allowForInstructor: legacy,
+    allowForStudent: legacy,
   };
 }
 
@@ -47,8 +62,10 @@ export async function setChatLastSeenVisibilitySettings(
   await setDoc(
     doc(db, COLLECTION, DOC_ID),
     {
-      allowForInstructorAndStudent: next.allowForInstructorAndStudent,
+      allowForInstructor: next.allowForInstructor,
+      allowForStudent: next.allowForStudent,
       updatedAt: serverTimestamp(),
+      allowForInstructorAndStudent: deleteField(),
     },
     { merge: true }
   );

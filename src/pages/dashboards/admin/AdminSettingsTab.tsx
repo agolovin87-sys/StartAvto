@@ -401,12 +401,11 @@ export function AdminSettingsTab() {
     return subscribeChatLastSeenVisibilitySettings(setChatLastSeenVisibility);
   }, []);
 
-  const toggleChatLastSeenVisibility = async () => {
+  const patchChatLastSeenVisibility = async (
+    patch: Partial<ChatLastSeenVisibilitySettings>
+  ) => {
     if (!isAdmin) return;
-    const next = {
-      allowForInstructorAndStudent:
-        !chatLastSeenVisibility.allowForInstructorAndStudent,
-    };
+    const next = { ...chatLastSeenVisibility, ...patch };
     await setChatLastSeenVisibilitySettings(next);
     setChatLastSeenVisibility(next);
   };
@@ -1591,23 +1590,51 @@ export function AdminSettingsTab() {
                 <div className="admin-settings-toggle-row">
                   <div
                     className="admin-settings-toggle-label"
-                    id="chat-last-seen-global-permission-label"
+                    id="chat-last-seen-instructor-label"
                   >
-                    Разрешить инструктору и курсанту видеть «был в сети»
+                    Разрешить инструктору видеть «был в сети»
                     <span className="admin-settings-toggle-hint">
-                      Глобально для всех аккаунтов инструктора и курсанта
+                      У контактов «курсант» и «инструктор» в списке и в шапке диалога
                     </span>
                   </div>
                   <label className="switch-stay">
                     <input
                       type="checkbox"
                       role="switch"
-                      checked={chatLastSeenVisibility.allowForInstructorAndStudent}
+                      checked={chatLastSeenVisibility.allowForInstructor}
                       onChange={() => {
-                        void toggleChatLastSeenVisibility();
+                        void patchChatLastSeenVisibility({
+                          allowForInstructor: !chatLastSeenVisibility.allowForInstructor,
+                        });
                       }}
-                      aria-labelledby="chat-last-seen-global-permission-label"
-                      aria-checked={chatLastSeenVisibility.allowForInstructorAndStudent}
+                      aria-labelledby="chat-last-seen-instructor-label"
+                      aria-checked={chatLastSeenVisibility.allowForInstructor}
+                    />
+                    <span className="switch-stay-slider" aria-hidden />
+                  </label>
+                </div>
+                <div className="admin-settings-toggle-row">
+                  <div
+                    className="admin-settings-toggle-label"
+                    id="chat-last-seen-student-label"
+                  >
+                    Разрешить курсанту видеть «был в сети»
+                    <span className="admin-settings-toggle-hint">
+                      У контактов «курсант» и «инструктор» в списке и в шапке диалога
+                    </span>
+                  </div>
+                  <label className="switch-stay">
+                    <input
+                      type="checkbox"
+                      role="switch"
+                      checked={chatLastSeenVisibility.allowForStudent}
+                      onChange={() => {
+                        void patchChatLastSeenVisibility({
+                          allowForStudent: !chatLastSeenVisibility.allowForStudent,
+                        });
+                      }}
+                      aria-labelledby="chat-last-seen-student-label"
+                      aria-checked={chatLastSeenVisibility.allowForStudent}
                     />
                     <span className="switch-stay-slider" aria-hidden />
                   </label>

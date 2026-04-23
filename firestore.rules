@@ -331,8 +331,9 @@ service cloud.firestore {
     match /appSettings/chatLastSeenVisibility {
       allow read: if isSignedIn();
       allow create, update: if isAdmin()
-        && request.resource.data.keys().hasOnly(['allowForInstructorAndStudent', 'updatedAt'])
-        && request.resource.data.allowForInstructorAndStudent is bool
+        && request.resource.data.keys().hasOnly(['allowForInstructor', 'allowForStudent', 'updatedAt'])
+        && request.resource.data.allowForInstructor is bool
+        && request.resource.data.allowForStudent is bool
         && request.resource.data.updatedAt is timestamp;
       allow delete: if false;
     }

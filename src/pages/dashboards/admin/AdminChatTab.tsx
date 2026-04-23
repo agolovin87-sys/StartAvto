@@ -501,22 +501,19 @@ type ChatDmContactListItemProps = {
   /** Только админ: в списке контактов после «не в сети» — последний визит в скобках. */
   showAdminContactLastSeen?: boolean;
   viewerRole: UserRole | undefined;
-  allowGlobalLastSeenForInstructorAndStudent: boolean;
+  globalLastSeenVisibility: ChatLastSeenVisibilitySettings;
 };
 
 function shouldShowContactLastSeenInSidebar(
   viewerRole: UserRole | undefined,
   contactRole: UserRole,
-  allowForInstructorAndStudent: boolean,
+  visibility: ChatLastSeenVisibilitySettings,
   showAdminContactLastSeen?: boolean
 ): boolean {
   if (viewerRole === "admin") return showAdminContactLastSeen === true;
-  if (viewerRole === "instructor" || viewerRole === "student") {
-    return (
-      allowForInstructorAndStudent &&
-      (contactRole === "student" || contactRole === "instructor")
-    );
-  }
+  if (contactRole !== "student" && contactRole !== "instructor") return false;
+  if (viewerRole === "instructor") return visibility.allowForInstructor;
+  if (viewerRole === "student") return visibility.allowForStudent;
   return false;
 }
 
@@ -535,13 +532,13 @@ function ChatDmContactListItem({
   onAvatarPhotoClick,
   showAdminContactLastSeen,
   viewerRole,
-  allowGlobalLastSeenForInstructorAndStudent,
+  globalLastSeenVisibility,
 }: ChatDmContactListItemProps) {
   const presenceOnline = useDebouncedPresenceOnline(c.presence, chatPrivacy, c.uid);
   const showContactLastSeen = shouldShowContactLastSeenInSidebar(
     viewerRole,
     c.role,
-    allowGlobalLastSeenForInstructorAndStudent,
+    globalLastSeenVisibility,
     showAdminContactLastSeen
   );
   const offlinePresenceMs =
@@ -2612,11 +2609,16 @@ export function AdminChatTab({
   const dmChatHeaderSubtitle = useMemo(() => {
     if (!selectedContact) return null;
     if (!chatPrivacy.showPresenceInChatUi) return null;
+    const peerIsStudentOrInstructor =
+      selectedContact.role === "student" || selectedContact.role === "instructor";
     const canShowLastSeenInHeader =
       (isAdmin && selectedContact.role !== "admin") ||
-      ((profile?.role === "instructor" || profile?.role === "student") &&
-        chatLastSeenVisibility.allowForInstructorAndStudent &&
-        (selectedContact.role === "student" || selectedContact.role === "instructor"));
+      (profile?.role === "instructor" &&
+        chatLastSeenVisibility.allowForInstructor &&
+        peerIsStudentOrInstructor) ||
+      (profile?.role === "student" &&
+        chatLastSeenVisibility.allowForStudent &&
+        peerIsStudentOrInstructor);
     const ms =
       canShowLastSeenInHeader && !debouncedDmPeerPresenceOnline
         ? adminContactOfflinePresenceMs(selectedContact.presence)
@@ -2643,7 +2645,8 @@ export function AdminChatTab({
   }, [
     selectedContact,
     chatPrivacy.showPresenceInChatUi,
-    chatLastSeenVisibility.allowForInstructorAndStudent,
+    chatLastSeenVisibility.allowForInstructor,
+    chatLastSeenVisibility.allowForStudent,
     debouncedDmPeerPresenceOnline,
     isAdmin,
     profile?.role,
@@ -4527,9 +4530,7 @@ export function AdminChatTab({
                             typingPeerIds={[]}
                             displayNameForUid={displayNameForUid}
                             viewerRole={profile?.role}
-                            allowGlobalLastSeenForInstructorAndStudent={
-                              chatLastSeenVisibility.allowForInstructorAndStudent
-                            }
+                            globalLastSeenVisibility={chatLastSeenVisibility}
                             onSelect={() => {
                               setCorrespondenceViewerU1(c);
                               setCorrespondenceSecondPeersLoading(true);
@@ -4930,9 +4931,7 @@ export function AdminChatTab({
                         displayNameForUid={displayNameForUid}
                         showAdminContactLastSeen
                         viewerRole={profile?.role}
-                        allowGlobalLastSeenForInstructorAndStudent={
-                          chatLastSeenVisibility.allowForInstructorAndStudent
-                        }
+                        globalLastSeenVisibility={chatLastSeenVisibility}
                         onSelect={() => {
                           const prevKey = selectedGroupChatId ?? selectedContactId;
                           if (prevKey) persistDraft(prevKey, composerText);
@@ -5010,9 +5009,7 @@ export function AdminChatTab({
                                 displayNameForUid={displayNameForUid}
                                 showAdminContactLastSeen
                                 viewerRole={profile?.role}
-                                allowGlobalLastSeenForInstructorAndStudent={
-                                  chatLastSeenVisibility.allowForInstructorAndStudent
-                                }
+                                globalLastSeenVisibility={chatLastSeenVisibility}
                                 onSelect={() => {
                                   const prevKey = selectedGroupChatId ?? selectedContactId;
                                   if (prevKey) persistDraft(prevKey, composerText);
@@ -5066,9 +5063,7 @@ export function AdminChatTab({
                     typingPeerIds={dmTypingPeers}
                     displayNameForUid={displayNameForUid}
                     viewerRole={profile?.role}
-                    allowGlobalLastSeenForInstructorAndStudent={
-                      chatLastSeenVisibility.allowForInstructorAndStudent
-                    }
+                    globalLastSeenVisibility={chatLastSeenVisibility}
                     onSelect={() => {
                       const prevKey = selectedGroupChatId ?? selectedContactId;
                       if (prevKey) persistDraft(prevKey, composerText);
