@@ -61,6 +61,33 @@ function toMillis(v: unknown): number {
   return Date.now();
 }
 
+/** Для полей присутствия: только валидные мс или null (без подстановки Date.now). */
+function toMillisOrNull(v: unknown): number | null {
+  if (v === null || v === undefined) return null;
+  if (typeof v === "number" && Number.isFinite(v)) return v;
+  if (
+    v &&
+    typeof v === "object" &&
+    "toMillis" in v &&
+    typeof (v as { toMillis: () => number }).toMillis === "function"
+  ) {
+    const ms = (v as { toMillis: () => number }).toMillis();
+    return Number.isFinite(ms) ? ms : null;
+  }
+  if (v && typeof v === "object" && "seconds" in v) {
+    const o = v as { seconds: unknown; nanoseconds?: unknown };
+    const sec = o.seconds;
+    if (typeof sec === "number" && Number.isFinite(sec)) {
+      const nano =
+        typeof o.nanoseconds === "number" && Number.isFinite(o.nanoseconds)
+          ? o.nanoseconds
+          : 0;
+      return sec * 1000 + Math.floor(nano / 1e6);
+    }
+  }
+  return null;
+}
+
 /** Число талонов из Firestore (или из формы) для сравнения и журнала. */
 export function normalizeTalonsValue(value: unknown): number {
   if (typeof value === "number" && Number.isFinite(value)) {
@@ -127,23 +154,12 @@ export function normalizeUserProfile(
               | "online"
               | "offline"
               | undefined) ?? "offline",
-            lastSeenAt: (() => {
-              const v = (data.presence as Record<string, unknown>).lastSeenAt;
-              return typeof v === "number" ? v : null;
-            })(),
-            heartbeatAt: (() => {
-              const raw = (data.presence as Record<string, unknown>).heartbeatAt;
-              if (typeof raw === "number") return raw;
-              if (
-                raw &&
-                typeof raw === "object" &&
-                "toMillis" in raw &&
-                typeof (raw as { toMillis: () => number }).toMillis === "function"
-              ) {
-                return (raw as { toMillis: () => number }).toMillis();
-              }
-              return null;
-            })(),
+            lastSeenAt: toMillisOrNull(
+              (data.presence as Record<string, unknown>).lastSeenAt
+            ),
+            heartbeatAt: toMillisOrNull(
+              (data.presence as Record<string, unknown>).heartbeatAt
+            ),
           }
         : undefined,
   };
