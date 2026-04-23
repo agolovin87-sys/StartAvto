@@ -14,6 +14,12 @@ import {
   type ChatPrivacySettings,
 } from "@/admin/adminChatPrivacySettings";
 import {
+  DEFAULT_CHAT_LAST_SEEN_VISIBILITY_SETTINGS,
+  setChatLastSeenVisibilitySettings,
+  subscribeChatLastSeenVisibilitySettings,
+  type ChatLastSeenVisibilitySettings,
+} from "@/firebase/chatLastSeenVisibilitySettings";
+import {
   INCOMING_SOUND_PRESETS,
   incomingSoundPresetAssetPath,
   incomingSoundPresetByAssetPath,
@@ -359,7 +365,6 @@ export function AdminSettingsTab() {
   const { user, profile, refreshProfile } = useAuth();
   const uid = user?.uid ?? "";
   const isAdmin = profile?.role === "admin";
-  const isInstructor = profile?.role === "instructor";
   const isDriveGeoUser = profile?.role === "instructor" || profile?.role === "student";
 
   const [meetingGeoEnabled, setMeetingGeoEnabledState] = useState(true);
@@ -368,6 +373,9 @@ export function AdminSettingsTab() {
   const [geoBusy, setGeoBusy] = useState(false);
 
   const [chatPrivacy, setChatPrivacy] = useState<ChatPrivacySettings>(DEFAULT_CHAT_PRIVACY_SETTINGS);
+  const [chatLastSeenVisibility, setChatLastSeenVisibility] = useState<ChatLastSeenVisibilitySettings>(
+    DEFAULT_CHAT_LAST_SEEN_VISIBILITY_SETTINGS
+  );
 
   useEffect(() => {
     if (uid) setChatPrivacy(getChatPrivacySettings(uid));
@@ -387,6 +395,20 @@ export function AdminSettingsTab() {
     const value = !cur[key];
     setChatPrivacySettings(uid, { [key]: value });
     setChatPrivacy({ ...cur, [key]: value });
+  };
+
+  useEffect(() => {
+    return subscribeChatLastSeenVisibilitySettings(setChatLastSeenVisibility);
+  }, []);
+
+  const toggleChatLastSeenVisibility = async () => {
+    if (!isAdmin) return;
+    const next = {
+      allowForInstructorAndStudent:
+        !chatLastSeenVisibility.allowForInstructorAndStudent,
+    };
+    await setChatLastSeenVisibilitySettings(next);
+    setChatLastSeenVisibility(next);
   };
 
   const [notifySettings, setNotifySettings] = useState<NotificationSettings>(
@@ -1500,7 +1522,7 @@ export function AdminSettingsTab() {
           onToggle={() => toggleSettingsSection("settings-chat")}
           icon={<IconSectionChat className="admin-settings-section-trigger-icon-svg" />}
         >
-          {isAdmin || isInstructor ? (
+          {isAdmin ? (
             <div
               className="admin-settings-chat-privacy"
               aria-labelledby="settings-chat-privacy-title"
@@ -1566,86 +1588,84 @@ export function AdminSettingsTab() {
                     <span className="switch-stay-slider" aria-hidden />
                   </label>
                 </div>
-                {isInstructor ? (
-                  <div className="admin-settings-toggle-row">
-                    <div
-                      className="admin-settings-toggle-label"
-                      id="chat-privacy-instructor-last-seen-label"
-                    >
-                      Был в сети (для контактов курсант/инструктор)
-                      <span className="admin-settings-toggle-hint">
-                        Показывать время последнего визита после «не в сети»
-                      </span>
-                    </div>
-                    <label className="switch-stay">
-                      <input
-                        type="checkbox"
-                        role="switch"
-                        checked={chatPrivacy.showLastSeenForInstructorContacts}
-                        onChange={() => toggleChatPrivacy("showLastSeenForInstructorContacts")}
-                        aria-labelledby="chat-privacy-instructor-last-seen-label"
-                        aria-checked={chatPrivacy.showLastSeenForInstructorContacts}
-                      />
-                      <span className="switch-stay-slider" aria-hidden />
-                    </label>
+                <div className="admin-settings-toggle-row">
+                  <div
+                    className="admin-settings-toggle-label"
+                    id="chat-last-seen-global-permission-label"
+                  >
+                    Разрешить инструктору и курсанту видеть «был в сети»
+                    <span className="admin-settings-toggle-hint">
+                      Глобально для всех аккаунтов инструктора и курсанта
+                    </span>
                   </div>
-                ) : null}
+                  <label className="switch-stay">
+                    <input
+                      type="checkbox"
+                      role="switch"
+                      checked={chatLastSeenVisibility.allowForInstructorAndStudent}
+                      onChange={() => {
+                        void toggleChatLastSeenVisibility();
+                      }}
+                      aria-labelledby="chat-last-seen-global-permission-label"
+                      aria-checked={chatLastSeenVisibility.allowForInstructorAndStudent}
+                    />
+                    <span className="switch-stay-slider" aria-hidden />
+                  </label>
+                </div>
               </div>
 
-              {isAdmin ? (
-                <div className="admin-settings-policy-block">
-                  <h4 className="admin-settings-policy-heading">Удаление сообщений</h4>
-                  <div className="admin-settings-toggle-row">
-                    <div className="admin-settings-toggle-label" id="chat-privacy-del-me-label">
-                      Пункт «Удалить у меня» в меню
-                    </div>
-                    <label className="switch-stay">
-                      <input
-                        type="checkbox"
-                        role="switch"
-                        checked={chatPrivacy.allowDeleteForMeInMenu}
-                        onChange={() => toggleChatPrivacy("allowDeleteForMeInMenu")}
-                        aria-labelledby="chat-privacy-del-me-label"
-                        aria-checked={chatPrivacy.allowDeleteForMeInMenu}
-                      />
-                      <span className="switch-stay-slider" aria-hidden />
-                    </label>
+              <div className="admin-settings-policy-block">
+                <h4 className="admin-settings-policy-heading">Удаление сообщений</h4>
+                <div className="admin-settings-toggle-row">
+                  <div className="admin-settings-toggle-label" id="chat-privacy-del-me-label">
+                    Пункт «Удалить у меня» в меню
                   </div>
-                  <div className="admin-settings-toggle-row">
-                    <div className="admin-settings-toggle-label" id="chat-privacy-del-all-label">
-                      Пункт «Удалить у всех» в меню
-                    </div>
-                    <label className="switch-stay">
-                      <input
-                        type="checkbox"
-                        role="switch"
-                        checked={chatPrivacy.allowDeleteForAllInMenu}
-                        onChange={() => toggleChatPrivacy("allowDeleteForAllInMenu")}
-                        aria-labelledby="chat-privacy-del-all-label"
-                        aria-checked={chatPrivacy.allowDeleteForAllInMenu}
-                      />
-                      <span className="switch-stay-slider" aria-hidden />
-                    </label>
-                  </div>
-                  <div className="admin-settings-toggle-row">
-                    <div className="admin-settings-toggle-label" id="chat-privacy-confirm-label">
-                      Подтверждать удаление
-                      <span className="admin-settings-toggle-hint">Диалог перед удалением одного или пакета</span>
-                    </div>
-                    <label className="switch-stay">
-                      <input
-                        type="checkbox"
-                        role="switch"
-                        checked={chatPrivacy.confirmBeforeDelete}
-                        onChange={() => toggleChatPrivacy("confirmBeforeDelete")}
-                        aria-labelledby="chat-privacy-confirm-label"
-                        aria-checked={chatPrivacy.confirmBeforeDelete}
-                      />
-                      <span className="switch-stay-slider" aria-hidden />
-                    </label>
-                  </div>
+                  <label className="switch-stay">
+                    <input
+                      type="checkbox"
+                      role="switch"
+                      checked={chatPrivacy.allowDeleteForMeInMenu}
+                      onChange={() => toggleChatPrivacy("allowDeleteForMeInMenu")}
+                      aria-labelledby="chat-privacy-del-me-label"
+                      aria-checked={chatPrivacy.allowDeleteForMeInMenu}
+                    />
+                    <span className="switch-stay-slider" aria-hidden />
+                  </label>
                 </div>
-              ) : null}
+                <div className="admin-settings-toggle-row">
+                  <div className="admin-settings-toggle-label" id="chat-privacy-del-all-label">
+                    Пункт «Удалить у всех» в меню
+                  </div>
+                  <label className="switch-stay">
+                    <input
+                      type="checkbox"
+                      role="switch"
+                      checked={chatPrivacy.allowDeleteForAllInMenu}
+                      onChange={() => toggleChatPrivacy("allowDeleteForAllInMenu")}
+                      aria-labelledby="chat-privacy-del-all-label"
+                      aria-checked={chatPrivacy.allowDeleteForAllInMenu}
+                    />
+                    <span className="switch-stay-slider" aria-hidden />
+                  </label>
+                </div>
+                <div className="admin-settings-toggle-row">
+                  <div className="admin-settings-toggle-label" id="chat-privacy-confirm-label">
+                    Подтверждать удаление
+                    <span className="admin-settings-toggle-hint">Диалог перед удалением одного или пакета</span>
+                  </div>
+                  <label className="switch-stay">
+                    <input
+                      type="checkbox"
+                      role="switch"
+                      checked={chatPrivacy.confirmBeforeDelete}
+                      onChange={() => toggleChatPrivacy("confirmBeforeDelete")}
+                      aria-labelledby="chat-privacy-confirm-label"
+                      aria-checked={chatPrivacy.confirmBeforeDelete}
+                    />
+                    <span className="switch-stay-slider" aria-hidden />
+                  </label>
+                </div>
+              </div>
             </div>
           ) : (
             <p className="admin-settings-section-desc">

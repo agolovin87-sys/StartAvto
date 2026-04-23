@@ -325,6 +325,18 @@ service cloud.firestore {
       allow delete: if false;
     }
 
+    /**
+     * Глобальный флаг: админ разрешает инструктору/курсанту видеть «был в сети».
+     */
+    match /appSettings/chatLastSeenVisibility {
+      allow read: if isSignedIn();
+      allow create, update: if isAdmin()
+        && request.resource.data.keys().hasOnly(['allowForInstructorAndStudent', 'updatedAt'])
+        && request.resource.data.allowForInstructorAndStudent is bool
+        && request.resource.data.updatedAt is timestamp;
+      allow delete: if false;
+    }
+
     match /groups/{groupId} {
       /** Курсант читает только свою учебную группу (для привязки к чат-группе и self-join). */
       allow read: if isAdmin()
