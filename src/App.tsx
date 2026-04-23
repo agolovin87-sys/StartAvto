@@ -24,7 +24,7 @@ import { StudentOnboardingProvider } from "@/context/StudentOnboardingContext";
 import { GlobalIncomingChatAlerts } from "@/chat/GlobalIncomingChatAlerts";
 import { FcmRegistrar } from "@/components/FcmRegistrar";
 import { OfflineLayer } from "@/components/OfflineLayer";
-import { PullToRefresh } from "@/components/common/PullToRefresh";
+import { AppUpdateChecker } from "@/components/AppUpdateChecker";
 import type { UserRole } from "@/types";
 import "@/styles/update-banner.css";
 
@@ -99,74 +99,66 @@ function GuestOnly({ children }: { children: ReactNode }) {
 }
 
 export default function App() {
-  const handleRefreshData = async () => {
-    // Точка для ручного обновления данных экранов (если появится общий рефетч).
-    await Promise.resolve();
-  };
-
   if (!isFirebaseConfigured) {
     return (
       <OfflineLayer>
-        <PullToRefresh onRefreshData={handleRefreshData}>
-          <Routes>
-            <Route path="*" element={<SetupFirebase />} />
-          </Routes>
-        </PullToRefresh>
+        <Routes>
+          <Route path="*" element={<SetupFirebase />} />
+        </Routes>
       </OfflineLayer>
     );
   }
 
   return (
     <OfflineLayer>
+      <AppUpdateChecker />
       <FcmRegistrar />
-      <PullToRefresh onRefreshData={handleRefreshData}>
-        <Routes>
-          <Route
-            path="/"
-            element={
-              <GuestOnly>
-                <Navigate to="/login" replace />
-              </GuestOnly>
-            }
-          />
-          <Route
-            path="/login"
-            element={
-              <GuestOnly>
-                <LoginPage />
-              </GuestOnly>
-            }
-          />
-          <Route
-            path="/register"
-            element={
-              <GuestOnly>
-                <RegisterPage />
-              </GuestOnly>
-            }
-          />
-          <Route path="/install" element={<InstallAppPage />} />
-          <Route path="/app" element={<RoleHome />} />
-          <Route path="/app/admin" element={<ProtectedApp role="admin" />} />
-          <Route
-            path="/app/instructor/*"
-            element={
-              <InstructorOnboardingProvider>
-                <ProtectedApp role="instructor" />
-              </InstructorOnboardingProvider>
-            }
-          />
-          <Route
-            path="/app/student/*"
-            element={
-              <StudentOnboardingProvider>
-                <ProtectedApp role="student" />
-              </StudentOnboardingProvider>
-            }
-          />
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
-      </PullToRefresh>
+      <Routes>
+        <Route
+          path="/"
+          element={
+            <GuestOnly>
+              <Navigate to="/login" replace />
+            </GuestOnly>
+          }
+        />
+        <Route
+          path="/login"
+          element={
+            <GuestOnly>
+              <LoginPage />
+            </GuestOnly>
+          }
+        />
+        <Route
+          path="/register"
+          element={
+            <GuestOnly>
+              <RegisterPage />
+            </GuestOnly>
+          }
+        />
+        <Route path="/install" element={<InstallAppPage />} />
+        <Route path="/app" element={<RoleHome />} />
+        <Route path="/app/admin" element={<ProtectedApp role="admin" />} />
+        <Route
+          path="/app/instructor/*"
+          element={
+            <InstructorOnboardingProvider>
+              <ProtectedApp role="instructor" />
+            </InstructorOnboardingProvider>
+          }
+        />
+        <Route
+          path="/app/student/*"
+          element={
+            <StudentOnboardingProvider>
+              <ProtectedApp role="student" />
+            </StudentOnboardingProvider>
+          }
+        />
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
     </OfflineLayer>
   );
 }
