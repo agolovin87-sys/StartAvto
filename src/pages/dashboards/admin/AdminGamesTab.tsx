@@ -19,7 +19,30 @@ export function AdminGamesTab() {
 
   return (
     <section className="admin-tab admin-home-tab">
-      <h2 className="admin-title">Игры</h2>
+      {isStarted ? (
+        <button
+          type="button"
+          onClick={() => {
+            gameRef.current?.destroy();
+            gameRef.current = null;
+            setIsStarted(false);
+          }}
+          style={{
+            marginBottom: 8,
+            minHeight: 38,
+            padding: "0 12px",
+            borderRadius: 10,
+            border: "1px solid #334155",
+            background: "#1e293b",
+            color: "#e2e8f0",
+            fontWeight: 600,
+            cursor: "pointer",
+          }}
+        >
+          ← Назад к играм
+        </button>
+      ) : null}
+      <h2 className="admin-title">{isStarted ? "Tetris" : "Игры"}</h2>
       {!isStarted ? (
         <button
           type="button"
