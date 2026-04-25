@@ -419,7 +419,9 @@ export function DriveLiveSessionPanel({
                 ? `Ещё осталось ${remainingMin} мин.`
                 : "Время почти вышло — можно завершить."}
             </p>
-            <p className="field-hint">С курсанта будет списан 1 талон на баланс инструктора.</p>
+            {slot.isOwnStudent !== true ? (
+              <p className="field-hint">С курсанта будет списан 1 талон на баланс инструктора.</p>
+            ) : null}
             <div className="modal-actions">
               <button
                 type="button"
