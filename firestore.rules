@@ -431,11 +431,13 @@ service cloud.firestore {
           && resource.data.instructorId == request.auth.uid
           && resource.data.status == 'scheduled'
           && resource.data.get('liveStartedAt', null) == null
+          && resource.data.get('liveStudentAckAt', null) == null
           && request.resource.data.status == 'scheduled'
           && request.resource.data.instructorId == request.auth.uid
           && request.resource.data.studentId == resource.data.studentId
           && request.resource.data.get('liveStartedAt', null) != null
-          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['liveStartedAt', 'instructorLateShiftMin']);
+          && request.resource.data.get('liveStudentAckAt', null) != null
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['liveStartedAt', 'liveStudentAckAt', 'instructorLateShiftMin']);
       }
 
       /** Инструктор: «Опаздываю» — сдвиг dateKey/startTime и отметка минут для курсанта. */

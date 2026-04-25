@@ -666,6 +666,8 @@ export async function instructorStartDriveLiveSession(slotId: string): Promise<v
   const { db } = getFirebase();
   await updateDoc(doc(db, DRIVES, slotId), {
     liveStartedAt: serverTimestamp(),
+    // По новому сценарию подтверждение не требуется: таймер стартует сразу.
+    liveStudentAckAt: serverTimestamp(),
     instructorLateShiftMin: deleteField(),
   });
 }
