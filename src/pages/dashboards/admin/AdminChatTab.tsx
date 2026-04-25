@@ -6175,9 +6175,9 @@ export function AdminChatTab({
                       editingMessageId ? "Редактировать сообщение…" : "Введите сообщение…"
                     }
                     aria-label={editingMessageId ? "Редактировать сообщение" : "Введите сообщение"}
-                    spellCheck={false}
+                    spellCheck
                     autoCapitalize="sentences"
-                    autoCorrect="off"
+                    autoCorrect="on"
                   />
                   <button
                     type="button"
