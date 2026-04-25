@@ -8,6 +8,7 @@ import {
 } from "@/admin/scheduleFormat";
 import {
   createInstructorBookingRequest,
+  createInstructorOwnStudentScheduled,
   instructorCancelFreeDriveWindowReservation,
   instructorConfirmFreeDriveWindowReservation,
   instructorCreateFreeDriveWindow,
@@ -119,6 +120,7 @@ export function InstructorBookingTab({ freeWindows }: { freeWindows: FreeDriveWi
   const [dateKey, setDateKey] = useState(() => localDateKey());
   const [startTime, setStartTime] = useState("09:00");
   const [submitBusy, setSubmitBusy] = useState(false);
+  const [ownStudentFio, setOwnStudentFio] = useState("");
   const [deleteBusyId, setDeleteBusyId] = useState<string | null>(null);
   const [deleteConfirmSlotId, setDeleteConfirmSlotId] = useState<string | null>(null);
   const [deleteConfirmWindowId, setDeleteConfirmWindowId] = useState<string | null>(null);
@@ -232,22 +234,37 @@ export function InstructorBookingTab({ freeWindows }: { freeWindows: FreeDriveWi
         return;
       }
       const sid = studentId.trim();
-      const st = studentMap.get(sid);
-      const committed = countStudentCommittedBookings(slots, sid, freeWindows);
-      const talonGate = evaluateStudentTalonBooking(st?.talons, committed);
-      if (!talonGate.ok) {
-        setTalonBookingAlert(talonGate.reason);
-        return;
+      if (sid === "__own__") {
+        const fio = ownStudentFio.trim();
+        if (!fio) {
+          setErr("Укажите ФИО для «Свой курсант»");
+          return;
+        }
+        await createInstructorOwnStudentScheduled({
+          instructorId: instructorUid,
+          dateKey,
+          startTime,
+          studentDisplayName: fio,
+        });
+      } else {
+        const st = studentMap.get(sid);
+        const committed = countStudentCommittedBookings(slots, sid, freeWindows);
+        const talonGate = evaluateStudentTalonBooking(st?.talons, committed);
+        if (!talonGate.ok) {
+          setTalonBookingAlert(talonGate.reason);
+          return;
+        }
+        await createInstructorBookingRequest({
+          instructorId: instructorUid,
+          dateKey,
+          startTime,
+          studentId: sid,
+          studentDisplayName: st?.displayName ?? "",
+        });
       }
-      await createInstructorBookingRequest({
-        instructorId: instructorUid,
-        dateKey,
-        startTime,
-        studentId: sid,
-        studentDisplayName: st?.displayName ?? "",
-      });
       setFormOpen(false);
       setStudentId("");
+      setOwnStudentFio("");
     } catch (e: unknown) {
       const msg = mapFirebaseError(e);
       if (msg === DRIVE_TIME_OCCUPIED_MSG) setDriveTimeOccupiedOpen(true);
@@ -646,6 +663,7 @@ export function InstructorBookingTab({ freeWindows }: { freeWindows: FreeDriveWi
                   required
                 >
                   <option value="">Выберите курсанта</option>
+                  <option value="__own__">Свой курсант</option>
                   {attachedStudents.map((s) => (
                     <option key={s.uid} value={s.uid}>
                       {formatShortFio(s.displayName) || s.uid}
@@ -653,6 +671,19 @@ export function InstructorBookingTab({ freeWindows }: { freeWindows: FreeDriveWi
                   ))}
                 </select>
               </label>
+              {studentId === "__own__" ? (
+                <label className="field">
+                  <span className="field-label">ФИО</span>
+                  <input
+                    type="text"
+                    className="input"
+                    value={ownStudentFio}
+                    onChange={(e) => setOwnStudentFio(e.target.value)}
+                    placeholder="Введите ФИО"
+                    required
+                  />
+                </label>
+              ) : null}
               <label className="field">
                 <span className="field-label">Дата</span>
                 <input
@@ -679,7 +710,7 @@ export function InstructorBookingTab({ freeWindows }: { freeWindows: FreeDriveWi
                 <button
                   type="submit"
                   className="btn btn-primary"
-                  disabled={submitBusy || attachedStudents.length === 0}
+                  disabled={submitBusy}
                 >
                   {submitBusy ? "Запись…" : "Записать"}
                 </button>

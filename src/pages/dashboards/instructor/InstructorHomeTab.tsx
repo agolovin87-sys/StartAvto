@@ -897,7 +897,11 @@ export function InstructorHomeTab() {
                     {daySlots.map((sl) => {
                       const st = studentMap.get(sl.studentId);
                       const shortName =
-                        formatShortFio(st?.displayName?.trim() ? st.displayName : "") || "Курсант";
+                        formatShortFio(
+                          (st?.displayName?.trim() ? st.displayName : "") ||
+                            (sl.studentDisplayName?.trim() ? sl.studentDisplayName : "")
+                        ) || "Курсант";
+                      const ownStudentSlot = sl.isOwnStudent === true;
                       const live = sl.liveStartedAt != null;
                       const liveAcked = sl.liveStudentAckAt != null;
                       const livePaused =
@@ -938,8 +942,9 @@ export function InstructorHomeTab() {
                           />
                         );
                       }
-                      const canStart = canShowInstructorStartDriveButton(sl, nowMs);
-                      const canRunningLate = canShowInstructorRunningLateButton(sl, nowMs);
+                      const canStart = !ownStudentSlot && canShowInstructorStartDriveButton(sl, nowMs);
+                      const canRunningLate =
+                        !ownStudentSlot && canShowInstructorRunningLateButton(sl, nowMs);
                       const hideWeekGeo = shouldHideWeekScheduleGeoShareButtons(sl);
                       return (
                         <DriveWeekScheduleNoticeCard
@@ -998,7 +1003,7 @@ export function InstructorHomeTab() {
                                   <IconRunningLate />
                                 </button>
                               ) : null}
-                              {showInstructorDriveLocationShare && !hideWeekGeo ? (
+                              {showInstructorDriveLocationShare && !hideWeekGeo && !ownStudentSlot ? (
                                 <InstructorStudentLocationShareButton slotId={sl.id} />
                               ) : null}
                               <button

@@ -118,6 +118,7 @@ export function normalizeDriveSlot(
         : data.instructorRatingStudent === null
           ? null
           : undefined,
+    isOwnStudent: data.isOwnStudent === true,
   };
 }
 
@@ -428,6 +429,8 @@ export async function addDriveSlot(input: {
   cancelReason?: string;
   /** Если не передано — подставляется из профиля курсанта (пока инструктор может читать users). */
   studentDisplayName?: string;
+  /** Ручная запись инструктора «Свой курсант». */
+  isOwnStudent?: boolean;
 }): Promise<string> {
   const { db } = getFirebase();
   const dk = input.dateKey.trim();
@@ -466,6 +469,7 @@ export async function addDriveSlot(input: {
     status: input.status,
     cancelledByRole: input.cancelledByRole ?? null,
     cancelReason: (input.cancelReason ?? "").trim(),
+    isOwnStudent: input.isOwnStudent === true,
     createdAt: serverTimestamp(),
   });
   for (const wid of openOverlapIds) {
@@ -490,6 +494,27 @@ export async function createInstructorBookingRequest(input: {
     studentId: input.studentId,
     studentDisplayName: input.studentDisplayName,
     status: "pending_confirmation",
+  });
+}
+
+/** Запись «Свой курсант»: сразу попадает в график инструктора как scheduled. */
+export async function createInstructorOwnStudentScheduled(input: {
+  instructorId: string;
+  dateKey: string;
+  startTime: string;
+  studentDisplayName: string;
+}): Promise<string> {
+  const name = input.studentDisplayName.trim();
+  if (!name) throw new Error("Укажите ФИО");
+  return addDriveSlot({
+    instructorId: input.instructorId,
+    dateKey: input.dateKey,
+    startTime: input.startTime,
+    /** Технически связываем слот с инструктором: это не реальный курсант из users/{uid}. */
+    studentId: input.instructorId,
+    studentDisplayName: name,
+    status: "scheduled",
+    isOwnStudent: true,
   });
 }
 

@@ -372,6 +372,19 @@ service cloud.firestore {
           && request.resource.data.get('studentDisplayName', '') is string;
       }
 
+      /** Инструктор: ручная запись «Свой курсант» (без подтверждения, без таймера). */
+      function driveSlotInstructorCreatesOwnStudentScheduled() {
+        return isInstructorAccount()
+          && request.resource.data.instructorId == request.auth.uid
+          && request.resource.data.status == 'scheduled'
+          && request.resource.data.studentId == request.auth.uid
+          && request.resource.data.isOwnStudent == true
+          && request.resource.data.cancelledByRole == null
+          && request.resource.data.cancelReason == ''
+          && request.resource.data.get('studentDisplayName', '') is string
+          && request.resource.data.get('studentDisplayName', '').size() > 0;
+      }
+
       /** Курсант подтверждает запись инструктора. */
       function driveSlotStudentConfirms() {
         return isStudentAccount()
@@ -581,7 +594,8 @@ service cloud.firestore {
 
       allow create: if isAdmin()
         || driveSlotInstructorCreatesBooking()
-        || driveSlotInstructorCreatesScheduledFromWindow();
+        || driveSlotInstructorCreatesScheduledFromWindow()
+        || driveSlotInstructorCreatesOwnStudentScheduled();
 
       allow update: if isAdmin()
         || driveSlotStudentConfirms()
