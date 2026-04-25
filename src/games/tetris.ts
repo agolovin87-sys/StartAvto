@@ -3,6 +3,7 @@ export function mountTetris(container, options = {}) {
   if (!container) throw new Error("mountTetris: container is required");
 
   const storageKey = options.storageKey || "tetris_best_score_v1";
+  const snapshotKey = options.snapshotKey || "tetris_snapshot_v1";
   const autoStart = Boolean(options.autoStart);
 
   container.classList.add("tetris-widget");
@@ -114,6 +115,57 @@ export function mountTetris(container, options = {}) {
   const onScoreChange = typeof options.onScoreChange === "function" ? options.onScoreChange : null;
   const onGameOver = typeof options.onGameOver === "function" ? options.onGameOver : null;
   const onStateChange = typeof options.onStateChange === "function" ? options.onStateChange : null;
+
+  function clearSnapshot() {
+    try {
+      localStorage.removeItem(snapshotKey);
+    } catch {}
+  }
+
+  function saveSnapshot() {
+    try {
+      localStorage.setItem(
+        snapshotKey,
+        JSON.stringify({
+          v: 1,
+          board,
+          bag,
+          current,
+          nextType,
+          score,
+          level,
+          linesTotal,
+          gameState,
+          dropAccumulator,
+          soundEnabled,
+          at: Date.now(),
+        })
+      );
+    } catch {}
+  }
+
+  function restoreSnapshot() {
+    try {
+      const raw = localStorage.getItem(snapshotKey);
+      if (!raw) return false;
+      const s = JSON.parse(raw);
+      if (!s || s.v !== 1) return false;
+      if (!Array.isArray(s.board) || s.board.length !== ROWS) return false;
+      board = s.board;
+      bag = Array.isArray(s.bag) ? s.bag : [];
+      current = s.current || null;
+      nextType = s.nextType || null;
+      score = Number.isFinite(s.score) ? s.score : 0;
+      level = Number.isFinite(s.level) ? s.level : 1;
+      linesTotal = Number.isFinite(s.linesTotal) ? s.linesTotal : 0;
+      gameState = typeof s.gameState === "string" ? s.gameState : "idle";
+      dropAccumulator = Number.isFinite(s.dropAccumulator) ? s.dropAccumulator : 0;
+      soundEnabled = typeof s.soundEnabled === "boolean" ? s.soundEnabled : true;
+      return true;
+    } catch {
+      return false;
+    }
+  }
 
   function emitState() {
     if (onStateChange) onStateChange(gameState);
@@ -394,6 +446,7 @@ export function mountTetris(container, options = {}) {
       syncOverlay();
       if (onGameOver) onGameOver(score, { level, lines: linesTotal });
     }
+    saveSnapshot();
   }
 
   function lockAndSpawn() {
@@ -421,6 +474,7 @@ export function mountTetris(container, options = {}) {
     animatingClear = false;
     updateHUD();
     finishLockAfterClear();
+    saveSnapshot();
   }
 
   function move(dx, dy, fromUser) {
@@ -431,6 +485,7 @@ export function mountTetris(container, options = {}) {
       if (dy > 0) score += 1;
       if (fromUser) dy > 0 ? sfx.softDrop() : sfx.move();
       updateHUD();
+      if (fromUser) saveSnapshot();
     }
   }
 
@@ -443,6 +498,7 @@ export function mountTetris(container, options = {}) {
       if (validPosition(np)) {
         current = np;
         sfx.rotate();
+        saveSnapshot();
         return;
       }
     }
@@ -461,6 +517,7 @@ export function mountTetris(container, options = {}) {
     score += drops * 2;
     updateHUD();
     lockAndSpawn();
+    saveSnapshot();
   }
 
   function softDropFrame() {
@@ -493,6 +550,7 @@ export function mountTetris(container, options = {}) {
     setStatus();
     syncOverlay();
     drawPreview();
+    saveSnapshot();
   }
 
   function togglePause() {
@@ -509,6 +567,7 @@ export function mountTetris(container, options = {}) {
     }
     setStatus();
     syncOverlay();
+    saveSnapshot();
   }
 
   function resetGame() {
@@ -524,6 +583,7 @@ export function mountTetris(container, options = {}) {
     syncOverlay();
     drawBoard(null);
     drawPreview();
+    clearSnapshot();
   }
 
   function setSound(enabled) {
@@ -535,6 +595,7 @@ export function mountTetris(container, options = {}) {
       ensureAudio();
       playTone(520, 0.06, "triangle", 0.04, 0.004);
     }
+    saveSnapshot();
   }
 
   function keyHandler(e) {
@@ -600,14 +661,16 @@ export function mountTetris(container, options = {}) {
   });
 
   window.addEventListener("keydown", keyHandler);
-  emptyBoard();
+  const restored = restoreSnapshot();
+  if (!restored) emptyBoard();
   refreshBestLabel();
+  setSound(soundEnabled);
   updateHUD();
   setStatus();
   drawBoard(null);
   drawPreview();
   rafId = requestAnimationFrame(loop);
-  if (autoStart) togglePause();
+  if (!restored && autoStart) togglePause();
 
   return {
     start: () => { if (gameState === "idle" || gameState === "gameover") togglePause(); },
@@ -616,10 +679,12 @@ export function mountTetris(container, options = {}) {
     reset: resetGame,
     setSound,
     getState: () => ({ score, level, lines: linesTotal, gameState, soundEnabled }),
-    destroy: () => {
+    destroy: (opts = {}) => {
       destroyed = true;
       cancelAnimationFrame(rafId);
       window.removeEventListener("keydown", keyHandler);
+      if (opts.clearSnapshot) clearSnapshot();
+      else saveSnapshot();
       if (audioCtx && audioCtx.state !== "closed") audioCtx.close();
       container.innerHTML = "";
       container.classList.remove("tetris-widget");

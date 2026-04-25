@@ -2,15 +2,25 @@ import { useEffect, useRef, useState } from "react";
 import { mountTetris } from "@/games/tetris";
 
 type TetrisHandle = ReturnType<typeof mountTetris>;
+const TETRIS_SNAPSHOT_KEY = "tetris_snapshot_v1";
 
 export function AdminGamesTab() {
-  const [isStarted, setIsStarted] = useState(false);
+  const [isStarted, setIsStarted] = useState(() => {
+    try {
+      return Boolean(localStorage.getItem(TETRIS_SNAPSHOT_KEY));
+    } catch {
+      return false;
+    }
+  });
   const containerRef = useRef<HTMLDivElement | null>(null);
   const gameRef = useRef<TetrisHandle | null>(null);
 
   useEffect(() => {
     if (!isStarted || !containerRef.current || gameRef.current) return;
-    gameRef.current = mountTetris(containerRef.current, { autoStart: true });
+    gameRef.current = mountTetris(containerRef.current, {
+      autoStart: true,
+      snapshotKey: TETRIS_SNAPSHOT_KEY,
+    });
     return () => {
       gameRef.current?.destroy();
       gameRef.current = null;
@@ -23,7 +33,7 @@ export function AdminGamesTab() {
         <button
           type="button"
           onClick={() => {
-            gameRef.current?.destroy();
+            gameRef.current?.destroy({ clearSnapshot: true });
             gameRef.current = null;
             setIsStarted(false);
           }}
