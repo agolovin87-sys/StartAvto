@@ -10965,7 +10965,7 @@ button.chat-bubble-image-btn:focus-visible {
   flex: 1;
   min-width: 0;
   min-height: 44px;
-  max-height: 120px;
+  max-height: 50vh;
   font-size: 1.0625rem;
   border-radius: 16px;
   border: 1px solid var(--theme-line-strong);
@@ -10973,7 +10973,7 @@ button.chat-bubble-image-btn:focus-visible {
   color: var(--theme-text);
   padding: 0.55rem 0.75rem;
   resize: none;
-  overflow-y: auto;
+  overflow-y: hidden;
   white-space: pre-wrap;
   word-break: normal;
   overflow-wrap: break-word;

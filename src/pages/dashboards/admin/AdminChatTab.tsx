@@ -1702,6 +1702,17 @@ export function AdminChatTab({
   const chatRoomSectionRef = useRef<HTMLElement | null>(null);
   const chatThreadHeaderFixedRef = useRef<HTMLDivElement | null>(null);
 
+  const adjustComposerHeight = useCallback((target?: HTMLTextAreaElement | null) => {
+    const ta = target ?? composerRef.current;
+    if (!ta) return;
+    const viewportHeight = window.visualViewport?.height ?? window.innerHeight;
+    const maxHeight = Math.max(120, Math.floor(viewportHeight * 0.5));
+    ta.style.height = "auto";
+    const next = Math.max(44, Math.min(ta.scrollHeight, maxHeight));
+    ta.style.height = `${next}px`;
+    ta.style.overflowY = ta.scrollHeight > maxHeight ? "auto" : "hidden";
+  }, []);
+
   const [contactsReloadKey, setContactsReloadKey] = useState(0);
 
   const threadOpen = Boolean(selectedContactId || selectedGroupChatId);
@@ -2830,6 +2841,7 @@ export function AdminChatTab({
 
   const handleComposerChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const v = e.target.value;
+    adjustComposerHeight(e.target);
     setComposerText(v);
     const key = selectedGroupChatId ?? selectedContactId;
     if (key && !editingMessageId) persistDraft(key, v);
@@ -2862,6 +2874,21 @@ export function AdminChatTab({
     }, CHAT_TYPING_IDLE_MS);
     typingIdleTimerRef.current = tid;
   };
+
+  useLayoutEffect(() => {
+    adjustComposerHeight();
+  }, [composerText, selectedChatId, adjustComposerHeight]);
+
+  useEffect(() => {
+    const onResize = () => adjustComposerHeight();
+    window.addEventListener("resize", onResize);
+    const vv = window.visualViewport;
+    vv?.addEventListener("resize", onResize);
+    return () => {
+      window.removeEventListener("resize", onResize);
+      vv?.removeEventListener("resize", onResize);
+    };
+  }, [adjustComposerHeight]);
 
   const handleSend = async () => {
     if (sendInFlightRef.current) return;
