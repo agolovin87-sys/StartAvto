@@ -8062,7 +8062,7 @@ html[data-theme="light"] .drive-live-session-panel__toolbar {
 }
 @media (max-width: 900px) {
   .tetris-widget .layout {
-    grid-template-columns: minmax(0, 1fr) clamp(128px, 31vw, 164px);
+    grid-template-columns: minmax(0, 1fr) clamp(104px, 27vw, 142px);
     align-items: stretch;
   }
   .tetris-widget .game-column {
@@ -8091,7 +8091,7 @@ html[data-theme="light"] .drive-live-session-panel__toolbar {
     height: 68px;
   }
   .tetris-widget .game-canvas {
-    max-width: min(63vw, 295px);
+    max-width: min(68vw, 330px);
     max-height: min(70vh, 520px);
   }
   .tetris-widget .stat {
@@ -8120,7 +8120,7 @@ html[data-theme="light"] .drive-live-session-panel__toolbar {
     max-height: min(68vh, 470px);
   }
   .tetris-widget .game-canvas {
-    max-width: min(66vw, 270px);
+    max-width: min(74vw, 320px);
     max-height: min(68vh, 470px);
   }
   .tetris-widget .mobile-controls button {

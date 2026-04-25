@@ -33,11 +33,11 @@ export function mountTetris(container, options = {}) {
         </div>
         <div class="panel">
           <div class="buttons-row">
-            <button type="button" class="main-btn btn-start" data-action="toggle">Старт / Пауза</button>
-            <button type="button" class="main-btn btn-reset" data-action="reset">Сброс</button>
+            <button type="button" class="main-btn btn-start" data-action="toggle" title="Старт / Пауза" aria-label="Старт / Пауза">⏯</button>
+            <button type="button" class="main-btn btn-reset" data-action="reset" title="Сброс" aria-label="Сброс">↺</button>
           </div>
           <div class="buttons-row" style="margin-top: 8px;">
-            <button type="button" class="main-btn btn-reset" data-action="sound">Звук: Вкл</button>
+            <button type="button" class="main-btn btn-reset" data-action="sound" title="Звук" aria-label="Звук">🔊</button>
           </div>
         </div>
       </div>
@@ -528,7 +528,9 @@ export function mountTetris(container, options = {}) {
 
   function setSound(enabled) {
     soundEnabled = Boolean(enabled);
-    btnSound.textContent = soundEnabled ? "Звук: Вкл" : "Звук: Выкл";
+    btnSound.textContent = soundEnabled ? "🔊" : "🔈";
+    btnSound.setAttribute("aria-label", soundEnabled ? "Звук включен" : "Звук выключен");
+    btnSound.setAttribute("title", soundEnabled ? "Звук включен" : "Звук выключен");
     if (soundEnabled) {
       ensureAudio();
       playTone(520, 0.06, "triangle", 0.04, 0.004);
