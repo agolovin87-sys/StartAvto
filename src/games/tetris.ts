@@ -40,16 +40,16 @@ export function mountTetris(container, options = {}) {
             <button type="button" class="main-btn btn-reset" data-action="sound">Звук: Вкл</button>
           </div>
         </div>
-        <div class="panel">
-          <h3>Управление (тач)</h3>
-          <div class="mobile-controls" data-role="touch">
-            <button type="button" data-action="rotate">↻</button>
-            <button type="button" data-action="hard">⤓</button>
-            <button type="button" class="placeholder" tabindex="-1"></button>
-            <button type="button" data-action="left">←</button>
-            <button type="button" data-action="down">↓</button>
-            <button type="button" data-action="right">→</button>
-          </div>
+      </div>
+      <div class="panel panel-controls">
+        <h3>Управление (тач)</h3>
+        <div class="mobile-controls" data-role="touch">
+          <button type="button" data-action="rotate">↻</button>
+          <button type="button" data-action="hard">⤓</button>
+          <button type="button" class="placeholder" tabindex="-1"></button>
+          <button type="button" data-action="left">←</button>
+          <button type="button" data-action="down">↓</button>
+          <button type="button" data-action="right">→</button>
         </div>
       </div>
     </div>
