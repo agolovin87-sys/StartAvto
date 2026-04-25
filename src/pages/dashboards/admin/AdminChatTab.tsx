@@ -63,6 +63,11 @@ import {
 } from "@/admin/adminChatPrivacySettings";
 import { isPresenceEffectivelyOnline } from "@/utils/presence";
 import { playOutgoingChatSound } from "@/audio/outgoingChatSound";
+import {
+  DEFAULT_CHAT_LAST_SEEN_VISIBILITY_SETTINGS,
+  subscribeChatLastSeenVisibilitySettings,
+  type ChatLastSeenVisibilitySettings,
+} from "@/firebase/chatLastSeenVisibilitySettings";
 
 function isFirestorePermissionDenied(e: unknown): boolean {
   if (!e || typeof e !== "object" || !("code" in e)) return false;
@@ -493,7 +498,7 @@ type ChatDmContactListItemProps = {
   onSelect: () => void;
   onAvatarPhotoClick: () => void;
   /** Только админ: в списке контактов после «не в сети» — последний визит в скобках. */
-  showAdminContactLastSeen?: boolean;
+  showLastSeenByRole: ChatLastSeenVisibilitySettings;
 };
 
 function ChatDmContactListItem({
@@ -509,15 +514,21 @@ function ChatDmContactListItem({
   displayNameForUid,
   onSelect,
   onAvatarPhotoClick,
-  showAdminContactLastSeen,
+  showLastSeenByRole,
 }: ChatDmContactListItemProps) {
   const presenceOnline = useDebouncedPresenceOnline(c.presence, chatPrivacy, c.uid);
+  const canShowLastSeenByRole =
+    c.role === "admin"
+      ? false
+      : c.role === "instructor"
+        ? showLastSeenByRole.showInstructorLastSeen
+        : showLastSeenByRole.showStudentLastSeen;
   const offlinePresenceMs =
-    showAdminContactLastSeen && !presenceOnline
+    canShowLastSeenByRole && !presenceOnline
       ? adminContactOfflinePresenceMs(c.presence)
       : null;
   const offlineLastSeenLabel =
-    showAdminContactLastSeen &&
+    canShowLastSeenByRole &&
     chatPrivacy.showPresenceInChatUi &&
     !presenceOnline &&
     offlinePresenceMs != null
@@ -1394,6 +1405,17 @@ export function AdminChatTab({
     () =>
       currentUserId ? getChatPrivacySettings(currentUserId) : DEFAULT_CHAT_PRIVACY_SETTINGS,
     [currentUserId, chatPrivacyVersion]
+  );
+  const [showLastSeenByRole, setShowLastSeenByRole] = useState<ChatLastSeenVisibilitySettings>(
+    DEFAULT_CHAT_LAST_SEEN_VISIBILITY_SETTINGS
+  );
+  useEffect(
+    () =>
+      subscribeChatLastSeenVisibilitySettings(
+        (v) => setShowLastSeenByRole(v),
+        () => setShowLastSeenByRole(DEFAULT_CHAT_LAST_SEEN_VISIBILITY_SETTINGS)
+      ),
+    []
   );
 
   const batchShowDeleteForMe = !isAdmin || chatPrivacy.allowDeleteForMeInMenu;
@@ -2573,8 +2595,14 @@ export function AdminChatTab({
   const dmChatHeaderSubtitle = useMemo(() => {
     if (!selectedContact) return null;
     if (!chatPrivacy.showPresenceInChatUi) return null;
+    const canShowLastSeenByRole =
+      selectedContact.role === "admin"
+        ? false
+        : selectedContact.role === "instructor"
+          ? showLastSeenByRole.showInstructorLastSeen
+          : showLastSeenByRole.showStudentLastSeen;
     const ms =
-      isAdmin && !debouncedDmPeerPresenceOnline
+      canShowLastSeenByRole && !debouncedDmPeerPresenceOnline
         ? adminContactOfflinePresenceMs(selectedContact.presence)
         : null;
     const offlineLabel =
@@ -2600,7 +2628,8 @@ export function AdminChatTab({
     selectedContact,
     chatPrivacy.showPresenceInChatUi,
     debouncedDmPeerPresenceOnline,
-    isAdmin,
+    showLastSeenByRole.showInstructorLastSeen,
+    showLastSeenByRole.showStudentLastSeen,
   ]);
 
   const typingPeerIdsOrdered = useMemo(
@@ -4480,6 +4509,7 @@ export function AdminChatTab({
                             unreadCount={0}
                             typingPeerIds={[]}
                             displayNameForUid={displayNameForUid}
+                            showLastSeenByRole={showLastSeenByRole}
                             onSelect={() => {
                               setCorrespondenceViewerU1(c);
                               setCorrespondenceSecondPeersLoading(true);
@@ -4878,7 +4908,7 @@ export function AdminChatTab({
                         unreadCount={unreadDm}
                         typingPeerIds={dmTypingPeers}
                         displayNameForUid={displayNameForUid}
-                        showAdminContactLastSeen
+                        showLastSeenByRole={showLastSeenByRole}
                         onSelect={() => {
                           const prevKey = selectedGroupChatId ?? selectedContactId;
                           if (prevKey) persistDraft(prevKey, composerText);
@@ -4954,7 +4984,7 @@ export function AdminChatTab({
                                 unreadCount={unreadDm}
                                 typingPeerIds={dmTypingPeers}
                                 displayNameForUid={displayNameForUid}
-                                showAdminContactLastSeen
+                                showLastSeenByRole={showLastSeenByRole}
                                 onSelect={() => {
                                   const prevKey = selectedGroupChatId ?? selectedContactId;
                                   if (prevKey) persistDraft(prevKey, composerText);
@@ -5007,6 +5037,7 @@ export function AdminChatTab({
                     unreadCount={unreadDm}
                     typingPeerIds={dmTypingPeers}
                     displayNameForUid={displayNameForUid}
+                    showLastSeenByRole={showLastSeenByRole}
                     onSelect={() => {
                       const prevKey = selectedGroupChatId ?? selectedContactId;
                       if (prevKey) persistDraft(prevKey, composerText);

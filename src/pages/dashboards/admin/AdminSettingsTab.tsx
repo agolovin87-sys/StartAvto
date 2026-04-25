@@ -63,6 +63,12 @@ import {
 } from "@/firebase/fcm";
 import { callSendTestPush } from "@/firebase/sendTestPush";
 import {
+  DEFAULT_CHAT_LAST_SEEN_VISIBILITY_SETTINGS,
+  setChatLastSeenVisibilitySettings,
+  subscribeChatLastSeenVisibilitySettings,
+  type ChatLastSeenVisibilitySettings,
+} from "@/firebase/chatLastSeenVisibilitySettings";
+import {
   getTheme,
   setTheme,
   subscribeTheme,
@@ -367,6 +373,10 @@ export function AdminSettingsTab() {
   const [geoBusy, setGeoBusy] = useState(false);
 
   const [chatPrivacy, setChatPrivacy] = useState<ChatPrivacySettings>(DEFAULT_CHAT_PRIVACY_SETTINGS);
+  const [chatLastSeenVisibility, setChatLastSeenVisibility] = useState<ChatLastSeenVisibilitySettings>(
+    DEFAULT_CHAT_LAST_SEEN_VISIBILITY_SETTINGS
+  );
+  const [chatLastSeenSaving, setChatLastSeenSaving] = useState(false);
 
   useEffect(() => {
     if (uid && isAdmin) setChatPrivacy(getChatPrivacySettings(uid));
@@ -387,6 +397,35 @@ export function AdminSettingsTab() {
     setChatPrivacySettings(uid, { [key]: value });
     setChatPrivacy({ ...cur, [key]: value });
   };
+
+  useEffect(() => {
+    if (!isAdmin) {
+      setChatLastSeenVisibility(DEFAULT_CHAT_LAST_SEEN_VISIBILITY_SETTINGS);
+      return;
+    }
+    return subscribeChatLastSeenVisibilitySettings(
+      (v) => setChatLastSeenVisibility(v),
+      () => setChatLastSeenVisibility(DEFAULT_CHAT_LAST_SEEN_VISIBILITY_SETTINGS)
+    );
+  }, [isAdmin]);
+
+  const updateChatLastSeenVisibility = useCallback(
+    async (patch: Partial<ChatLastSeenVisibilitySettings>) => {
+      if (!isAdmin || chatLastSeenSaving) return;
+      const prev = chatLastSeenVisibility;
+      const next = { ...prev, ...patch };
+      setChatLastSeenVisibility(next);
+      setChatLastSeenSaving(true);
+      try {
+        await setChatLastSeenVisibilitySettings(next);
+      } catch {
+        setChatLastSeenVisibility(prev);
+      } finally {
+        setChatLastSeenSaving(false);
+      }
+    },
+    [isAdmin, chatLastSeenSaving, chatLastSeenVisibility]
+  );
 
   const [notifySettings, setNotifySettings] = useState<NotificationSettings>(
     DEFAULT_NOTIFICATION_SETTINGS
@@ -1561,6 +1600,54 @@ export function AdminSettingsTab() {
                       onChange={() => toggleChatPrivacy("showPresenceInChatUi")}
                       aria-labelledby="chat-privacy-show-ui-label"
                       aria-checked={chatPrivacy.showPresenceInChatUi}
+                    />
+                    <span className="switch-stay-slider" aria-hidden />
+                  </label>
+                </div>
+                <div className="admin-settings-toggle-row">
+                  <div className="admin-settings-toggle-label" id="chat-last-seen-instructors-label">
+                    Показывать «был(а) в сети» для инструкторов
+                    <span className="admin-settings-toggle-hint">
+                      Для админа, курсантов и инструкторов в контактах/шапке чата
+                    </span>
+                  </div>
+                  <label className="switch-stay">
+                    <input
+                      type="checkbox"
+                      role="switch"
+                      checked={chatLastSeenVisibility.showInstructorLastSeen}
+                      disabled={chatLastSeenSaving}
+                      onChange={() =>
+                        void updateChatLastSeenVisibility({
+                          showInstructorLastSeen: !chatLastSeenVisibility.showInstructorLastSeen,
+                        })
+                      }
+                      aria-labelledby="chat-last-seen-instructors-label"
+                      aria-checked={chatLastSeenVisibility.showInstructorLastSeen}
+                    />
+                    <span className="switch-stay-slider" aria-hidden />
+                  </label>
+                </div>
+                <div className="admin-settings-toggle-row">
+                  <div className="admin-settings-toggle-label" id="chat-last-seen-students-label">
+                    Показывать «был(а) в сети» для курсантов
+                    <span className="admin-settings-toggle-hint">
+                      Для админа, курсантов и инструкторов в контактах/шапке чата
+                    </span>
+                  </div>
+                  <label className="switch-stay">
+                    <input
+                      type="checkbox"
+                      role="switch"
+                      checked={chatLastSeenVisibility.showStudentLastSeen}
+                      disabled={chatLastSeenSaving}
+                      onChange={() =>
+                        void updateChatLastSeenVisibility({
+                          showStudentLastSeen: !chatLastSeenVisibility.showStudentLastSeen,
+                        })
+                      }
+                      aria-labelledby="chat-last-seen-students-label"
+                      aria-checked={chatLastSeenVisibility.showStudentLastSeen}
                     />
                     <span className="switch-stay-slider" aria-hidden />
                   </label>
