@@ -130,7 +130,9 @@ function ScheduleDayBlock({
                   </td>
                   <td>
                     {formatShortFio(
-                      studentMap.get(slot.studentId)?.displayName ?? ""
+                      studentMap.get(slot.studentId)?.displayName ??
+                        slot.studentDisplayName ??
+                        ""
                     )}
                   </td>
                   <td>{formatDriveSlotStatus(slot)}</td>
