@@ -3079,6 +3079,25 @@ export function AdminChatTab({
     }
   };
 
+  const handleShareFromApp = async () => {
+    try {
+      if (!navigator.share) {
+        setErr("На этом устройстве шеринг не поддерживается.");
+        return;
+      }
+      await navigator.share({
+        title: "StartAvto — Автошкола",
+        text: composerText?.trim() || "Посмотри StartAvto",
+        url: window.location.href,
+      });
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "";
+      if (message && message !== "Share canceled") {
+        setErr("Не удалось открыть системное меню «Поделиться».");
+      }
+    }
+  };
+
   const handlePickAttachment = async (file: File) => {
     const draftKey = selectedGroupChatId ?? selectedContactId;
     if (!draftKey) {
@@ -3166,6 +3185,23 @@ export function AdminChatTab({
       setErr(e?.message ?? "Ошибка отправки");
     }
   };
+
+  useEffect(() => {
+    const onSharedUse = (event: Event) => {
+      const detail = (event as CustomEvent<{ text?: string; files?: File[] }>).detail;
+      if (!detail) return;
+      if (detail.text) {
+        const incomingText = detail.text;
+        setComposerText((prev) => (prev ? `${prev}\n${incomingText}` : incomingText));
+      }
+      if (detail.files?.[0]) {
+        void handlePickAttachment(detail.files[0]);
+      }
+    };
+
+    window.addEventListener("startavto:share-target-use", onSharedUse);
+    return () => window.removeEventListener("startavto:share-target-use", onSharedUse);
+  }, [handlePickAttachment]);
 
   const clearVoiceTimers = useCallback(() => {
     if (voiceMaxTimerRef.current != null) {
@@ -6147,6 +6183,16 @@ export function AdminChatTab({
                   </div>
                 ) : null}
                 <div className="chat-composer-row">
+                  <button
+                    type="button"
+                    className="chat-ico-btn"
+                    title="Поделиться"
+                    aria-label="Поделиться"
+                    disabled={composerSending || isVoiceRecording}
+                    onClick={() => void handleShareFromApp()}
+                  >
+                    📤
+                  </button>
                   <button
                     type="button"
                     className="chat-ico-btn chat-ico-btn--attach"

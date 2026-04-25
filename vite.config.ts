@@ -200,7 +200,7 @@ export default defineConfig(({ mode }) => {
          * Фоновые push: отдельный файл собирает `firebaseMessagingSwPlugin` в dist.
          * Подключается тем же регистрацией `sw.js`, отдельно `firebase-messaging-sw.js` не регистрируем.
          */
-        importScripts: ["firebase-messaging-sw.js"],
+        importScripts: ["firebase-messaging-sw.js", "pwa-sw.js"],
         cleanupOutdatedCaches: true,
         skipWaiting: true,
         clientsClaim: true,
@@ -315,6 +315,7 @@ export default defineConfig(({ mode }) => {
     ],
   },
   server: {
+    https: true,
     host: true,
   },
   /** Preview production build: HTTPS (самоподписанный), как dev — для микрофона и тестов по LAN. */

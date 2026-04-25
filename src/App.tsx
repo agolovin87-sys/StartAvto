@@ -25,7 +25,10 @@ import { GlobalIncomingChatAlerts } from "@/chat/GlobalIncomingChatAlerts";
 import { FcmRegistrar } from "@/components/FcmRegistrar";
 import { OfflineLayer } from "@/components/OfflineLayer";
 import { PullToRefresh } from "@/components/common/PullToRefresh";
+import { SharedContentPreview } from "@/components/chat/SharedContentPreview";
 import type { UserRole } from "@/types";
+import { useShareTarget } from "@/hooks/useShareTarget";
+import { ShareHandler } from "@/pages/ShareHandler";
 import "@/styles/update-banner.css";
 
 function RoleHome() {
@@ -99,6 +102,13 @@ function GuestOnly({ children }: { children: ReactNode }) {
 }
 
 export default function App() {
+  const { sharedData, hasSharedData, clearSharedData } = useShareTarget();
+
+  const handleUseSharedData = (data: { text?: string; files?: File[] }) => {
+    window.dispatchEvent(new CustomEvent("startavto:share-target-use", { detail: data }));
+    clearSharedData();
+  };
+
   const handleRefreshData = async () => {
     // Точка для ручного обновления данных экранов (если появится общий рефетч).
     await Promise.resolve();
@@ -119,8 +129,16 @@ export default function App() {
   return (
     <OfflineLayer>
       <FcmRegistrar />
+      {hasSharedData && sharedData ? (
+        <SharedContentPreview
+          sharedData={sharedData}
+          onUse={handleUseSharedData}
+          onCancel={clearSharedData}
+        />
+      ) : null}
       <PullToRefresh onRefreshData={handleRefreshData}>
         <Routes>
+          <Route path="/share" element={<ShareHandler />} />
           <Route
             path="/"
             element={
