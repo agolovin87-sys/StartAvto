@@ -519,7 +519,7 @@ function ChatDmContactListItem({
   const presenceOnline = useDebouncedPresenceOnline(c.presence, chatPrivacy, c.uid);
   const canShowLastSeenByRole =
     c.role === "admin"
-      ? false
+      ? showLastSeenByRole.showInstructorLastSeen || showLastSeenByRole.showStudentLastSeen
       : c.role === "instructor"
         ? showLastSeenByRole.showInstructorLastSeen
         : showLastSeenByRole.showStudentLastSeen;
@@ -2597,7 +2597,7 @@ export function AdminChatTab({
     if (!chatPrivacy.showPresenceInChatUi) return null;
     const canShowLastSeenByRole =
       selectedContact.role === "admin"
-        ? false
+        ? showLastSeenByRole.showInstructorLastSeen || showLastSeenByRole.showStudentLastSeen
         : selectedContact.role === "instructor"
           ? showLastSeenByRole.showInstructorLastSeen
           : showLastSeenByRole.showStudentLastSeen;
