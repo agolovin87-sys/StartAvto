@@ -59,7 +59,7 @@ export async function setChatLastSeenVisibilitySettings(
       showStudentLastSeen: next.showStudentLastSeen,
       updatedAt: serverTimestamp(),
     },
-    { merge: true }
+    { merge: false }
   );
   void import("@/utils/audit").then(({ logAuditAction }) =>
     logAuditAction("UPDATE_SETTINGS", "settings", {

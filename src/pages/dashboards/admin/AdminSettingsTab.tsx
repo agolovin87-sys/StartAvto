@@ -399,19 +399,16 @@ export function AdminSettingsTab() {
   };
 
   useEffect(() => {
-    if (!isAdmin) {
-      setChatLastSeenVisibility(DEFAULT_CHAT_LAST_SEEN_VISIBILITY_SETTINGS);
-      return;
-    }
+    if (!uid || !isAdmin) return;
     return subscribeChatLastSeenVisibilitySettings(
       (v) => setChatLastSeenVisibility(v),
       () => setChatLastSeenVisibility(DEFAULT_CHAT_LAST_SEEN_VISIBILITY_SETTINGS)
     );
-  }, [isAdmin]);
+  }, [uid, isAdmin]);
 
   const updateChatLastSeenVisibility = useCallback(
     async (patch: Partial<ChatLastSeenVisibilitySettings>) => {
-      if (!isAdmin || chatLastSeenSaving) return;
+      if (!uid || !isAdmin || chatLastSeenSaving) return;
       const prev = chatLastSeenVisibility;
       const next = { ...prev, ...patch };
       setChatLastSeenVisibility(next);
@@ -424,7 +421,7 @@ export function AdminSettingsTab() {
         setChatLastSeenSaving(false);
       }
     },
-    [isAdmin, chatLastSeenSaving, chatLastSeenVisibility]
+    [uid, isAdmin, chatLastSeenSaving, chatLastSeenVisibility]
   );
 
   const [notifySettings, setNotifySettings] = useState<NotificationSettings>(
