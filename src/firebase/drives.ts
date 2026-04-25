@@ -846,6 +846,23 @@ export async function instructorCompleteDriveLiveSession(slotId: string): Promis
   const uid = auth.currentUser?.uid;
   if (!uid) throw new Error("Не выполнен вход");
 
+  // «Свой курсант»: завершаем занятие без движения талонов.
+  const ownSlotRef = doc(db, DRIVES, slotId);
+  const ownSlotSnap = await getDoc(ownSlotRef);
+  if (!ownSlotSnap.exists()) throw new Error("Запись не найдена");
+  const ownSlot = normalizeDriveSlot(ownSlotSnap.data() as Record<string, unknown>, slotId);
+  if (ownSlot.instructorId !== uid) throw new Error("Нет доступа к этой записи");
+  if (ownSlot.status !== "scheduled") throw new Error("Запись уже завершена или отменена");
+  if (ownSlot.liveStartedAt == null) throw new Error("Вождение не было начато");
+  if (ownSlot.isOwnStudent === true) {
+    await updateDoc(ownSlotRef, {
+      status: "completed",
+      livePausedAt: deleteField(),
+      liveEndedAt: serverTimestamp(),
+    });
+    return;
+  }
+
   await runTransaction(db, async (transaction) => {
     const slotRef = doc(db, DRIVES, slotId);
     const slotSnap = await transaction.get(slotRef);

@@ -901,7 +901,6 @@ export function InstructorHomeTab() {
                           (st?.displayName?.trim() ? st.displayName : "") ||
                             (sl.studentDisplayName?.trim() ? sl.studentDisplayName : "")
                         ) || "Курсант";
-                      const ownStudentSlot = sl.isOwnStudent === true;
                       const live = sl.liveStartedAt != null;
                       const liveAcked = sl.liveStudentAckAt != null;
                       const livePaused =
@@ -942,9 +941,8 @@ export function InstructorHomeTab() {
                           />
                         );
                       }
-                      const canStart = !ownStudentSlot && canShowInstructorStartDriveButton(sl, nowMs);
-                      const canRunningLate =
-                        !ownStudentSlot && canShowInstructorRunningLateButton(sl, nowMs);
+                      const canStart = canShowInstructorStartDriveButton(sl, nowMs);
+                      const canRunningLate = canShowInstructorRunningLateButton(sl, nowMs);
                       const hideWeekGeo = shouldHideWeekScheduleGeoShareButtons(sl);
                       return (
                         <DriveWeekScheduleNoticeCard
@@ -1003,7 +1001,7 @@ export function InstructorHomeTab() {
                                   <IconRunningLate />
                                 </button>
                               ) : null}
-                              {showInstructorDriveLocationShare && !hideWeekGeo && !ownStudentSlot ? (
+                              {showInstructorDriveLocationShare && !hideWeekGeo ? (
                                 <InstructorStudentLocationShareButton slotId={sl.id} />
                               ) : null}
                               <button
