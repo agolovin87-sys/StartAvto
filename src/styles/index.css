@@ -8117,11 +8117,11 @@ html[data-theme="light"] .drive-live-session-panel__toolbar {
 }
 @media (max-width: 520px) {
   .tetris-widget .side {
-    max-height: min(68vh, 470px);
+    max-height: min(72vh, 500px);
   }
   .tetris-widget .game-canvas {
     max-width: min(74vw, 320px);
-    max-height: min(68vh, 470px);
+    max-height: min(72vh, 500px);
   }
   .tetris-widget .mobile-controls button {
     min-height: 30px;
