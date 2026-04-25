@@ -12,6 +12,7 @@ import { AdminScheduleTab } from "@/pages/dashboards/admin/AdminScheduleTab";
 import { AdminStudentsTab } from "@/pages/dashboards/admin/AdminStudentsTab";
 import { AdminChatTab } from "@/pages/dashboards/admin/AdminChatTab";
 import { AdminGpsTab } from "@/pages/dashboards/admin/AdminGpsTab";
+import { AdminGamesTab } from "@/pages/dashboards/admin/AdminGamesTab";
 import { AdminHistoryTab } from "@/pages/dashboards/admin/AdminHistoryTab";
 import { AdminSettingsTab } from "@/pages/dashboards/admin/AdminSettingsTab";
 import { backfillManualGroupParticipantEmails } from "@/firebase/chat";
@@ -19,7 +20,7 @@ import { useDashboardTabHistory } from "@/hooks/useDashboardTabHistory";
 import { HapticButton } from "@/components/HapticButton";
 import { hapticSelection } from "@/utils/haptics";
 
-type AdminNavTab = "home" | "schedule" | "chat" | "history" | "gps" | "settings";
+type AdminNavTab = "home" | "schedule" | "chat" | "history" | "gps" | "games" | "settings";
 
 const ADMIN_DASH_TABS = [
   "home",
@@ -27,6 +28,7 @@ const ADMIN_DASH_TABS = [
   "chat",
   "history",
   "gps",
+  "games",
   "settings",
 ] as const satisfies readonly AdminNavTab[];
 
@@ -96,6 +98,17 @@ function IconSettings({ className }: { className?: string }) {
   );
 }
 
+function IconGames({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" aria-hidden>
+      <path
+        fill="currentColor"
+        d="M6 8h12a4 4 0 0 1 3.91 4.83l-.76 3.35A3.5 3.5 0 0 1 17.73 19a3.48 3.48 0 0 1-2.66-1.23l-.87-1.04a.26.26 0 0 0-.2-.09h-4a.26.26 0 0 0-.2.09l-.87 1.04A3.48 3.48 0 0 1 6.27 19a3.5 3.5 0 0 1-3.42-2.82l-.76-3.35A4 4 0 0 1 6 8zm1.25 2.5a.75.75 0 0 0-.75.75v1h-1a.75.75 0 0 0 0 1.5h1v1a.75.75 0 0 0 1.5 0v-1h1a.75.75 0 0 0 0-1.5h-1v-1a.75.75 0 0 0-.75-.75zm9 1a1.1 1.1 0 1 0 0 2.2 1.1 1.1 0 0 0 0-2.2zm2.25 2.25a1.1 1.1 0 1 0 0 2.2 1.1 1.1 0 0 0 0-2.2z"
+      />
+    </svg>
+  );
+}
+
 const navItems: {
   id: AdminNavTab;
   label: string;
@@ -106,6 +119,7 @@ const navItems: {
   { id: "chat", label: "Чат", Icon: IconChatNav },
   { id: "history", label: "История", Icon: IconHistory },
   { id: "gps", label: "GPS", Icon: IconGps },
+  { id: "games", label: "Игры", Icon: IconGames },
   { id: "settings", label: "Настройки", Icon: IconSettings },
 ];
 
@@ -209,6 +223,7 @@ function AdminDashboardInner() {
         ) : null}
         {tab === "history" ? <AdminHistoryTab /> : null}
         {tab === "gps" ? <AdminGpsTab /> : null}
+        {tab === "games" ? <AdminGamesTab /> : null}
         {tab === "settings" ? <AdminSettingsTab /> : null}
       </div>
 
