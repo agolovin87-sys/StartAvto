@@ -7948,9 +7948,11 @@ html[data-theme="light"] .drive-live-session-panel__toolbar {
   grid-template-columns: minmax(0, 300px) minmax(0, 1fr);
   gap: 12px;
   align-items: start;
+  width: 100%;
 }
 .tetris-widget .game-column {
   position: relative;
+  width: 100%;
 }
 .tetris-widget .game-canvas {
   width: 100%;
@@ -7978,6 +7980,7 @@ html[data-theme="light"] .drive-live-session-panel__toolbar {
 .tetris-widget .side {
   display: grid;
   gap: 10px;
+  min-width: 0;
 }
 .tetris-widget .panel {
   background: #0f172a;
@@ -8057,6 +8060,40 @@ html[data-theme="light"] .drive-live-session-panel__toolbar {
 @media (max-width: 900px) {
   .tetris-widget .layout {
     grid-template-columns: 1fr;
+  }
+  .tetris-widget .game-column {
+    order: 2;
+    display: flex;
+    justify-content: center;
+  }
+  .tetris-widget .side {
+    order: 1;
+    grid-template-columns: 1fr 1fr;
+    align-items: start;
+  }
+  .tetris-widget .panel:last-child {
+    grid-column: 1 / -1;
+  }
+  .tetris-widget .preview-canvas {
+    width: 96px;
+    height: 96px;
+  }
+  .tetris-widget .game-canvas {
+    max-width: min(58vw, 260px);
+  }
+}
+@media (max-width: 520px) {
+  .tetris-widget .side {
+    grid-template-columns: 1fr;
+  }
+  .tetris-widget .panel:last-child {
+    grid-column: auto;
+  }
+  .tetris-widget .game-canvas {
+    max-width: min(68vw, 240px);
+  }
+  .tetris-widget .mobile-controls button {
+    min-height: 40px;
   }
 }
 
