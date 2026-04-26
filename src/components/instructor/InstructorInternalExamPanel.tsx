@@ -7,7 +7,7 @@ import type { InternalExamSession, InternalExamSheet as SheetModel } from "@/typ
 import { useInternalExam } from "@/hooks/useInternalExam";
 import { getInternalExamSheet, startStudentExam } from "@/services/internalExamService";
 import { exportExamSheetPDF } from "@/services/examExportService";
-import { ConfirmDialog } from "@/components/ConfirmDialog";
+import { AlertDialog, ConfirmDialog } from "@/components/ConfirmDialog";
 
 type InstructorInternalExamPanelProps = {
   instructorUid: string;
@@ -101,6 +101,7 @@ export function InstructorInternalExamPanel({
   const [archiveBusy, setArchiveBusy] = useState(false);
   const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null);
   const [deleteBusy, setDeleteBusy] = useState(false);
+  const [examTalonZeroAlertOpen, setExamTalonZeroAlertOpen] = useState(false);
 
   const activeSessions = useMemo(
     () => sessions.filter((s) => s.instructorArchivedAt == null),
@@ -227,7 +228,13 @@ export function InstructorInternalExamPanel({
         setOverlaySessionId(session.id);
         setSheetOverlay(sheet);
       } catch (e) {
-        setErr(e instanceof Error ? e.message : "Ошибка");
+        const message = e instanceof Error ? e.message : "Ошибка";
+        if (message === "У курсанта 0 экзаменационных талонов, начать не возможно!") {
+          setExamTalonZeroAlertOpen(true);
+          setErr(null);
+        } else {
+          setErr(message);
+        }
       } finally {
         setStartBusy(null);
       }
@@ -745,6 +752,14 @@ export function InstructorInternalExamPanel({
         onCancel={() => {
           if (!archiveBusy) setArchiveTargetId(null);
         }}
+      />
+
+      <AlertDialog
+        open={examTalonZeroAlertOpen}
+        title="Недостаточно талонов"
+        message="У курсанта 0 экзаменационных талонов, начать не возможно!"
+        okLabel="Ок"
+        onClose={() => setExamTalonZeroAlertOpen(false)}
       />
     </section>
   );

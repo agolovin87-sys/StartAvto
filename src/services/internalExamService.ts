@@ -10,6 +10,7 @@ import {
   onSnapshot,
   orderBy,
   query,
+  runTransaction,
   serverTimestamp,
   Timestamp,
   updateDoc,
@@ -28,11 +29,14 @@ import {
   isInternalExamPassed,
   sumInternalExamPenaltyPoints,
 } from "@/types/internalExam";
-import { getUserProfile } from "@/firebase/users";
+import { getUserProfile, normalizeTalonsValue, normalizeUserProfile } from "@/firebase/users";
 import { getFirebase, isFirebaseConfigured } from "@/firebase/config";
 
 const SESSIONS = "internalExamSessions";
 const SHEETS = "internalExamSheets";
+const USERS = "users";
+const ADMIN_TALON_HISTORY = "adminTalonHistory";
+const EXAM_TALON_ZERO_ERROR = "У курсанта 0 экзаменационных талонов, начать не возможно!";
 
 function toMillis(v: unknown): number {
   if (typeof v === "number" && Number.isFinite(v)) return v;
@@ -356,6 +360,17 @@ export async function startStudentExam(sessionId: string, studentId: string): Pr
   const st = session.students.find((x) => x.studentId === studentId);
   if (!st) throw new Error("Курсант не в списке сессии");
   if (st.status === "passed" || st.status === "failed") throw new Error("Экзамен уже завершён");
+
+  const studentProfileSnap = await getDoc(doc(db, USERS, studentId));
+  if (!studentProfileSnap.exists()) throw new Error("Профиль курсанта не найден");
+  const studentProfile = normalizeUserProfile(
+    studentProfileSnap.data() as Record<string, unknown>,
+    studentId
+  );
+  if (normalizeTalonsValue(studentProfile.examTalons) < 1) {
+    throw new Error(EXAM_TALON_ZERO_ERROR);
+  }
+
   if (st.examSheetId) {
     const existing = await getDoc(doc(db, SHEETS, st.examSheetId));
     if (existing.exists()) return st.examSheetId;
@@ -442,30 +457,87 @@ export async function completeStudentExam(
   );
 
   const allDone = nextStudents.every((x) => x.status === "passed" || x.status === "failed");
-  const batch = writeBatch(db);
-  batch.update(doc(db, SHEETS, sheet.id), {
-    exercises: sheet.exercises,
-    errors: sheet.errors,
-    totalPoints,
-    isPassed: passed,
-    examinerComment: sheet.examinerComment,
-    ...(sheet.trainingVehicleLabel !== undefined
-      ? { trainingVehicleLabel: sheet.trainingVehicleLabel }
-      : {}),
-    ...(sheet.instructorSignatureDataUrl !== undefined
-      ? { instructorSignatureDataUrl: sheet.instructorSignatureDataUrl }
-      : {}),
-    ...(sheet.studentSignatureDataUrl !== undefined
-      ? { studentSignatureDataUrl: sheet.studentSignatureDataUrl }
-      : {}),
-    isDraft: false,
-  });
 
-  batch.update(sref, {
-    students: nextStudents,
-    ...(allDone ? { completedAt: now } : {}),
+  await runTransaction(db, async (transaction) => {
+    const studentRef = doc(db, USERS, studentId);
+    const instructorRef = doc(db, USERS, session.instructorId);
+    const [studentSnap, instructorSnap] = await Promise.all([
+      transaction.get(studentRef),
+      transaction.get(instructorRef),
+    ]);
+    if (!studentSnap.exists() || !instructorSnap.exists()) {
+      throw new Error("Профиль участника экзамена не найден");
+    }
+
+    const student = normalizeUserProfile(
+      studentSnap.data() as Record<string, unknown>,
+      studentId
+    );
+    const instructor = normalizeUserProfile(
+      instructorSnap.data() as Record<string, unknown>,
+      session.instructorId
+    );
+    const studentExamTalons = normalizeTalonsValue(student.examTalons);
+    const instructorExamTalons = normalizeTalonsValue(instructor.examTalons);
+    if (studentExamTalons < 1) {
+      throw new Error("У курсанта нет экзаменационных талонов для списания");
+    }
+
+    transaction.update(doc(db, SHEETS, sheet.id), {
+      exercises: sheet.exercises,
+      errors: sheet.errors,
+      totalPoints,
+      isPassed: passed,
+      examinerComment: sheet.examinerComment,
+      ...(sheet.trainingVehicleLabel !== undefined
+        ? { trainingVehicleLabel: sheet.trainingVehicleLabel }
+        : {}),
+      ...(sheet.instructorSignatureDataUrl !== undefined
+        ? { instructorSignatureDataUrl: sheet.instructorSignatureDataUrl }
+        : {}),
+      ...(sheet.studentSignatureDataUrl !== undefined
+        ? { studentSignatureDataUrl: sheet.studentSignatureDataUrl }
+        : {}),
+      isDraft: false,
+    });
+
+    transaction.update(sref, {
+      students: nextStudents,
+      ...(allDone ? { completedAt: now } : {}),
+    });
+
+    transaction.update(studentRef, { examTalons: studentExamTalons - 1 });
+    transaction.update(instructorRef, { examTalons: instructorExamTalons + 1 });
+
+    const hStudent = doc(collection(db, ADMIN_TALON_HISTORY));
+    const hInstructor = doc(collection(db, ADMIN_TALON_HISTORY));
+    transaction.set(hStudent, {
+      at: serverTimestamp(),
+      targetUid: student.uid,
+      targetRole: student.role,
+      targetDisplayName: student.displayName,
+      delta: -1,
+      previousTalons: studentExamTalons,
+      newTalons: studentExamTalons - 1,
+      fromUid: instructor.uid,
+      fromRole: instructor.role,
+      fromDisplayName: instructor.displayName,
+      talonKind: "exam",
+    });
+    transaction.set(hInstructor, {
+      at: serverTimestamp(),
+      targetUid: instructor.uid,
+      targetRole: instructor.role,
+      targetDisplayName: instructor.displayName,
+      delta: 1,
+      previousTalons: instructorExamTalons,
+      newTalons: instructorExamTalons + 1,
+      fromUid: student.uid,
+      fromRole: student.role,
+      fromDisplayName: student.displayName,
+      talonKind: "exam",
+    });
   });
-  await batch.commit();
 }
 
 /** Сохранить черновик листа (полные объекты упражнений и ошибок). */
