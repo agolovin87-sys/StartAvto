@@ -15107,6 +15107,8 @@ html[data-theme="light"] .student-cabinet-footer-back {
 .student-cabinet-talon-head-main {
   min-width: 0;
   flex: 1;
+  display: flex;
+  flex-direction: column;
 }
 
 .student-cabinet-talon-head-lines {
@@ -15116,6 +15118,12 @@ html[data-theme="light"] .student-cabinet-footer-back {
   font-size: 0.78rem;
   color: var(--theme-soft);
   line-height: 1.25;
+}
+
+.student-cabinet-talon-head-lines > div {
+  min-height: 2.35rem;
+  display: flex;
+  align-items: center;
 }
 
 .student-cabinet-talon-head-title {
@@ -15155,9 +15163,10 @@ html[data-theme="light"] .student-cab-section-ico {
 }
 
 .student-cabinet-talon-head-values {
-  display: grid;
-  grid-template-columns: repeat(2, auto);
-  align-items: start;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
   gap: 0.45rem;
   flex-shrink: 0;
 }
