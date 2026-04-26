@@ -4279,6 +4279,10 @@ html[data-theme="purple"] .instr-side-btn.instr-side-loc:hover {
   color: var(--theme-soft);
 }
 
+.instructor-preview-status-row .instructor-ico {
+  color: #a78bfa;
+}
+
 .instructor-preview-status-row .instructor-status {
   margin-left: 0.1rem;
 }
@@ -12832,6 +12836,8 @@ html[data-theme="light"] .instructor-error-template-selector__suggest-item--pick
 }
 
 .instructor-internal-exam__new-session-btn {
+  width: 100%;
+  justify-content: center;
   gap: 0.4rem;
   border-color: rgba(56, 189, 248, 0.45);
   color: #7dd3fc;
@@ -13494,6 +13500,17 @@ html[data-theme="light"] .internal-exam-sheet__checks--exercises {
   color: var(--theme-muted);
 }
 
+.exam-student-card__talons {
+  font-size: 0.82rem;
+  color: var(--theme-soft);
+}
+
+.exam-student-card__talons--zero {
+  width: fit-content;
+  border-radius: 8px;
+  padding: 0.1rem 0.38rem;
+}
+
 .exam-student-card__points {
   font-size: 0.85rem;
   font-weight: 600;
@@ -13512,7 +13529,10 @@ html[data-theme="light"] .internal-exam-sheet__checks--exercises {
 }
 
 .exam-student-card__btn--start {
-  box-shadow: 0 1px 2px rgba(2, 132, 199, 0.35);
+  background: linear-gradient(165deg, #22c55e 0%, #15803d 55%, #14532d 100%);
+  border-color: rgba(22, 101, 52, 0.95);
+  color: #fff;
+  box-shadow: 0 1px 2px rgba(21, 128, 61, 0.45);
 }
 
 .exam-student-card__btn--start .exam-student-card__btn-ico {

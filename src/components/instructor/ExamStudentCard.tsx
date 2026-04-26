@@ -39,6 +39,7 @@ function formatExamStartedAt(ms: number): string {
 
 type ExamStudentCardProps = {
   student: InternalExamStudent;
+  examTalons: number;
   onStartExam: () => void;
   onViewSheet: () => void;
   startBusy?: boolean;
@@ -51,6 +52,7 @@ type ExamStudentCardProps = {
  */
 export function ExamStudentCard({
   student,
+  examTalons,
   onStartExam,
   onViewSheet,
   startBusy,
@@ -75,6 +77,7 @@ export function ExamStudentCard({
           : "exam-student-card__status--fail";
 
   const done = student.status === "passed" || student.status === "failed";
+  const zeroExamTalons = examTalons < 1;
 
   return (
     <div className={`exam-student-card exam-student-card--${student.status}`}>
@@ -83,6 +86,16 @@ export function ExamStudentCard({
         {student.studentGroup ? (
           <div className="exam-student-card__group">Группа: {student.studentGroup}</div>
         ) : null}
+        <div
+          className={
+            zeroExamTalons
+              ? "exam-student-card__talons exam-student-card__talons--zero instructor-preview-talons-zero"
+              : "exam-student-card__talons"
+          }
+          title={zeroExamTalons ? "Нет экзаменационных талонов" : undefined}
+        >
+          Талоны (экзамен): {examTalons}
+        </div>
         <div className={`exam-student-card__status ${statusClass}`}>{statusLabel}</div>
         {done && student.totalPoints != null ? (
           <div className="exam-student-card__points">Баллы: {student.totalPoints}</div>
