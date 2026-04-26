@@ -256,6 +256,7 @@ function InstructorSelfCard({
   const initials = initialsFromFullName(profile.displayName);
   const presenceOnline = isPresenceEffectivelyOnline(profile.presence);
   const zeroTalons = profile.talons === 0;
+  const zeroExamTalons = (profile.examTalons ?? 0) === 0;
 
   return (
     <div className="instructor-card instructor-card--student instructor-home-self-card">
@@ -319,20 +320,37 @@ function InstructorSelfCard({
           </div>
           <div
             className="instructor-home-self-talons-col"
-            aria-label={`Баланс талонов: ${profile.talons}`}
+            aria-label={`Баланс талонов: вождений ${profile.talons}, экзамен ${profile.examTalons ?? 0}`}
           >
             <span className="instructor-home-self-talons-label">
               <IconTalons />
               <span>Баланс талонов</span>
             </span>
-            <span
-              className={
-                zeroTalons
-                  ? "instructor-home-self-talons-circle is-zero"
-                  : "instructor-home-self-talons-circle is-positive"
-              }
-            >
-              {profile.talons}
+            <span className="instructor-home-self-talons-pair">
+              <span className="instructor-home-self-talons-item">
+                <span className="instructor-home-self-talons-item-label">вождений</span>
+                <span
+                  className={
+                    zeroTalons
+                      ? "instructor-home-self-talons-circle is-zero"
+                      : "instructor-home-self-talons-circle is-positive"
+                  }
+                >
+                  {profile.talons}
+                </span>
+              </span>
+              <span className="instructor-home-self-talons-item">
+                <span className="instructor-home-self-talons-item-label">экзамен</span>
+                <span
+                  className={
+                    zeroExamTalons
+                      ? "instructor-home-self-talons-circle is-zero"
+                      : "instructor-home-self-talons-circle is-exam"
+                  }
+                >
+                  {profile.examTalons ?? 0}
+                </span>
+              </span>
             </span>
           </div>
         </button>
@@ -385,7 +403,11 @@ function CadetRowCard({ student }: { student: UserProfile }) {
               </span>
               <span className="instructor-preview-status-row">
                 <IconTalons />
-                <span>Талоны: {student.talons}</span>
+                <span>Талоны (вождений): {student.talons}</span>
+              </span>
+              <span className="instructor-preview-status-row">
+                <IconTalons />
+                <span>Талоны (экзамен): {student.examTalons ?? 0}</span>
               </span>
               <span className="instructor-preview-status-row">
                 <IconDrives />
