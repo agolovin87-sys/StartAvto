@@ -21,6 +21,8 @@ export interface UserProfile {
   vehicleLabel: string;
   /** Талоны (учётные единицы) */
   talons: number;
+  /** Талоны на экзамены */
+  examTalons: number;
   /** Число завершённых вождений (слот completed: таймер до конца или досрочное завершение). */
   drivesCount: number;
   /** ID курсантов, закреплённых за инструктором */

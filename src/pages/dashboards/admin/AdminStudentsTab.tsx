@@ -287,6 +287,9 @@ function GroupMemberStudentCard({
   const [talonsBusy, setTalonsBusy] = useState(false);
   /** Сразу после сохранения показываем число из ответа, пока не придёт snapshot */
   const [talonsCommittedOverride, setTalonsCommittedOverride] = useState<number | null>(null);
+  const [examTalonsDelta, setExamTalonsDelta] = useState(0);
+  const [examTalonsBusy, setExamTalonsBusy] = useState(false);
+  const [examTalonsCommittedOverride, setExamTalonsCommittedOverride] = useState<number | null>(null);
   const [drivesDelta, setDrivesDelta] = useState(0);
   const [drivesBusy, setDrivesBusy] = useState(false);
   /** Сразу после сохранения показываем число из ответа, пока не придёт snapshot */
@@ -302,6 +305,7 @@ function GroupMemberStudentCard({
   const presenceOnline = isPresenceEffectivelyOnline(student.presence);
   const instructorText = instructorShort ?? "не назначен";
   const baseTalons = talonsCommittedOverride ?? student.talons;
+  const baseExamTalons = examTalonsCommittedOverride ?? (student.examTalons ?? 0);
   const baseDrivesCount = drivesCommittedOverride ?? student.drivesCount;
   const telHref = telHrefFromPhone(student.phone);
 
@@ -317,6 +321,8 @@ function GroupMemberStudentCard({
   useEffect(() => {
     setTalonsDelta(0);
     setTalonsCommittedOverride(null);
+    setExamTalonsDelta(0);
+    setExamTalonsCommittedOverride(null);
     setDrivesDelta(0);
     setDrivesCommittedOverride(null);
   }, [student.uid]);
@@ -399,6 +405,23 @@ function GroupMemberStudentCard({
     }
   }
 
+  async function saveExamTalons() {
+    const next = Math.max(0, baseExamTalons + examTalonsDelta);
+    setExamTalonsBusy(true);
+    setLocalErr(null);
+    try {
+      await updateUserProfileFields(student.uid, { examTalons: next });
+      setExamTalonsCommittedOverride(next);
+      setExamTalonsDelta(0);
+    } catch (e: unknown) {
+      setLocalErr(
+        e instanceof Error ? e.message : "Не удалось сохранить талоны экзамена"
+      );
+    } finally {
+      setExamTalonsBusy(false);
+    }
+  }
+
   async function toggleStudentActivation() {
     const isActive = student.accountStatus === "active";
     if (isActive && !confirm("Деактивировать курсанта? Вход будет закрыт.")) return;
@@ -434,8 +457,10 @@ function GroupMemberStudentCard({
 
   const actionBusy = busy || cardBusy;
   const talonsDisabled = actionBusy || talonsBusy;
+  const examTalonsDisabled = actionBusy || examTalonsBusy;
   const drivesDisabled = actionBusy || drivesBusy;
   const effectiveTalons = Math.max(0, baseTalons + talonsDelta);
+  const effectiveExamTalons = Math.max(0, baseExamTalons + examTalonsDelta);
   const effectiveDrivesCount = Math.max(0, baseDrivesCount + drivesDelta);
   const zeroTalonsWarning = effectiveTalons === 0;
 
@@ -512,7 +537,11 @@ function GroupMemberStudentCard({
                 }
               >
                 <IconTalons className="instructor-ico--purple" />
-                <span>Талоны: {effectiveTalons}</span>
+                <span>Талоны (вождений): {effectiveTalons}</span>
+              </span>
+              <span className="instructor-preview-status-row">
+                <IconTalons className="instructor-ico--purple" />
+                <span>Талоны (экзамен): {effectiveExamTalons}</span>
               </span>
               <span
                 className="instructor-preview-status-row"
@@ -684,7 +713,7 @@ function GroupMemberStudentCard({
                 <dt>
                   <span className="instr-dt-inner">
                     <IconTalons className="instructor-ico--purple" />
-                    <span className="instr-dt-text">Талоны:</span>
+                    <span className="instr-dt-text">Талоны (вождений):</span>
                   </span>
                 </dt>
                 <dd className="instr-dd-talons">
@@ -723,6 +752,55 @@ function GroupMemberStudentCard({
                       disabled={talonsDisabled || talonsDelta === 0}
                       title="Сохранить талоны"
                       onClick={() => void saveTalons()}
+                    >
+                      <IconSave />
+                    </button>
+                  </span>
+                </dd>
+              </div>
+              <div className="instr-row instr-row-talons">
+                <dt>
+                  <span className="instr-dt-inner">
+                    <IconTalons className="instructor-ico--purple" />
+                    <span className="instr-dt-text">Талоны (экзамен):</span>
+                  </span>
+                </dt>
+                <dd className="instr-dd-talons">
+                  <span className="instr-talons-main instr-field-readonly">
+                    {baseExamTalons}
+                    {examTalonsDelta !== 0 ? (
+                      <span className="instr-talons-delta">
+                        {" "}
+                        ({examTalonsDelta > 0 ? "+" : ""}
+                        {examTalonsDelta})
+                      </span>
+                    ) : null}
+                  </span>
+                  <span className="instr-talons-actions">
+                    <button
+                      type="button"
+                      className="icon-pill icon-pill-talons-minus glossy-btn"
+                      disabled={examTalonsDisabled}
+                      title="Списать экзамен"
+                      onClick={() => setExamTalonsDelta((d) => d - 1)}
+                    >
+                      <IconMinus />
+                    </button>
+                    <button
+                      type="button"
+                      className="icon-pill icon-pill-talons-plus glossy-btn"
+                      disabled={examTalonsDisabled}
+                      title="Зачислить экзамен"
+                      onClick={() => setExamTalonsDelta((d) => d + 1)}
+                    >
+                      <IconPlus />
+                    </button>
+                    <button
+                      type="button"
+                      className="icon-pill icon-pill-talons-save glossy-btn"
+                      disabled={examTalonsDisabled || examTalonsDelta === 0}
+                      title="Сохранить талоны экзамена"
+                      onClick={() => void saveExamTalons()}
                     >
                       <IconSave />
                     </button>

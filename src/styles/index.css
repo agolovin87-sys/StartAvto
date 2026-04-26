@@ -5255,6 +5255,27 @@ html[data-theme="dark"] .pdd-exam-tickets-cell--current.pdd-exam-tickets-cell--b
   opacity: 0.9;
 }
 
+.instructor-home-self-talons-pair {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.45rem;
+}
+
+.instructor-home-self-talons-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.18rem;
+}
+
+.instructor-home-self-talons-item-label {
+  font-size: 0.58rem;
+  line-height: 1;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--theme-muted);
+}
+
 @keyframes instructor-talons-glow-green {
   0%,
   100% {
@@ -5285,14 +5306,14 @@ html[data-theme="dark"] .pdd-exam-tickets-cell--current.pdd-exam-tickets-cell--b
 
 .instructor-home-self-talons-circle {
   box-sizing: border-box;
-  min-width: 2.65rem;
-  min-height: 2.65rem;
+  min-width: 2.35rem;
+  min-height: 2.35rem;
   padding: 0 0.4rem;
   border-radius: 50%;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.05rem;
+  font-size: 0.96rem;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
   line-height: 1;
@@ -5310,6 +5331,13 @@ html[data-theme="dark"] .pdd-exam-tickets-cell--current.pdd-exam-tickets-cell--b
   background: rgba(127, 29, 29, 0.4);
   border: 2px solid rgba(248, 113, 113, 0.55);
   animation: instructor-talons-glow-red 2.2s ease-in-out infinite;
+}
+
+.instructor-home-self-talons-circle.is-exam {
+  color: #e9d5ff;
+  background: rgba(107, 33, 168, 0.5);
+  border: 2px solid rgba(196, 181, 253, 0.75);
+  animation: instructor-talons-glow-green 2.2s ease-in-out infinite;
 }
 
 .instructor-home-week-toolbar {

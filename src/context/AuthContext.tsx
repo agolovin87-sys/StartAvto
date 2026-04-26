@@ -143,6 +143,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             prev.phone === next.phone &&
             prev.vehicleLabel === next.vehicleLabel &&
             prev.talons === next.talons &&
+            prev.examTalons === next.examTalons &&
             prev.drivesCount === next.drivesCount &&
             prev.groupId === next.groupId &&
             (prev.avatarDataUrl ?? null) === (next.avatarDataUrl ?? null) &&

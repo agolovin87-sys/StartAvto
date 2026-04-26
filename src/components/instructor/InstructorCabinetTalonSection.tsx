@@ -41,7 +41,8 @@ function formatRuTime(ms: number): string {
 function operationLabel(e: TalonHistoryEntry): string {
   const credited = e.delta > 0;
   const amount = Math.abs(e.delta);
-  return credited ? `Зачислено: ${amount}` : `Списано: ${amount}`;
+  const suffix = e.talonKind === "exam" ? " (экзамен)" : "";
+  return credited ? `Зачислено${suffix}: ${amount}` : `Списано${suffix}: ${amount}`;
 }
 
 function whoCell(e: TalonHistoryEntry): string {

@@ -416,6 +416,7 @@ export async function updateUserProfileFields(
       | "phone"
       | "vehicleLabel"
       | "talons"
+      | "examTalons"
       | "drivesCount"
       | "role"
       | "avatarDataUrl"
@@ -433,23 +434,40 @@ export async function updateUserProfileFields(
         targetDisplayName: string;
         previousTalons: number;
         newTalons: number;
+        talonKind: "driving" | "exam";
       }
     | null = null;
 
-  if (fields.talons !== undefined) {
+  if (fields.talons !== undefined || fields.examTalons !== undefined) {
     const snap = await getDoc(ref);
     if (snap.exists()) {
       const prev = normalizeUserProfile(snap.data() as Record<string, unknown>, uid);
-      const prevTalons = normalizeTalonsValue(prev.talons);
-      const newTalons = normalizeTalonsValue(fields.talons);
-      if (prevTalons !== newTalons) {
-        talonLog = {
-          targetUid: uid,
-          targetRole: prev.role,
-          targetDisplayName: prev.displayName,
-          previousTalons: prevTalons,
-          newTalons,
-        };
+      if (fields.talons !== undefined) {
+        const prevTalons = normalizeTalonsValue(prev.talons);
+        const newTalons = normalizeTalonsValue(fields.talons);
+        if (prevTalons !== newTalons) {
+          talonLog = {
+            targetUid: uid,
+            targetRole: prev.role,
+            targetDisplayName: prev.displayName,
+            previousTalons: prevTalons,
+            newTalons,
+            talonKind: "driving",
+          };
+        }
+      } else {
+        const prevTalons = normalizeTalonsValue(prev.examTalons);
+        const newTalons = normalizeTalonsValue(fields.examTalons);
+        if (prevTalons !== newTalons) {
+          talonLog = {
+            targetUid: uid,
+            targetRole: prev.role,
+            targetDisplayName: prev.displayName,
+            previousTalons: prevTalons,
+            newTalons,
+            talonKind: "exam",
+          };
+        }
       }
     }
   }
@@ -459,6 +477,7 @@ export async function updateUserProfileFields(
     phone?: string;
     vehicleLabel?: string;
     talons?: number;
+    examTalons?: number;
     drivesCount?: number;
     role?: UserRole;
     avatarDataUrl?: string | null;
@@ -467,6 +486,7 @@ export async function updateUserProfileFields(
   if (fields.phone !== undefined) patch.phone = fields.phone;
   if (fields.vehicleLabel !== undefined) patch.vehicleLabel = fields.vehicleLabel;
   if (fields.talons !== undefined) patch.talons = normalizeTalonsValue(fields.talons);
+  if (fields.examTalons !== undefined) patch.examTalons = normalizeTalonsValue(fields.examTalons);
   if (fields.drivesCount !== undefined) patch.drivesCount = fields.drivesCount;
   if (fields.role !== undefined) patch.role = fields.role;
   if (fields.avatarDataUrl !== undefined) patch.avatarDataUrl = fields.avatarDataUrl;

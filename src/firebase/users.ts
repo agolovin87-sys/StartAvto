@@ -136,6 +136,7 @@ export function normalizeUserProfile(
     phone: typeof data.phone === "string" ? data.phone : "",
     vehicleLabel: typeof data.vehicleLabel === "string" ? data.vehicleLabel : "",
     talons: normalizeTalonsValue(data.talons),
+    examTalons: normalizeTalonsValue(data.examTalons),
     drivesCount: typeof data.drivesCount === "number" ? data.drivesCount : 0,
     attachedStudentIds: Array.isArray(data.attachedStudentIds)
       ? (data.attachedStudentIds as string[])
@@ -233,6 +234,7 @@ const defaultProfileFields = (
   phone,
   vehicleLabel: "",
   talons: 0,
+  examTalons: 0,
   drivesCount: 0,
   attachedStudentIds: [],
   groupId: "",

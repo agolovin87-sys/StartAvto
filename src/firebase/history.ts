@@ -25,6 +25,7 @@ export type TalonHistoryLogPayload = {
   fromUid?: string;
   fromRole?: UserRole;
   fromDisplayName?: string;
+  talonKind?: "driving" | "exam";
 };
 
 /** Одна атомарная операция с обновлением users (вызывать из writeBatch вместе с batch.update). */
@@ -44,6 +45,7 @@ export function appendTalonHistoryToBatch(
     delta,
     previousTalons: input.previousTalons,
     newTalons: input.newTalons,
+    talonKind: input.talonKind ?? "driving",
   };
   if (input.fromUid?.trim() && input.fromRole && input.fromDisplayName !== undefined) {
     base.fromUid = input.fromUid.trim();
@@ -78,6 +80,7 @@ export type TalonHistoryEntry = {
   fromUid?: string;
   fromRole?: UserRole;
   fromDisplayName?: string;
+  talonKind?: "driving" | "exam";
 };
 
 function normalizeTalonDoc(
@@ -97,6 +100,8 @@ function normalizeTalonDoc(
         ? data.fromDisplayName
         : ""
       : undefined;
+  const talonKindRaw = data.talonKind;
+  const talonKind = talonKindRaw === "exam" ? "exam" : "driving";
   return {
     id,
     at: toMillis(data.at),
@@ -107,6 +112,7 @@ function normalizeTalonDoc(
     delta: typeof data.delta === "number" ? data.delta : 0,
     previousTalons: typeof data.previousTalons === "number" ? data.previousTalons : 0,
     newTalons: typeof data.newTalons === "number" ? data.newTalons : 0,
+    talonKind,
     ...(fromUid && fromRole ? { fromUid, fromRole, fromDisplayName: fromDisplayName ?? "" } : {}),
   };
 }

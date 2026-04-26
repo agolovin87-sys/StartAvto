@@ -220,7 +220,7 @@ export function AdminHistoryTab() {
                           {e.delta > 0 ? (
                             <span className="admin-history-talon-op">
                               <span className="admin-history-talon-op__label admin-history-talon-op__label--credit">
-                                Зачисление
+                                {`Зачисление${e.talonKind === "exam" ? " (экзамен)" : ""}`}
                               </span>
                               <span className="admin-history-talon-op__value admin-history-talon-op__value--credit">
                                 +{e.delta}
@@ -229,7 +229,7 @@ export function AdminHistoryTab() {
                           ) : e.delta < 0 ? (
                             <span className="admin-history-talon-op">
                               <span className="admin-history-talon-op__label admin-history-talon-op__label--debit">
-                                Списание
+                                {`Списание${e.talonKind === "exam" ? " (экзамен)" : ""}`}
                               </span>
                               <span className="admin-history-talon-op__value admin-history-talon-op__value--debit">
                                 -{Math.abs(e.delta)}
