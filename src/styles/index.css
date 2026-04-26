@@ -15096,12 +15096,26 @@ html[data-theme="light"] .student-cabinet-footer-back {
 
 .student-cabinet-talon-head {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
   gap: 0.5rem;
   margin-bottom: 0.45rem;
   padding-bottom: 0.45rem;
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.student-cabinet-talon-head-main {
+  min-width: 0;
+  flex: 1;
+}
+
+.student-cabinet-talon-head-lines {
+  margin-top: 0.28rem;
+  display: grid;
+  gap: 0.16rem;
+  font-size: 0.78rem;
+  color: var(--theme-soft);
+  line-height: 1.25;
 }
 
 .student-cabinet-talon-head-title {
@@ -15141,8 +15155,9 @@ html[data-theme="light"] .student-cab-section-ico {
 }
 
 .student-cabinet-talon-head-values {
-  display: flex;
-  align-items: center;
+  display: grid;
+  grid-template-columns: repeat(2, auto);
+  align-items: start;
   gap: 0.45rem;
   flex-shrink: 0;
 }
@@ -15184,6 +15199,16 @@ html[data-theme="light"] .student-cab-section-ico {
     0 0 0 1px rgba(0, 0, 0, 0.15),
     0 0 14px rgba(248, 113, 113, 0.5),
     0 0 26px rgba(239, 68, 68, 0.35);
+}
+
+.student-cabinet-talon-disc.is-exam {
+  color: #e9d5ff;
+  background: linear-gradient(145deg, rgba(107, 33, 168, 0.52) 0%, rgba(88, 28, 135, 0.64) 100%);
+  border-color: rgba(196, 181, 253, 0.82);
+  box-shadow:
+    0 0 0 1px rgba(0, 0, 0, 0.15),
+    0 0 14px rgba(167, 139, 250, 0.5),
+    0 0 26px rgba(139, 92, 246, 0.34);
 }
 
 .student-cab-collapse-toggle {

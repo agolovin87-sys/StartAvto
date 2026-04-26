@@ -55,7 +55,8 @@ export function StudentCabinetTalonBalance() {
   const navigate = useNavigate();
   const { user, profile } = useAuth();
   const uid = (user?.uid ?? profile?.uid ?? "").trim();
-  const balance = profile?.talons ?? 0;
+  const drivingTalons = profile?.talons ?? 0;
+  const examTalons = profile?.examTalons ?? 0;
   const [entries, setEntries] = useState<TalonHistoryEntry[]>([]);
   const [opsOpen, setOpsOpen] = useState(false);
 
@@ -78,19 +79,34 @@ export function StudentCabinetTalonBalance() {
   return (
     <section className="student-cabinet-card student-cabinet-talon-brief" aria-labelledby="cabinet-talon-title">
       <div className="student-cabinet-talon-head">
-        <h2
-          id="cabinet-talon-title"
-          className="student-cabinet-talon-head-title student-cab-title-with-ico"
+        <div className="student-cabinet-talon-head-main">
+          <h2
+            id="cabinet-talon-title"
+            className="student-cabinet-talon-head-title student-cab-title-with-ico"
+          >
+            <IconCabinetTalon />
+            <span>Баланс талонов</span>
+          </h2>
+          <div className="student-cabinet-talon-head-lines">
+            <div>Талоны (вождений): {drivingTalons}</div>
+            <div>Талоны (экзамен): {examTalons}</div>
+          </div>
+        </div>
+        <div
+          className="student-cabinet-talon-head-values"
+          aria-label={`Талоны: вождений ${drivingTalons}, экзамен ${examTalons}`}
         >
-          <IconCabinetTalon />
-          <span>Баланс талонов</span>
-        </h2>
-        <div className="student-cabinet-talon-head-values" aria-label={`Талонов на счёте: ${balance}`}>
           <span
-            className={`student-cabinet-talon-disc${balance > 0 ? " is-positive" : balance < 1 ? " is-zero" : ""}`}
+            className={`student-cabinet-talon-disc${drivingTalons > 0 ? " is-positive" : " is-zero"}`}
             aria-hidden
           >
-            {balance}
+            {drivingTalons}
+          </span>
+          <span
+            className={`student-cabinet-talon-disc${examTalons > 0 ? " is-exam" : " is-zero"}`}
+            aria-hidden
+          >
+            {examTalons}
           </span>
         </div>
       </div>
