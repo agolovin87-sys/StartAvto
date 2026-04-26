@@ -12837,6 +12837,7 @@ html[data-theme="light"] .instructor-error-template-selector__suggest-item--pick
 
 .instructor-internal-exam__new-session-btn {
   width: 100%;
+  min-height: 44px;
   justify-content: center;
   gap: 0.4rem;
   border-color: rgba(56, 189, 248, 0.45);

@@ -33,7 +33,7 @@ function IconArchiveSession({ className }: { className?: string }) {
     <svg className={className} viewBox="0 0 24 24" aria-hidden>
       <path
         fill="currentColor"
-        d="M5 4h14a1 1 0 0 1 1 1v3H4V5a1 1 0 0 1 1-1zm-1 6h16v9a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1v-9zm3 2h10v2H7v-2zm0 3h6v2H7v-2z"
+        d="M6 3h9a1 1 0 0 1 1 1v2H7a2 2 0 0 0-2 2v11H4a1 1 0 0 1-1-1V6a3 3 0 0 1 3-3zm3 5h11a1 1 0 0 1 1 1v11a1 1 0 0 1-1 1H9a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1zm1 2v1h8v-1h-8zm0 3v1h8v-1h-8zm0 3v1h5v-1h-5z"
       />
     </svg>
   );

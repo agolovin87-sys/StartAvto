@@ -385,7 +385,9 @@ export function InstructorHistoryTab() {
                       <tr key={e.id}>
                         <td>{formatRuDateTime(e.at)}</td>
                         <td className={credited ? "instr-talon-hist--credit" : "instr-talon-hist--debit"}>
-                          {credited ? "Зачислено" : "Списано"}
+                          {credited
+                            ? `Зачислено${e.talonKind === "exam" ? " (экзамен)" : ""}`
+                            : `Списано${e.talonKind === "exam" ? " (экзамен)" : ""}`}
                         </td>
                         <td>{amount}</td>
                         <td>{fromCell}</td>
