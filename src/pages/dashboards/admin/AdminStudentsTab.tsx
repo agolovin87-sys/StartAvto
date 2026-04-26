@@ -463,6 +463,7 @@ function GroupMemberStudentCard({
   const effectiveExamTalons = Math.max(0, baseExamTalons + examTalonsDelta);
   const effectiveDrivesCount = Math.max(0, baseDrivesCount + drivesDelta);
   const zeroTalonsWarning = effectiveTalons === 0;
+  const zeroExamTalonsWarning = effectiveExamTalons === 0;
 
   return (
     <li className="instructor-card-outer">
@@ -539,7 +540,18 @@ function GroupMemberStudentCard({
                 <IconTalons className="instructor-ico--purple" />
                 <span>Талоны (вождений): {effectiveTalons}</span>
               </span>
-              <span className="instructor-preview-status-row">
+              <span
+                className={
+                  zeroExamTalonsWarning
+                    ? "instructor-preview-status-row instructor-preview-talons-zero"
+                    : "instructor-preview-status-row"
+                }
+                title={
+                  zeroExamTalonsWarning
+                    ? "Нет талонов экзамена — необходимо пополнение"
+                    : undefined
+                }
+              >
                 <IconTalons className="instructor-ico--purple" />
                 <span>Талоны (экзамен): {effectiveExamTalons}</span>
               </span>

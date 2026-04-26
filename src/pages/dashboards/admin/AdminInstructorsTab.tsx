@@ -414,6 +414,7 @@ function InstructorCard({
   const previewTalons = Math.max(0, baseTalons + talonsDelta);
   const previewExamTalons = Math.max(0, baseExamTalons + examTalonsDelta);
   const zeroTalonsPreview = previewTalons === 0;
+  const zeroExamTalonsPreview = previewExamTalons === 0;
 
   return (
     <li className="instructor-card-outer">
@@ -500,7 +501,18 @@ function InstructorCard({
                 <IconTalons className="instructor-ico--purple" />
                 <span>Талоны (вождений): {previewTalons}</span>
               </span>
-              <span className="instructor-preview-status-row">
+              <span
+                className={
+                  zeroExamTalonsPreview
+                    ? "instructor-preview-status-row instructor-preview-talons-zero"
+                    : "instructor-preview-status-row"
+                }
+                title={
+                  zeroExamTalonsPreview
+                    ? "Нет талонов экзамена — необходимо пополнение"
+                    : undefined
+                }
+              >
                 <IconTalons className="instructor-ico--purple" />
                 <span>Талоны (экзамен): {previewExamTalons}</span>
               </span>

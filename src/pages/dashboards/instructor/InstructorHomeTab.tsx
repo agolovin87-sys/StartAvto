@@ -365,6 +365,8 @@ function CadetRowCard({ student }: { student: UserProfile }) {
   const initials = initialsFromFullName(student.displayName);
   const presenceOnline = isPresenceEffectivelyOnline(student.presence);
   const telHref = telHrefFromPhone(student.phone);
+  const zeroDrivingTalons = student.talons === 0;
+  const zeroExamTalons = (student.examTalons ?? 0) === 0;
 
   return (
     <li className="instructor-card-outer">
@@ -401,11 +403,27 @@ function CadetRowCard({ student }: { student: UserProfile }) {
               <span className="instructor-preview-name instructor-home-cadet-fio">
                 {student.displayName.trim() || "—"}
               </span>
-              <span className="instructor-preview-status-row">
+              <span
+                className={
+                  zeroDrivingTalons
+                    ? "instructor-preview-status-row instructor-preview-talons-zero"
+                    : "instructor-preview-status-row"
+                }
+                title={zeroDrivingTalons ? "Нет талонов — необходимо пополнение" : undefined}
+              >
                 <IconTalons />
                 <span>Талоны (вождений): {student.talons}</span>
               </span>
-              <span className="instructor-preview-status-row">
+              <span
+                className={
+                  zeroExamTalons
+                    ? "instructor-preview-status-row instructor-preview-talons-zero"
+                    : "instructor-preview-status-row"
+                }
+                title={
+                  zeroExamTalons ? "Нет талонов экзамена — необходимо пополнение" : undefined
+                }
+              >
                 <IconTalons />
                 <span>Талоны (экзамен): {student.examTalons ?? 0}</span>
               </span>
