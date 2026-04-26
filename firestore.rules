@@ -449,7 +449,7 @@ service cloud.firestore {
           && request.resource.data.instructorId == request.auth.uid
           && request.resource.data.studentId == resource.data.studentId
           && request.resource.data.get('liveStartedAt', null) != null
-          && request.resource.data.get('liveStudentAckAt', null) != null
+          && request.resource.data.get('liveStudentAckAt', null) == null
           && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['liveStartedAt', 'liveStudentAckAt', 'instructorLateShiftMin']);
       }
 
@@ -487,6 +487,24 @@ service cloud.firestore {
           && request.resource.data.studentId == resource.data.studentId
           && request.resource.data.get('liveStudentAckAt', null) != null
           && request.resource.data.get('liveStartedAt', null) == resource.data.get('liveStartedAt', null)
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['liveStudentAckAt']);
+      }
+
+      /** Автоподтверждение старта: liveStudentAckAt заполняется без смены остальных полей. */
+      function driveSlotAutoAckLive() {
+        return isSignedIn()
+          && (
+            request.auth.uid == resource.data.instructorId
+            || request.auth.uid == resource.data.studentId
+          )
+          && resource.data.status == 'scheduled'
+          && resource.data.get('liveStartedAt', null) != null
+          && resource.data.get('liveStudentAckAt', null) == null
+          && request.resource.data.status == 'scheduled'
+          && request.resource.data.instructorId == resource.data.instructorId
+          && request.resource.data.studentId == resource.data.studentId
+          && request.resource.data.get('liveStartedAt', null) == resource.data.get('liveStartedAt', null)
+          && request.resource.data.get('liveStudentAckAt', null) != null
           && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['liveStudentAckAt']);
       }
 
@@ -619,6 +637,7 @@ service cloud.firestore {
         || driveSlotInstructorStartsLive()
         || driveSlotInstructorRunningLate()
         || driveSlotStudentAckLive()
+        || driveSlotAutoAckLive()
         || driveSlotInstructorCompletesLive()
         || driveSlotStudentRatesInstructor()
         || driveSlotInstructorRatesStudent()
