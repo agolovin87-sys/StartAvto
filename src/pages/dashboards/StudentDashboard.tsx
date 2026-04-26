@@ -14,6 +14,7 @@ import { useDriveLocationSharingUi } from "@/context/DriveLocationSharingUiConte
 import { ChatNavContext } from "@/context/ChatNavContext";
 import { useChatThreadShell } from "@/context/ChatThreadShellContext";
 import {
+  autoAckDriveLiveSessionIfTimeout,
   studentReserveFreeDriveWindow,
   studentCancelFreeDriveWindowReservation,
   studentAckDriveLiveSession,
@@ -848,6 +849,14 @@ function StudentDashboardShell() {
     }
     return subscribeDriveSlotsForStudent(studentUid, setSlots, () => setSlots([]));
   }, [studentUid]);
+
+  useEffect(() => {
+    const candidates = slots.filter(
+      (s) => s.status === "scheduled" && s.liveStartedAt != null && s.liveStudentAckAt == null
+    );
+    if (candidates.length === 0) return;
+    void Promise.allSettled(candidates.map((s) => autoAckDriveLiveSessionIfTimeout(s.id)));
+  }, [slots]);
 
   const myInstructor = myInstructors[0] ?? null;
   const visibleFreeWindows = useMemo(

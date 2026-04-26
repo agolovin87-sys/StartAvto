@@ -5,6 +5,7 @@ import { formatShortFio } from "@/admin/formatShortFio";
 import { dateKeyToRuDisplay, sortSlotsByTime } from "@/admin/scheduleFormat";
 import { subscribeTrainingGroups } from "@/firebase/admin";
 import {
+  autoAckDriveLiveSessionIfTimeout,
   instructorApplyRunningLateShift,
   instructorCompleteDriveLiveSession,
   instructorDeleteDriveSlot,
@@ -593,6 +594,14 @@ export function InstructorHomeTab() {
       (e) => setErr(e.message)
     );
   }, [instructorUid]);
+
+  useEffect(() => {
+    const candidates = slots.filter(
+      (s) => s.status === "scheduled" && s.liveStartedAt != null && s.liveStudentAckAt == null
+    );
+    if (candidates.length === 0) return;
+    void Promise.allSettled(candidates.map((s) => autoAckDriveLiveSessionIfTimeout(s.id)));
+  }, [slots]);
 
   const studentMap = useMemo(() => {
     const m = new Map<string, UserProfile>();

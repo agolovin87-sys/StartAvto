@@ -666,8 +666,7 @@ export async function instructorStartDriveLiveSession(slotId: string): Promise<v
   const { db } = getFirebase();
   await updateDoc(doc(db, DRIVES, slotId), {
     liveStartedAt: serverTimestamp(),
-    // По новому сценарию подтверждение не требуется: таймер стартует сразу.
-    liveStudentAckAt: serverTimestamp(),
+    liveStudentAckAt: deleteField(),
     instructorLateShiftMin: deleteField(),
   });
 }
@@ -677,6 +676,28 @@ export async function studentAckDriveLiveSession(slotId: string): Promise<void> 
   const { db } = getFirebase();
   await updateDoc(doc(db, DRIVES, slotId), {
     liveStudentAckAt: serverTimestamp(),
+  });
+}
+
+/** Если курсант не подтвердил старт 10 минут, таймер запускается автоматически с учётом ожидания. */
+export async function autoAckDriveLiveSessionIfTimeout(
+  slotId: string,
+  timeoutMs = 10 * 60 * 1000
+): Promise<void> {
+  const { db } = getFirebase();
+  await runTransaction(db, async (transaction) => {
+    const slotRef = doc(db, DRIVES, slotId);
+    const snap = await transaction.get(slotRef);
+    if (!snap.exists()) return;
+    const slot = normalizeDriveSlot(snap.data() as Record<string, unknown>, slotId);
+    if (slot.status !== "scheduled") return;
+    if (slot.liveStartedAt == null) return;
+    if (slot.liveStudentAckAt != null) return;
+    if (Date.now() - slot.liveStartedAt < timeoutMs) return;
+    // Подтверждаем моментом фактического старта, чтобы 10 минут ожидания списались из общего времени.
+    transaction.update(slotRef, {
+      liveStudentAckAt: Timestamp.fromMillis(slot.liveStartedAt),
+    });
   });
 }
 
