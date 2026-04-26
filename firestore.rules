@@ -128,6 +128,18 @@ service cloud.firestore {
         && request.resource.data.get('drivesCount', 0) == resource.data.get('drivesCount', 0) + 1;
     }
 
+    /** Внутренний экзамен: списание ровно 1 экзаменационного талона у закреплённого курсанта. */
+    function instructorDecrementsAttachedStudentExamTalonsByOne(userId) {
+      return isInstructorAccount()
+        && userId != request.auth.uid
+        && resource.data.get('role', 'student') == 'student'
+        && userId in instructorAttachedStudentIds()
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['examTalons'])
+        && request.resource.data.get('uid', '') == resource.data.get('uid', '')
+        && resource.data.get('examTalons', 0) >= 1
+        && request.resource.data.get('examTalons', 0) == resource.data.get('examTalons', 0) - 1;
+    }
+
     match /users/{userId} {
       allow read: if isOwner(userId)
         || isAdmin()
@@ -146,7 +158,8 @@ service cloud.firestore {
           && request.resource.data.get('uid', '') == resource.data.get('uid', '')
         )
         || instructorDecrementsAttachedStudentTalonsByOne(userId)
-        || instructorCompletesDriveIncrementsStudentCount(userId);
+        || instructorCompletesDriveIncrementsStudentCount(userId)
+        || instructorDecrementsAttachedStudentExamTalonsByOne(userId);
       allow delete: if isAdmin();
 
       /** FCM: только владелец хранит токены устройств для push. */
