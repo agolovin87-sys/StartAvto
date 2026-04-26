@@ -8129,6 +8129,154 @@ html[data-theme="light"] .drive-live-session-panel__toolbar {
   }
 }
 
+/* Игры: Durak */
+.durak-widget {
+  width: 100%;
+  color: #fef3c7;
+}
+.durak-widget .game-container {
+  width: 100%;
+  background: linear-gradient(145deg, #1a4d2a 0%, #0e3a1f 100%);
+  border-radius: 24px;
+  padding: 12px;
+  border: 1px solid #ffd966aa;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.35);
+}
+.durak-widget .players-area {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.durak-widget .player-zone {
+  background: #0a2a1ad9;
+  border-radius: 16px;
+  padding: 12px;
+}
+.durak-widget .zone-title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #ffdf99;
+  border-left: 4px solid gold;
+  padding-left: 10px;
+  margin-bottom: 10px;
+}
+.durak-widget .cards {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  justify-content: center;
+  min-height: 88px;
+}
+.durak-widget .card {
+  width: 70px;
+  height: 96px;
+  background: #fff;
+  border-radius: 10px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 6px 4px;
+  box-shadow: -2px 2px 8px rgba(0, 0, 0, 0.35);
+  font-weight: 700;
+  cursor: pointer;
+}
+.durak-widget .computer-card {
+  cursor: default;
+  background: repeating-linear-gradient(45deg, #2c5, #0a3 10px);
+}
+.durak-widget .card-rank {
+  font-size: 1.25rem;
+  text-align: center;
+}
+.durak-widget .card-suit {
+  font-size: 1.35rem;
+  text-align: center;
+}
+.durak-widget .card-corner {
+  font-size: 0.9rem;
+  align-self: flex-start;
+}
+.durak-widget .suit-red {
+  color: #c33;
+}
+.durak-widget .suit-black {
+  color: #222;
+}
+.durak-widget .table-area {
+  background: #1e4a2b;
+  border-radius: 16px;
+  padding: 12px;
+  text-align: center;
+  border: 1px solid #cb9e5e;
+}
+.durak-widget .table-title {
+  font-weight: 700;
+  color: #ffd966;
+}
+.durak-widget .battlefield {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  justify-content: center;
+  margin: 10px 0;
+}
+.durak-widget .card-pair {
+  background: #2b5a34b3;
+  border-radius: 12px;
+  display: flex;
+  gap: 6px;
+  padding: 7px;
+  border: 1px solid gold;
+}
+.durak-widget .pair-inner {
+  display: flex;
+  gap: 6px;
+}
+.durak-widget .unknown-card {
+  background: #a56b2f77;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.durak-widget .info-panel {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  background: #071f0ecc;
+  border-radius: 14px;
+  padding: 10px 12px;
+}
+.durak-widget .trump-pill {
+  font-weight: 700;
+  background: #00000088;
+  padding: 4px 10px;
+  border-radius: 30px;
+}
+.durak-widget .btn {
+  background: #ffb347;
+  border: none;
+  padding: 8px 14px;
+  border-radius: 999px;
+  font-weight: 700;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+.durak-widget .player-actions {
+  margin-top: 10px;
+  text-align: center;
+}
+@media (max-width: 700px) {
+  .durak-widget .card {
+    width: 62px;
+    height: 88px;
+  }
+  .durak-widget .card-corner {
+    font-size: 0.8rem;
+  }
+}
+
 .student-loc-whereami-ico {
   width: 18px;
   height: 18px;
