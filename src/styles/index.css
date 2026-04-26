@@ -5889,6 +5889,8 @@ html[data-theme="light"] .instructor-week-schedule-hint-em {
   justify-content: center;
   gap: 0;
   cursor: default;
+  animation: drive-week-imminent-glow 1.8s ease-in-out infinite;
+  border-color: rgba(34, 197, 94, 0.55);
 }
 
 .student-pending-drive-item .student-pending-drive-main,
