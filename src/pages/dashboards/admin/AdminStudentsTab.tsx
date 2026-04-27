@@ -1365,7 +1365,17 @@ function GroupFormModal({
 
 type FeedbackState = { kind: "success" | "error"; text: string } | null;
 
-export function AdminStudentsTab() {
+export function AdminStudentsTab({
+  groupsSectionOpen,
+  carsSectionOpen,
+  onToggleGroupsSection,
+  onToggleCarsSection,
+}: {
+  groupsSectionOpen: boolean;
+  carsSectionOpen: boolean;
+  onToggleGroupsSection: () => void;
+  onToggleCarsSection: () => void;
+}) {
   const { user } = useAuth();
   const authUid = (user?.uid ?? "").trim();
   const [groupChats, setGroupChats] = useState<ChatRoom[]>([]);
@@ -1382,9 +1392,7 @@ export function AdminStudentsTab() {
   const [confirmCancel, setConfirmCancel] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<TrainingGroup | null>(null);
   const [instructors, setInstructors] = useState<UserProfile[]>([]);
-  const [groupsSectionOpen, setGroupsSectionOpen] = useState(false);
   const [groupStudentSearch, setGroupStudentSearch] = useState("");
-  const [carsSectionOpen, setCarsSectionOpen] = useState(false);
 
   useEffect(() => {
     const u1 = subscribeTrainingGroups(setGroups, () => {});
@@ -1559,7 +1567,7 @@ export function AdminStudentsTab() {
           className="instructor-home-section-toggle glossy-panel admin-history-collapse-toggle"
           aria-expanded={groupsSectionOpen}
           aria-controls="admin-groups-collapsible-panel"
-          onClick={() => setGroupsSectionOpen((o) => !o)}
+          onClick={onToggleGroupsSection}
         >
           <span className="instructor-home-section-toggle-label instructor-home-toggle-label-row">
             <IconSectionGroups />
@@ -1664,7 +1672,7 @@ export function AdminStudentsTab() {
           className="instructor-home-section-toggle glossy-panel admin-history-collapse-toggle"
           aria-expanded={carsSectionOpen}
           aria-controls="admin-cars-panel"
-          onClick={() => setCarsSectionOpen((o) => !o)}
+          onClick={onToggleCarsSection}
         >
           <span className="instructor-home-section-toggle-label instructor-home-toggle-label-row">
             <IconSectionCar />

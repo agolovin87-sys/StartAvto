@@ -981,8 +981,13 @@ function pickStudentOptions(
   );
 }
 
-export function AdminInstructorsTab() {
-  const [sectionOpen, setSectionOpen] = useState(false);
+export function AdminInstructorsTab({
+  sectionOpen,
+  onToggleSection,
+}: {
+  sectionOpen: boolean;
+  onToggleSection: () => void;
+}) {
   const [instructors, setInstructors] = useState<UserProfile[]>([]);
   const [allStudents, setAllStudents] = useState<UserProfile[]>([]);
   const [err, setErr] = useState<string | null>(null);
@@ -1019,7 +1024,7 @@ export function AdminInstructorsTab() {
         className="instructor-home-section-toggle glossy-panel admin-history-collapse-toggle"
         aria-expanded={sectionOpen}
         aria-controls="admin-instructors-collapsible-panel"
-        onClick={() => setSectionOpen((o) => !o)}
+        onClick={onToggleSection}
       >
         <span className="instructor-home-section-toggle-label instructor-home-toggle-label-row">
           <IconRole />

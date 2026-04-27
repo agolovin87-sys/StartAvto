@@ -27,6 +27,9 @@ import { hapticSelection } from "@/utils/haptics";
 
 type AdminNavTab = "home" | "schedule" | "chat" | "history" | "gps" | "games" | "settings";
 
+/** Одна открытая секция на главной: инструкторы / группы / автомобили */
+type AdminHomeAccordion = "instructors" | "groups" | "cars";
+
 const ADMIN_DASH_TABS = [
   "home",
   "schedule",
@@ -143,6 +146,7 @@ export function AdminDashboard() {
 function AdminDashboardInner() {
   const [tab, setTab] = useState<AdminNavTab>("home");
   useDashboardTabHistory(tab, setTab, ADMIN_DASH_TABS);
+  const [homeAccordion, setHomeAccordion] = useState<AdminHomeAccordion | null>(null);
   const [chatThreadOpen, setChatThreadOpen] = useState(false);
   const { setShellHeaderHidden } = useChatThreadShell();
   const { reportDashboardTab, totalUnread } = useChatUnread();
@@ -199,6 +203,10 @@ function AdminDashboardInner() {
     void backfillManualGroupParticipantEmails();
   }, []);
 
+  useEffect(() => {
+    if (tab !== "home") setHomeAccordion(null);
+  }, [tab]);
+
   return (
     <ChatNavContext.Provider value={chatNavValue}>
     <div
@@ -213,9 +221,23 @@ function AdminDashboardInner() {
           <>
             <AdminHomeTab users={pendingNewUsers} fetchError={pendingUsersErr} />
             <div className="admin-section-sep" aria-hidden />
-            <AdminInstructorsTab />
+            <AdminInstructorsTab
+              sectionOpen={homeAccordion === "instructors"}
+              onToggleSection={() =>
+                setHomeAccordion((cur) => (cur === "instructors" ? null : "instructors"))
+              }
+            />
             <div className="admin-section-sep" aria-hidden />
-            <AdminStudentsTab />
+            <AdminStudentsTab
+              groupsSectionOpen={homeAccordion === "groups"}
+              carsSectionOpen={homeAccordion === "cars"}
+              onToggleGroupsSection={() =>
+                setHomeAccordion((cur) => (cur === "groups" ? null : "groups"))
+              }
+              onToggleCarsSection={() =>
+                setHomeAccordion((cur) => (cur === "cars" ? null : "cars"))
+              }
+            />
           </>
         ) : null}
         {tab === "schedule" ? <AdminScheduleTab /> : null}
