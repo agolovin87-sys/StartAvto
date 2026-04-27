@@ -67,6 +67,13 @@ function ruGroupsCountLabel(n: number): string {
   return `${n} групп`;
 }
 
+/** Поиск курсанта по фамилии / части ФИО (регистр не важен). */
+function studentMatchesAdminGroupSearch(displayName: string, rawQuery: string): boolean {
+  const t = rawQuery.trim().toLowerCase();
+  if (!t) return true;
+  return (displayName ?? "").toLowerCase().includes(t);
+}
+
 function toDateInputValue(ms: number): string {
   const d = new Date(ms);
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
@@ -1018,6 +1025,7 @@ function GroupCard({
   onDeleteRequest,
   onRemoveMember,
   onLinkedChatChange,
+  studentSearchQuery = "",
 }: {
   group: TrainingGroup;
   members: UserProfile[];
@@ -1028,8 +1036,15 @@ function GroupCard({
   onDeleteRequest: () => void;
   onRemoveMember: (studentUid: string) => void;
   onLinkedChatChange: (trainingGroupId: string, chatId: string | null) => void;
+  /** Непустой — разворачиваем карточку, чтобы были видны найденные курсанты */
+  studentSearchQuery?: string;
 }) {
   const [expanded, setExpanded] = useState(false);
+
+  useEffect(() => {
+    const q = studentSearchQuery.trim();
+    if (q.length > 0 && members.length > 0) setExpanded(true);
+  }, [studentSearchQuery, members.length, group.id]);
   const hue = avatarHueFromUid(group.id);
   const initials = initialsFromFullName(group.name);
   const periodText =
@@ -1368,6 +1383,7 @@ export function AdminStudentsTab() {
   const [deleteTarget, setDeleteTarget] = useState<TrainingGroup | null>(null);
   const [instructors, setInstructors] = useState<UserProfile[]>([]);
   const [groupsSectionOpen, setGroupsSectionOpen] = useState(false);
+  const [groupStudentSearch, setGroupStudentSearch] = useState("");
   const [carsSectionOpen, setCarsSectionOpen] = useState(false);
 
   useEffect(() => {
@@ -1524,6 +1540,16 @@ export function AdminStudentsTab() {
     }
   }
 
+  const groupsMatchingStudentSearch = useMemo(() => {
+    const q = groupStudentSearch.trim();
+    if (!q) return groups;
+    return groups.filter((g) =>
+      students
+        .filter((s) => s.groupId === g.id)
+        .some((s) => studentMatchesAdminGroupSearch(s.displayName, q))
+    );
+  }, [groups, students, groupStudentSearch]);
+
   return (
     <div className="admin-tab">
       <section className="admin-students-groups-section" aria-labelledby="groups-heading">
@@ -1560,6 +1586,19 @@ export function AdminStudentsTab() {
               >
                 Создать группу
               </button>
+              <label className="admin-groups-student-search-label">
+                <span className="admin-groups-student-search-title">Курсанты</span>
+                <input
+                  type="search"
+                  className="input admin-groups-student-search-input"
+                  placeholder="Фамилия или часть ФИО…"
+                  value={groupStudentSearch}
+                  onChange={(e) => setGroupStudentSearch(e.target.value)}
+                  aria-label="Поиск курсанта по фамилии или ФИО"
+                  autoComplete="off"
+                  disabled={busy}
+                />
+              </label>
             </div>
 
             {feedback ? (
@@ -1587,13 +1626,22 @@ export function AdminStudentsTab() {
                 Пока нет групп. Нажмите «Создать группу», затем назначьте курсантов
                 ниже.
               </p>
+            ) : groupsMatchingStudentSearch.length === 0 ? (
+              <p className="admin-empty admin-groups-empty" role="status">
+                По запросу «{groupStudentSearch.trim()}» курсанты не найдены.
+              </p>
             ) : (
               <ul className="instructor-card-list">
-                {groups.map((g) => (
+                {groupsMatchingStudentSearch.map((g) => (
                   <GroupCard
                     key={g.id}
                     group={g}
-                    members={students.filter((s) => s.groupId === g.id)}
+                    members={students
+                      .filter((s) => s.groupId === g.id)
+                      .filter((s) =>
+                        studentMatchesAdminGroupSearch(s.displayName, groupStudentSearch)
+                      )}
+                    studentSearchQuery={groupStudentSearch}
                     instructors={instructors}
                     busy={busy}
                     groupChats={groupChats}

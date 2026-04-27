@@ -7506,7 +7506,29 @@ html[data-theme="light"] .admin-students-groups-section {
 }
 
 .admin-groups-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 0.65rem 0.85rem;
   margin-bottom: 0.75rem;
+}
+
+.admin-groups-student-search-label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.22rem;
+  flex: 1 1 200px;
+  min-width: 160px;
+}
+
+.admin-groups-student-search-title {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--theme-soft);
+}
+
+.admin-groups-student-search-input {
+  width: 100%;
 }
 
 .admin-group-linked-chat {
