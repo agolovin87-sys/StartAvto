@@ -7336,7 +7336,7 @@ html[data-theme="light"] .drive-live-session-panel__toolbar {
 /* Новые пользователи и «Не в группе»: красный оттенок блока */
 .admin-pending-users-section,
 .admin-students-ungrouped {
-  padding: 1rem 1rem 1.25rem;
+  padding: 0.55rem 0.75rem 0.62rem;
   border-radius: 14px;
   border: 1px solid rgba(248, 113, 113, 0.32);
   background: linear-gradient(
@@ -7347,11 +7347,67 @@ html[data-theme="light"] .drive-live-session-panel__toolbar {
 }
 
 .admin-pending-users-section {
-  margin-bottom: 0.25rem;
+  margin-bottom: 0;
 }
 
 .admin-students-ungrouped {
-  margin-top: 1.25rem;
+  margin-top: 0;
+}
+
+.admin-home-pending-ungrouped-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.admin-home-pending-ungrouped-stack .admin-tab-title {
+  margin: 0 0 0.2rem;
+  font-size: 1.05rem;
+}
+
+.admin-home-pending-ungrouped-stack .admin-students-ungrouped .admin-subsection-title {
+  margin: 0 0 0.28rem;
+  font-size: 1rem;
+}
+
+.admin-home-pending-ungrouped-stack .admin-empty {
+  margin: 0;
+  font-size: 0.88rem;
+  line-height: 1.35;
+}
+
+.admin-home-pending-ungrouped-stack .form-error {
+  margin-bottom: 0.35rem;
+  font-size: 0.85rem;
+}
+
+.admin-home-pending-ungrouped-stack .admin-user-list {
+  gap: 0.45rem;
+}
+
+.admin-home-pending-ungrouped-stack .admin-user-card {
+  padding: 0.62rem 0.72rem;
+}
+
+.admin-home-pending-ungrouped-stack .admin-user-head {
+  margin-bottom: 0.45rem;
+}
+
+.admin-home-pending-ungrouped-stack .admin-inline-field {
+  margin-bottom: 0.45rem;
+}
+
+.admin-home-pending-ungrouped-stack .admin-ungrouped-hint {
+  margin: 0 0 0.38rem;
+  font-size: 0.78rem;
+}
+
+.admin-home-pending-ungrouped-stack .admin-ungrouped-list {
+  gap: 0.28rem;
+}
+
+.admin-home-pending-ungrouped-stack .admin-ungrouped-row {
+  padding: 0.42rem 0.55rem;
 }
 
 /* Раздел «Инструкторы» на главной админки: синий фон */

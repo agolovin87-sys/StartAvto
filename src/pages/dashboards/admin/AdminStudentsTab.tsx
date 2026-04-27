@@ -1362,14 +1362,6 @@ export function AdminStudentsTab() {
     return undefined;
   }, [feedback]);
 
-  const ungrouped = useMemo(
-    () =>
-      students.filter(
-        (s) => !s.groupId || !groups.some((g) => g.id === s.groupId)
-      ),
-    [students, groups]
-  );
-
   async function onCreateSubmit(payload: {
     name: string;
     hasTrainingPeriod: boolean;
@@ -1384,7 +1376,8 @@ export function AdminStudentsTab() {
       setEditingGroup(null);
       setFeedback({
         kind: "success",
-        text: "Группа создана — откройте карточку ниже или переведите курсантов из «Не в группе».",
+        text:
+          "Группа создана — откройте карточку ниже или переведите курсантов из блока «Не в группе» на вкладке «Главная».",
       });
     } catch (e) {
       setFeedback({
@@ -1440,17 +1433,6 @@ export function AdminStudentsTab() {
     setBusy(true);
     try {
       await deleteTrainingGroup(g.id);
-    } catch {
-      /* ошибка без показа блока в интерфейсе */
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  async function onStudentGroupChange(uid: string, value: string) {
-    setBusy(true);
-    try {
-      await setStudentGroup(uid, value || null);
     } catch {
       /* ошибка без показа блока в интерфейсе */
     } finally {
@@ -1554,57 +1536,6 @@ export function AdminStudentsTab() {
                 onRemoveMember={(uid) => void removeStudentFromGroup(uid)}
                 onLinkedChatChange={(tid, cid) => void onLinkedChatChange(tid, cid)}
               />
-            ))}
-          </ul>
-        )}
-      </section>
-
-      <section
-        className="admin-students-ungrouped"
-        aria-labelledby="ungrouped-heading"
-      >
-        <h2 id="ungrouped-heading" className="admin-subsection-title">
-          Не в группе
-        </h2>
-        {groups.length === 0 ? (
-          <p className="field-hint admin-ungrouped-hint">
-            Сначала создайте группу в разделе выше — затем здесь появится выбор,
-            куда перевести курсанта.
-          </p>
-        ) : null}
-        {ungrouped.length === 0 ? (
-          <p className="admin-empty">Нет курсантов без группы.</p>
-        ) : (
-          <ul className="admin-ungrouped-list">
-            {ungrouped.map((s) => (
-              <li key={s.uid} className="admin-ungrouped-row">
-                <div className="admin-ungrouped-text">
-                  <span className="admin-ungrouped-name">
-                    {formatShortFio(s.displayName)}
-                  </span>
-                  <span className="admin-ungrouped-email">{s.email}</span>
-                </div>
-                {groups.length > 0 ? (
-                  <select
-                    className="input input-inline admin-ungrouped-select"
-                    value=""
-                    disabled={busy}
-                    onChange={(e) => {
-                      const v = e.target.value;
-                      e.target.value = "";
-                      if (v) void onStudentGroupChange(s.uid, v);
-                    }}
-                    aria-label="Назначить группу"
-                  >
-                    <option value="">В группу…</option>
-                    {groups.map((g) => (
-                      <option key={g.id} value={g.id}>
-                        {g.name}
-                      </option>
-                    ))}
-                  </select>
-                ) : null}
-              </li>
             ))}
           </ul>
         )}

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { setUserAccountStatus, setUserRole } from "@/firebase/admin";
 import type { UserProfile, UserRole } from "@/types";
+import { AdminUngroupedStudentsSection } from "@/pages/dashboards/admin/AdminUngroupedStudentsSection";
 
 const roleOptions: { value: UserRole; label: string }[] = [
   { value: "student", label: "Курсант" },
@@ -46,7 +47,7 @@ export function AdminHomeTab({
   }
 
   return (
-    <div className="admin-tab">
+    <div className="admin-tab admin-home-pending-ungrouped-stack">
       <section
         className="admin-pending-users-section"
         aria-labelledby="pending-users-heading"
@@ -109,6 +110,7 @@ export function AdminHomeTab({
           </ul>
         )}
       </section>
+      <AdminUngroupedStudentsSection />
     </div>
   );
 }
