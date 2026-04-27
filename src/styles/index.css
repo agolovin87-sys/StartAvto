@@ -2731,27 +2731,27 @@ html[data-theme="light"] .page-loading-brand {
   color: var(--theme-dim);
 }
 
-/* Управление автомобилями (админ) */
+/* Управление автомобилями (админ) — фиолетовый блок */
 .admin-cars-section {
-  margin-top: 1.75rem;
-  padding: 0.65rem 0.75rem 1rem;
-  border-radius: 0.85rem;
-  border: 1px solid rgba(167, 139, 250, 0.38);
+  margin-top: 0;
+  padding: 1rem 1rem 1.25rem;
+  border-radius: 14px;
+  border: 1px solid rgba(167, 139, 250, 0.52);
   background: linear-gradient(
     155deg,
-    rgba(139, 92, 246, 0.2) 0%,
-    rgba(124, 58, 237, 0.14) 45%,
-    rgba(76, 29, 149, 0.12) 100%
+    rgba(139, 92, 246, 0.34) 0%,
+    rgba(124, 58, 237, 0.26) 42%,
+    rgba(76, 29, 149, 0.22) 100%
   );
 }
 
 html[data-theme="light"] .admin-cars-section {
-  border-color: rgba(139, 92, 246, 0.42);
+  border-color: rgba(139, 92, 246, 0.48);
   background: linear-gradient(
     155deg,
-    rgba(167, 139, 250, 0.28) 0%,
-    rgba(196, 181, 253, 0.2) 55%,
-    rgba(237, 233, 254, 0.45) 100%
+    rgba(167, 139, 250, 0.42) 0%,
+    rgba(196, 181, 253, 0.32) 52%,
+    rgba(237, 233, 254, 0.72) 100%
   );
 }
 
@@ -7475,16 +7475,34 @@ html[data-theme="light"] .drive-live-session-panel__toolbar {
   );
 }
 
-.admin-students-groups {
+/* Раздел «Группы»: тот же тип карточки, зелёная тема */
+.admin-students-groups-section {
   padding: 1rem 1rem 1.25rem;
-  margin-bottom: 0.25rem;
+  margin-bottom: 1.75rem;
   border-radius: 14px;
-  border: 1px solid rgba(74, 222, 128, 0.28);
+  border: 1px solid rgba(74, 222, 128, 0.42);
   background: linear-gradient(
     180deg,
-    rgba(22, 101, 52, 0.22) 0%,
-    rgba(30, 41, 59, 0.45) 100%
+    rgba(22, 101, 52, 0.38) 0%,
+    rgba(30, 41, 59, 0.52) 100%
   );
+}
+
+html[data-theme="light"] .admin-students-groups-section {
+  border-color: rgba(34, 197, 94, 0.42);
+  background: linear-gradient(
+    180deg,
+    rgba(220, 252, 231, 0.92) 0%,
+    rgba(241, 245, 249, 0.88) 100%
+  );
+}
+
+.admin-students-groups {
+  padding: 0.65rem 0 0;
+  margin-bottom: 0;
+  border-radius: 0;
+  border: none;
+  background: transparent;
 }
 
 .admin-groups-actions {

@@ -1021,7 +1021,10 @@ export function AdminInstructorsTab() {
         aria-controls="admin-instructors-collapsible-panel"
         onClick={() => setSectionOpen((o) => !o)}
       >
-        <span className="instructor-home-section-toggle-label">Инструкторы</span>
+        <span className="instructor-home-section-toggle-label instructor-home-toggle-label-row">
+          <IconRole />
+          Инструкторы
+        </span>
         <span className="instructor-home-section-toggle-meta">
           {ruInstructorsCountLabel(instructors.length)}
         </span>
