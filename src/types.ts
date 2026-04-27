@@ -87,7 +87,7 @@ export interface DriveSlot {
   studentRatingInstructor?: number | null;
   /** Оценка курсанта инструктором после завершения урока (3, 4 или 5). */
   instructorRatingStudent?: number | null;
-  /** Ручная запись «Свой курсант» (без подтверждения и без таймера). */
+  /** Ручная запись «Свой курсант» (без подтверждения курсантом; таймер запускается сразу). */
   isOwnStudent?: boolean;
 }
 

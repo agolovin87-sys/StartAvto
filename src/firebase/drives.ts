@@ -664,11 +664,22 @@ export async function instructorApplyRunningLateShift(
 /** Инструктор нажимает «Начать вождение»; таймер запустится после подтверждения курсантом. */
 export async function instructorStartDriveLiveSession(slotId: string): Promise<void> {
   const { db } = getFirebase();
-  await updateDoc(doc(db, DRIVES, slotId), {
+  const slotRef = doc(db, DRIVES, slotId);
+  const slotSnap = await getDoc(slotRef);
+  if (!slotSnap.exists()) throw new Error("Запись не найдена");
+  const slot = normalizeDriveSlot(slotSnap.data() as Record<string, unknown>, slotId);
+  await updateDoc(slotRef, {
     liveStartedAt: serverTimestamp(),
     liveStudentAckAt: deleteField(),
     instructorLateShiftMin: deleteField(),
   });
+  // Для «Свой курсант» подтверждение от курсанта не требуется (личного кабинета нет) —
+  // сразу запускаем таймер вождения.
+  if (slot.isOwnStudent === true) {
+    await updateDoc(slotRef, {
+      liveStudentAckAt: serverTimestamp(),
+    });
+  }
 }
 
 /** Курсант подтверждает участие в начатом вождении. */
@@ -766,13 +777,18 @@ export async function instructorCancelLiveDriveSession(
   const reason = cancelReason.trim();
   if (!reason) throw new Error("Укажите причину отмены");
 
-  const charge = options?.chargeTalonToInstructor === true;
+  const slotRef = doc(db, DRIVES, slotId);
+  const slotSnap = await getDoc(slotRef);
+  if (!slotSnap.exists()) throw new Error("Запись не найдена");
+  const slot = normalizeDriveSlot(slotSnap.data() as Record<string, unknown>, slotId);
+  if (slot.instructorId !== uid) throw new Error("Нет доступа к этой записи");
+  if (slot.status !== "scheduled") throw new Error("Запись уже завершена или отменена");
+  if (slot.liveStartedAt == null) throw new Error("Вождение не было начато");
+
+  // Для ручной записи «Свой курсант» никогда не двигаем талоны (нет ЛК курсанта).
+  const charge = slot.isOwnStudent !== true && options?.chargeTalonToInstructor === true;
 
   if (!charge) {
-    const slotRef = doc(db, DRIVES, slotId);
-    const slotSnap = await getDoc(slotRef);
-    if (!slotSnap.exists()) throw new Error("Запись не найдена");
-    const slot = normalizeDriveSlot(slotSnap.data() as Record<string, unknown>, slotId);
     const st = await getUserProfile(slot.studentId);
     const studentDisplayName = (
       slot.studentDisplayName.trim() ||
@@ -793,7 +809,6 @@ export async function instructorCancelLiveDriveSession(
   }
 
   await runTransaction(db, async (transaction) => {
-    const slotRef = doc(db, DRIVES, slotId);
     const slotSnap = await transaction.get(slotRef);
     if (!slotSnap.exists()) throw new Error("Запись не найдена");
     const slot = normalizeDriveSlot(slotSnap.data() as Record<string, unknown>, slotId);
