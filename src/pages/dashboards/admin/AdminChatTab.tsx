@@ -1416,18 +1416,10 @@ export function AdminChatTab({
   const currentUserRole = profile?.role ?? "student";
 
   useEffect(() => {
-    if (!isAdmin) {
-      setTrainingGroups([]);
-      return;
-    }
+    if (!isAdmin) return;
     // Один раз дотягиваем email-метки участников у старых ручных групп,
     // чтобы отмеченные админом пользователи стабильно видели чат.
     void backfillManualGroupParticipantEmails();
-    return subscribeTrainingGroups(setTrainingGroups, (e) => {
-      if (import.meta.env.DEV) {
-        console.warn("[subscribeTrainingGroups]", e.message);
-      }
-    });
   }, [isAdmin]);
 
   const contactsMode = useMemo((): "allActiveUsers" | "instructorAttached" | "none" | "studentChat" => {
@@ -1617,6 +1609,21 @@ export function AdminChatTab({
   }, [allChatIdsForPreviewKey]);
 
   const [trainingGroups, setTrainingGroups] = useState<TrainingGroup[]>([]);
+
+  /** У админа и у инструктора — названия учебных групп для подраздела «Курсанты». */
+  useEffect(() => {
+    const needTrainingGroups = isAdmin || profile?.role === "instructor";
+    if (!needTrainingGroups) {
+      setTrainingGroups([]);
+      return;
+    }
+    return subscribeTrainingGroups(setTrainingGroups, (e) => {
+      if (import.meta.env.DEV) {
+        console.warn("[subscribeTrainingGroups]", e.message);
+      }
+    });
+  }, [isAdmin, profile?.role]);
+
   const [selectedContactId, setSelectedContactId] = useState<string | null>(null);
   const [selectedGroupChatId, setSelectedGroupChatId] = useState<string | null>(null);
   /** Пока allRooms обновляется, не показывать вечную «Загрузка группы…». */
@@ -1800,18 +1807,22 @@ export function AdminChatTab({
     setDraftsMap(readDraftMap(currentUserId));
   }, [currentUserId]);
 
+  const persistStudentGroupCollapsed =
+    isAdmin ||
+    (profile?.role === "instructor" && contactsMode === "instructorAttached");
+
   useEffect(() => {
-    if (!isAdmin || !currentUserId) {
+    if (!persistStudentGroupCollapsed || !currentUserId) {
       setAdminChatGroupCollapsedMap({});
       return;
     }
     setAdminChatGroupCollapsedMap(readAdminChatGroupsCollapsedMap(currentUserId));
-  }, [isAdmin, currentUserId]);
+  }, [persistStudentGroupCollapsed, currentUserId]);
 
   useEffect(() => {
-    if (!isAdmin || !currentUserId) return;
+    if (!persistStudentGroupCollapsed || !currentUserId) return;
     writeAdminChatGroupsCollapsedMap(currentUserId, adminChatGroupCollapsedMap);
-  }, [isAdmin, currentUserId, adminChatGroupCollapsedMap]);
+  }, [persistStudentGroupCollapsed, currentUserId, adminChatGroupCollapsedMap]);
 
   // Контакты: все активные пользователи (админ) или закреплённые курсанты (инструктор).
   useEffect(() => {
@@ -2550,6 +2561,12 @@ export function AdminChatTab({
     groups.sort((a, b) => a.title.localeCompare(b.title, "ru"));
     return groups;
   }, [contactsOrdered, trainingGroupNameById]);
+
+  /** Инструктор: администратор и др. — отдельно от блока «Курсанты» по группам. */
+  const instructorNonStudentContacts = useMemo(
+    () => contactsOrdered.filter((c) => c.role !== "student"),
+    [contactsOrdered]
+  );
 
   const toggleAdminStudentGroupCollapsed = useCallback((groupId: string) => {
     setAdminChatGroupCollapsedMap((prev) => ({
@@ -5174,6 +5191,163 @@ export function AdminChatTab({
                               />
                             );
                           })}
+                      </ul>
+                    </div>
+                  ))}
+                </>
+              )}
+            </>
+          ) : profile?.role === "instructor" &&
+            contactsMode === "instructorAttached" ? (
+            <>
+              {instructorNonStudentContacts.length > 0 ? (
+                <>
+                  <div className="chat-contacts-section-title">Другие контакты:</div>
+                  <ul className="chat-contact-list">
+                    {instructorNonStudentContacts.map((c) => {
+                      const room = roomMetaByContactUid[c.uid.trim()];
+                      const lastText = room?.lastText ?? "";
+                      const hasLastMsg = Boolean(room?.lastMs);
+                      const draft = draftsMap[c.uid]?.trim() ?? "";
+                      const previewText = draft
+                        ? `Черновик: ${truncatePreviewLine(draft)}`
+                        : lastText || "—";
+                      const me = selfId.trim();
+                      const peer = c.uid.trim();
+                      const dmChatId = me && peer ? chatIdPair(me, peer) : "";
+                      const unreadDm = dmChatId ? (unreadByChatId[dmChatId] ?? 0) : 0;
+                      const dmTypingPeers = dmChatId
+                        ? (typingPeersByChatId[dmChatId] ?? [])
+                        : [];
+                      return (
+                        <ChatDmContactListItem
+                          key={c.uid}
+                          c={c}
+                          room={room}
+                          draft={draft}
+                          previewText={previewText}
+                          hasLastMsg={hasLastMsg}
+                          isActive={selectedContactId === c.uid}
+                          chatPrivacy={chatPrivacy}
+                          unreadCount={unreadDm}
+                          typingPeerIds={dmTypingPeers}
+                          displayNameForUid={displayNameForUid}
+                          showLastSeenByRole={showLastSeenByRole}
+                          currentUserRole={currentUserRole}
+                          outgoingReceipt={dmContactListOutgoingReceipt(
+                            selfId,
+                            receiptSelfKeys,
+                            c.uid,
+                            dmChatId,
+                            dmChatId ? previewFromMessagesByChatId[dmChatId] : undefined,
+                            allRooms
+                          )}
+                          onSelect={() => {
+                            const prevKey = selectedGroupChatId ?? selectedContactId;
+                            if (prevKey) persistDraft(prevKey, composerText);
+                            setSelectedGroupChatId(null);
+                            setPickedGroupSnapshot(null);
+                            setSelectedContactId(c.uid);
+                            setMenuAdjusted(null);
+                            setMenu({ open: false, messageId: null, x: 0, y: 0 });
+                          }}
+                          onAvatarPhotoClick={() =>
+                            setAvatarLightbox({
+                              src: c.avatarDataUrl!,
+                              name: c.displayName,
+                            })
+                          }
+                        />
+                      );
+                    })}
+                  </ul>
+                </>
+              ) : null}
+
+              <div className="chat-contacts-section-title">Курсанты:</div>
+              {adminStudentGroupContacts.length === 0 ? (
+                <div className="chat-contacts-empty">Нет курсантов.</div>
+              ) : (
+                <>
+                  <div className="chat-contacts-section-subtitle">Группы:</div>
+                  {adminStudentGroupContacts.map((group) => (
+                    <div key={group.id}>
+                      <button
+                        type="button"
+                        className="chat-contacts-group-toggle"
+                        onClick={() => toggleAdminStudentGroupCollapsed(group.id)}
+                        aria-expanded={!adminChatGroupCollapsedMap[group.id]}
+                        aria-controls={`instructor-chat-group-${group.id}`}
+                      >
+                        <span className="chat-contacts-group-toggle-ico" aria-hidden>
+                          {adminChatGroupCollapsedMap[group.id] ? "▸" : "▾"}
+                        </span>
+                        <span className="chat-contacts-group-toggle-title">
+                          {group.title} ({group.students.length})
+                        </span>
+                      </button>
+                      <ul
+                        id={`instructor-chat-group-${group.id}`}
+                        className="chat-contact-list"
+                      >
+                        {adminChatGroupCollapsedMap[group.id]
+                          ? null
+                          : group.students.map((c) => {
+                              const room = roomMetaByContactUid[c.uid.trim()];
+                              const lastText = room?.lastText ?? "";
+                              const hasLastMsg = Boolean(room?.lastMs);
+                              const draft = draftsMap[c.uid]?.trim() ?? "";
+                              const previewText = draft
+                                ? `Черновик: ${truncatePreviewLine(draft)}`
+                                : lastText || "—";
+                              const me = selfId.trim();
+                              const peer = c.uid.trim();
+                              const dmChatId = me && peer ? chatIdPair(me, peer) : "";
+                              const unreadDm = dmChatId ? (unreadByChatId[dmChatId] ?? 0) : 0;
+                              const dmTypingPeers = dmChatId
+                                ? (typingPeersByChatId[dmChatId] ?? [])
+                                : [];
+                              return (
+                                <ChatDmContactListItem
+                                  key={c.uid}
+                                  c={c}
+                                  room={room}
+                                  draft={draft}
+                                  previewText={previewText}
+                                  hasLastMsg={hasLastMsg}
+                                  isActive={selectedContactId === c.uid}
+                                  chatPrivacy={chatPrivacy}
+                                  unreadCount={unreadDm}
+                                  typingPeerIds={dmTypingPeers}
+                                  displayNameForUid={displayNameForUid}
+                                  showLastSeenByRole={showLastSeenByRole}
+                                  currentUserRole={currentUserRole}
+                                  outgoingReceipt={dmContactListOutgoingReceipt(
+                                    selfId,
+                                    receiptSelfKeys,
+                                    c.uid,
+                                    dmChatId,
+                                    dmChatId ? previewFromMessagesByChatId[dmChatId] : undefined,
+                                    allRooms
+                                  )}
+                                  onSelect={() => {
+                                    const prevKey = selectedGroupChatId ?? selectedContactId;
+                                    if (prevKey) persistDraft(prevKey, composerText);
+                                    setSelectedGroupChatId(null);
+                                    setPickedGroupSnapshot(null);
+                                    setSelectedContactId(c.uid);
+                                    setMenuAdjusted(null);
+                                    setMenu({ open: false, messageId: null, x: 0, y: 0 });
+                                  }}
+                                  onAvatarPhotoClick={() =>
+                                    setAvatarLightbox({
+                                      src: c.avatarDataUrl!,
+                                      name: c.displayName,
+                                    })
+                                  }
+                                />
+                              );
+                            })}
                       </ul>
                     </div>
                   ))}
