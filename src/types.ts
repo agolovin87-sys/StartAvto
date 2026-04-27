@@ -146,6 +146,8 @@ export interface ChatRoom {
   createdAt: number;
   lastMessageAt: number | null;
   lastMessageText: string;
+  /** Время (мс UTC), до которого участник прочитал ленту — для галочек «доставлено / прочитано». */
+  lastReadAtByUser?: Record<string, number>;
 }
 
 export interface ChatMessage {

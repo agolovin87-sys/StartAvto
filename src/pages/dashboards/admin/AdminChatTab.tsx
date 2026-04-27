@@ -33,6 +33,7 @@ import {
   subscribeChatTypingPeers,
   subscribeLatestMessageForChat,
   subscribeMessagesForChat,
+  markParticipantReadCursor,
   previewLineFromChatMessage,
   clearUserReactionOnMessage,
   toggleReaction,
@@ -68,6 +69,52 @@ import {
   subscribeChatLastSeenVisibilitySettings,
   type ChatLastSeenVisibilitySettings,
 } from "@/firebase/chatLastSeenVisibilitySettings";
+import {
+  groupOutgoingReceipt,
+  outgoingReceiptTitle,
+  pairOutgoingReceipt,
+  type OutgoingReceipt,
+} from "@/lib/chatReadReceipts";
+
+function ChatOutgoingReceiptTicks({
+  receipt,
+  title,
+  className,
+}: {
+  receipt: OutgoingReceipt;
+  title: string;
+  className?: string;
+}) {
+  const cls = ["chat-outgoing-receipt-ticks"];
+  if (receipt === "read") cls.push("chat-outgoing-receipt-ticks--read");
+  else cls.push("chat-outgoing-receipt-ticks--sent");
+  if (className) cls.push(className);
+  return (
+    <span className={cls.join(" ")} title={title} aria-hidden>
+      <span className="chat-outgoing-receipt-tick">✓</span>
+      {receipt === "read" ? (
+        <span className="chat-outgoing-receipt-tick chat-outgoing-receipt-tick--second">
+          ✓
+        </span>
+      ) : null}
+    </span>
+  );
+}
+
+function dmContactListOutgoingReceipt(
+  selfId: string,
+  peerUid: string,
+  dmChatId: string,
+  preview: { at: number; senderId: string } | undefined,
+  allRoomsList: ChatRoom[]
+): OutgoingReceipt | null {
+  const me = selfId.trim();
+  const peer = peerUid.trim();
+  const cid = dmChatId.trim();
+  if (!me || !peer || !cid || !preview || preview.senderId !== me) return null;
+  const room = allRoomsList.find((r) => r.id === cid);
+  return pairOutgoingReceipt(preview.at, peer, room?.lastReadAtByUser);
+}
 
 function isFirestorePermissionDenied(e: unknown): boolean {
   if (!e || typeof e !== "object" || !("code" in e)) return false;
@@ -500,6 +547,8 @@ type ChatDmContactListItemProps = {
   /** Только админ: в списке контактов после «не в сети» — последний визит в скобках. */
   showLastSeenByRole: ChatLastSeenVisibilitySettings;
   currentUserRole: UserProfile["role"];
+  /** Последнее сообщение от вас: доставлено / прочитано собеседником */
+  outgoingReceipt?: OutgoingReceipt | null;
 };
 
 function ChatDmContactListItem({
@@ -517,6 +566,7 @@ function ChatDmContactListItem({
   onAvatarPhotoClick,
   showLastSeenByRole,
   currentUserRole,
+  outgoingReceipt = null,
 }: ChatDmContactListItemProps) {
   const presenceOnline = useDebouncedPresenceOnline(c.presence, chatPrivacy, c.uid);
   const canShowLastSeenByRole =
@@ -611,9 +661,17 @@ function ChatDmContactListItem({
             )}
             {hasLastMsg && room?.lastMs != null && !draft && typingPeerIds.length === 0 ? (
               <span className="chat-contact-preview-meta">
-                <span className="chat-contact-ticks" aria-hidden>
-                  ✓✓
-                </span>
+                {outgoingReceipt ? (
+                  <ChatOutgoingReceiptTicks
+                    receipt={outgoingReceipt}
+                    title={
+                      outgoingReceipt === "read"
+                        ? "Прочитано собеседником"
+                        : "Доставлено"
+                    }
+                    className="chat-contact-receipt-ticks"
+                  />
+                ) : null}
                 <span className="chat-contact-meta">{formatPreviewDateTime(room.lastMs)}</span>
               </span>
             ) : null}
@@ -1457,7 +1515,7 @@ export function AdminChatTab({
   const [extraChatContacts, setExtraChatContacts] = useState<UserProfile[]>([]);
   /** Превью и время из подписки на последнее сообщение (если в документе чата пустой lastMessageText). */
   const [previewFromMessagesByChatId, setPreviewFromMessagesByChatId] = useState<
-    Record<string, { text: string; at: number }>
+    Record<string, { text: string; at: number; senderId: string }>
   >({});
 
   useEffect(() => {
@@ -1536,6 +1594,7 @@ export function AdminChatTab({
             [chatId]: {
               text: previewLineFromChatMessage(msg),
               at: msg.createdAt,
+              senderId: msg.senderId,
             },
           }));
         },
@@ -1563,6 +1622,11 @@ export function AdminChatTab({
     if (!me || !peer) return null;
     return chatIdPair(me, peer);
   }, [selectedGroupChatId, selectedContactId, selfId]);
+
+  const activeChatRoomForReceipts = useMemo(
+    () => (selectedChatId ? allRooms.find((r) => r.id === selectedChatId) ?? null : null),
+    [allRooms, selectedChatId]
+  );
 
   const { reportFocusedChatId, clearUnreadForChat, unreadByChatId } = useChatUnread();
 
@@ -2087,6 +2151,17 @@ export function AdminChatTab({
     [messagesForDisplay]
   );
 
+  useEffect(() => {
+    if (!selectedChatId || !selfId.trim()) return;
+    const last = messagesForDisplay[messagesForDisplay.length - 1];
+    if (!last) return;
+    const readAt = last.createdAt;
+    const tm = window.setTimeout(() => {
+      void markParticipantReadCursor(selectedChatId, selfId.trim(), readAt).catch(() => {});
+    }, 420);
+    return () => window.clearTimeout(tm);
+  }, [selectedChatId, selfId, messagesForDisplay]);
+
   const correspondenceTimeline = useMemo(
     () => groupChatMessagesByDay(correspondenceViewMessages),
     [correspondenceViewMessages]
@@ -2603,12 +2678,6 @@ export function AdminChatTab({
     chatPrivacy,
     selectedGroupChatId ? "__group__" : selectedContactId ?? ""
   );
-
-  const dmPeerShowsOnline =
-    !selectedGroupChatId &&
-    selectedContact != null &&
-    chatPrivacy.showPresenceInChatUi &&
-    debouncedDmPeerPresenceOnline;
 
   const dmChatHeaderSubtitle = useMemo(() => {
     if (!selectedContact) return null;
@@ -4535,6 +4604,9 @@ export function AdminChatTab({
                         const previewText = draft
                           ? `Черновик: ${truncatePreviewLine(draft)}`
                           : room?.lastText ?? "—";
+                        const meW = selfId.trim();
+                        const peerW = c.uid.trim();
+                        const dmChatIdW = meW && peerW ? chatIdPair(meW, peerW) : "";
                         return (
                           <ChatDmContactListItem
                             key={c.uid}
@@ -4550,6 +4622,13 @@ export function AdminChatTab({
                             displayNameForUid={displayNameForUid}
                             showLastSeenByRole={showLastSeenByRole}
                             currentUserRole={currentUserRole}
+                            outgoingReceipt={dmContactListOutgoingReceipt(
+                              selfId,
+                              c.uid,
+                              dmChatIdW,
+                              dmChatIdW ? previewFromMessagesByChatId[dmChatIdW] : undefined,
+                              allRooms
+                            )}
                             onSelect={() => {
                               setCorrespondenceViewerU1(c);
                               setCorrespondenceSecondPeersLoading(true);
@@ -4826,6 +4905,18 @@ export function AdminChatTab({
                 const hasLastMsg =
                   effectiveLastAt != null || Boolean(effectiveLastText);
                 const groupTypingPeers = typingPeersByChatId[g.id] ?? [];
+                const groupSidebarReceipt =
+                  fromMsg &&
+                  selfId.trim() &&
+                  fromMsg.senderId === selfId.trim() &&
+                  fromMsg.at != null
+                    ? groupOutgoingReceipt(
+                        fromMsg.at,
+                        selfId.trim(),
+                        g.participantIds,
+                        g.lastReadAtByUser
+                      )
+                    : null;
                 return (
                   <li key={g.id}>
                     <button
@@ -4893,6 +4984,17 @@ export function AdminChatTab({
                           )}
                           {hasLastMsg && effectiveLastAt != null && !draft && groupTypingPeers.length === 0 ? (
                             <span className="chat-contact-preview-meta">
+                              {groupSidebarReceipt ? (
+                                <ChatOutgoingReceiptTicks
+                                  receipt={groupSidebarReceipt}
+                                  title={
+                                    groupSidebarReceipt === "read"
+                                      ? "Прочитано всеми участниками"
+                                      : "Доставлено"
+                                  }
+                                  className="chat-contact-receipt-ticks"
+                                />
+                              ) : null}
                               <span className="chat-contact-meta">
                                 {formatPreviewDateTime(effectiveLastAt)}
                               </span>
@@ -4950,6 +5052,13 @@ export function AdminChatTab({
                         displayNameForUid={displayNameForUid}
                         showLastSeenByRole={showLastSeenByRole}
                         currentUserRole={currentUserRole}
+                        outgoingReceipt={dmContactListOutgoingReceipt(
+                          selfId,
+                          c.uid,
+                          dmChatId,
+                          dmChatId ? previewFromMessagesByChatId[dmChatId] : undefined,
+                          allRooms
+                        )}
                         onSelect={() => {
                           const prevKey = selectedGroupChatId ?? selectedContactId;
                           if (prevKey) persistDraft(prevKey, composerText);
@@ -5027,6 +5136,13 @@ export function AdminChatTab({
                                 displayNameForUid={displayNameForUid}
                                 showLastSeenByRole={showLastSeenByRole}
                                 currentUserRole={currentUserRole}
+                                outgoingReceipt={dmContactListOutgoingReceipt(
+                                  selfId,
+                                  c.uid,
+                                  dmChatId,
+                                  dmChatId ? previewFromMessagesByChatId[dmChatId] : undefined,
+                                  allRooms
+                                )}
                                 onSelect={() => {
                                   const prevKey = selectedGroupChatId ?? selectedContactId;
                                   if (prevKey) persistDraft(prevKey, composerText);
@@ -5081,6 +5197,13 @@ export function AdminChatTab({
                     displayNameForUid={displayNameForUid}
                     showLastSeenByRole={showLastSeenByRole}
                     currentUserRole={currentUserRole}
+                    outgoingReceipt={dmContactListOutgoingReceipt(
+                      selfId,
+                      c.uid,
+                      dmChatId,
+                      dmChatId ? previewFromMessagesByChatId[dmChatId] : undefined,
+                      allRooms
+                    )}
                     onSelect={() => {
                       const prevKey = selectedGroupChatId ?? selectedContactId;
                       if (prevKey) persistDraft(prevKey, composerText);
@@ -5353,18 +5476,35 @@ export function AdminChatTab({
                         ? messageByIdForRender.get(m.replyToMessageId) ?? null
                         : null;
                       const metaTimeLabel = formatRuTime(m.editedAt ?? m.createdAt);
-                      const checkTitleMine = [
-                        selectedGroupChatId
-                          ? "Отправлено"
-                          : dmPeerShowsOnline
-                            ? "Доставлено (собеседник в сети)"
-                            : "Доставлено",
-                        m.editedAt != null
-                          ? `Изменено ${formatRuTime(m.editedAt)}`
-                          : null,
-                      ]
-                        .filter(Boolean)
-                        .join(" · ");
+                      const outgoingReceiptMine: OutgoingReceipt | null =
+                        mine && selectedChatId
+                          ? selectedGroupChatId
+                            ? groupOutgoingReceipt(
+                                m.createdAt,
+                                currentUserId.trim(),
+                                activeChatRoomForReceipts?.participantIds ?? [],
+                                activeChatRoomForReceipts?.lastReadAtByUser
+                              )
+                            : pairOutgoingReceipt(
+                                m.createdAt,
+                                selectedContactId?.trim() ||
+                                  activeChatRoomForReceipts?.participantIds.find(
+                                    (x) => x.trim() !== currentUserId.trim()
+                                  ) ||
+                                  "",
+                                activeChatRoomForReceipts?.lastReadAtByUser
+                              )
+                          : null;
+                      const checkTitleMine = outgoingReceiptMine
+                        ? [
+                            outgoingReceiptTitle(outgoingReceiptMine, m.editedAt != null),
+                            m.editedAt != null
+                              ? `Изменено ${formatRuTime(m.editedAt)}`
+                              : null,
+                          ]
+                            .filter(Boolean)
+                            .join(" · ")
+                        : "";
 
                       const msgSelected = selectedMessageIds.includes(m.id);
                       const incomingSenderProfile =
@@ -5693,14 +5833,12 @@ export function AdminChatTab({
 
                             <span className="chat-msg-meta">
                                 {metaTimeLabel}
-                                {mine ? (
-                                  <span className="chat-msg-check" title={checkTitleMine}>
-                                    {selectedGroupChatId
-                                      ? "✓"
-                                      : dmPeerShowsOnline
-                                        ? "✓✓"
-                                        : "✓"}
-                                  </span>
+                                {mine && outgoingReceiptMine ? (
+                                  <ChatOutgoingReceiptTicks
+                                    receipt={outgoingReceiptMine}
+                                    title={checkTitleMine}
+                                    className="chat-msg-receipt-ticks"
+                                  />
                                 ) : null}
                                 {m.editedAt != null ? (
                                   <span

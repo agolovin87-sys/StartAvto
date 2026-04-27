@@ -111,6 +111,23 @@ function normalizeChatRoomDoc(
         : toMillis(data.lastMessageAt),
     lastMessageText:
       typeof data.lastMessageText === "string" ? data.lastMessageText : "",
+    lastReadAtByUser: (() => {
+      const raw = data.lastReadAtByUser;
+      if (!raw || typeof raw !== "object" || Array.isArray(raw)) return undefined;
+      const out: Record<string, number> = {};
+      for (const [k, v] of Object.entries(raw as Record<string, unknown>)) {
+        const kk = typeof k === "string" ? k.trim() : "";
+        if (!kk) continue;
+        const ms =
+          typeof v === "number" && Number.isFinite(v)
+            ? v
+            : v != null
+              ? toMillis(v as never)
+              : NaN;
+        if (Number.isFinite(ms)) out[kk] = ms as number;
+      }
+      return Object.keys(out).length ? out : undefined;
+    })(),
   };
 }
 
@@ -1189,6 +1206,33 @@ export function subscribeLatestMessageForChat(
     },
     (e) => onError?.(e as Error)
   );
+}
+
+/** Курсор прочтения участника (для исходящих галочек у собеседника). */
+export async function markParticipantReadCursor(
+  chatId: string,
+  participantUid: string,
+  readAtMs: number
+): Promise<void> {
+  const cid = chatId.trim();
+  const uid = participantUid.trim();
+  if (!cid || !uid || !Number.isFinite(readAtMs)) return;
+  const { db } = getFirebase();
+  const chatRef = doc(db, "chats", cid);
+  const snap = await getDoc(chatRef);
+  if (!snap.exists()) return;
+  const data = snap.data() as Record<string, unknown>;
+  const rawMap = data.lastReadAtByUser;
+  let prev = 0;
+  if (rawMap && typeof rawMap === "object" && !Array.isArray(rawMap)) {
+    const v = (rawMap as Record<string, unknown>)[uid];
+    if (typeof v === "number" && Number.isFinite(v)) prev = v;
+    else if (v != null) prev = toMillis(v as never);
+  }
+  if (readAtMs <= prev) return;
+  await updateDoc(chatRef, {
+    [`lastReadAtByUser.${uid}`]: readAtMs,
+  });
 }
 
 export async function sendChatTextMessage(input: {

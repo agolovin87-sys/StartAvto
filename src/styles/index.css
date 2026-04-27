@@ -9248,6 +9248,34 @@ html[data-theme="light"] .admin-students-groups-section {
   line-height: 1;
 }
 
+/* Исходящие галочки: одна синяя = доставлено, две зелёные = прочитано */
+.chat-outgoing-receipt-ticks {
+  display: inline-flex;
+  align-items: center;
+  font-size: 0.72rem;
+  font-weight: 900;
+  line-height: 1;
+  letter-spacing: -0.14em;
+  flex-shrink: 0;
+}
+
+.chat-outgoing-receipt-ticks--sent {
+  color: #38bdf8;
+}
+
+.chat-outgoing-receipt-ticks--read {
+  color: #22c55e;
+}
+
+.chat-outgoing-receipt-tick--second {
+  margin-left: -0.28em;
+}
+
+.chat-msg-receipt-ticks.chat-outgoing-receipt-ticks,
+.chat-contact-receipt-ticks.chat-outgoing-receipt-ticks {
+  margin-top: 0.05rem;
+}
+
 .chat-contact-meta {
   font-size: 0.75rem;
   color: var(--theme-dim);
