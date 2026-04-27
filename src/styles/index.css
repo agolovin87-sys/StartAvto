@@ -5485,6 +5485,43 @@ html[data-theme="dark"] .pdd-exam-tickets-cell--current.pdd-exam-tickets-cell--b
   margin-top: 0.5rem;
 }
 
+/* «Мои курсанты»: один общий glossy-блок — шапка + содержимое */
+.instructor-home-cadets-shell {
+  margin-top: 0.35rem;
+  border-radius: 14px;
+  border: 1px solid var(--theme-line);
+  background: var(--theme-slate-hover);
+  overflow: hidden;
+}
+
+.instructor-home-cadets-shell-toggle.instructor-home-section-toggle {
+  margin-top: 0;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.instructor-home-cadets-shell-toggle.instructor-home-section-toggle:hover {
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.instructor-home-cadets-shell > .instructor-home-empty {
+  margin-top: 0;
+  padding: 0 1rem 1rem;
+}
+
+.instructor-home-cadets-shell .instructor-home-cadets-body {
+  margin-top: 0;
+  padding: 0 1rem 1rem;
+}
+
+.instructor-home-group-block--in-cadets-shell {
+  background: rgba(0, 0, 0, 0.14);
+  border-color: rgba(255, 255, 255, 0.07);
+  box-shadow: none;
+}
+
 .instructor-home-cadets-body {
   margin-top: 0.65rem;
 }

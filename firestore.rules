@@ -57,7 +57,8 @@ service cloud.firestore {
 
     /** Курсант видит карточку инструктора, у которого он в attachedStudentIds. */
     function studentReadsTheirInstructorProfile() {
-      return isStudentAccount()
+      return resource != null
+        && isStudentAccount()
         && resource.data.get('role', '') == 'instructor'
         && request.auth.uid in resource.data.get('attachedStudentIds', []);
     }
@@ -66,7 +67,8 @@ service cloud.firestore {
      * Любой вошедший не-админ может читать профили с role admin (контакт «Администратор», чат).
      */
     function signedNonAdminReadsAdminUserDoc() {
-      return isSignedIn()
+      return resource != null
+        && isSignedIn()
         && !isAdmin()
         && resource.data.get('role', '') == 'admin';
     }
@@ -76,8 +78,9 @@ service cloud.firestore {
      * Нужно для запроса where('email','in',…) и закреплённого контакта.
      */
     function signedNonAdminReadsUserInAdminEmailList() {
-      let em = resource.data.get('email', '');
-      return isSignedIn()
+      let em = resource != null ? resource.data.get('email', '') : '';
+      return resource != null
+        && isSignedIn()
         && !isAdmin()
         && em is string
         && em.lower() in adminEmailsList();

@@ -791,24 +791,25 @@ export function InstructorHomeTab() {
       </section>
 
       <section className="instructor-home-section" aria-labelledby="my-cadets-heading">
-        <button
-          type="button"
-          id="my-cadets-heading"
-          className="instructor-home-section-toggle glossy-panel"
-          aria-expanded={cadetsOpen}
-          onClick={() => setCadetsOpen((o) => !o)}
-        >
-          <span className="instructor-home-section-toggle-label">
-            <span className="instructor-home-toggle-label-row">
-              <IconMyCadets />
-              <span>Мои курсанты</span>
+        <div className="instructor-home-cadets-shell glossy-panel">
+          <button
+            type="button"
+            id="my-cadets-heading"
+            className="instructor-home-section-toggle instructor-home-cadets-shell-toggle"
+            aria-expanded={cadetsOpen}
+            onClick={() => setCadetsOpen((o) => !o)}
+          >
+            <span className="instructor-home-section-toggle-label">
+              <span className="instructor-home-toggle-label-row">
+                <IconMyCadets />
+                <span>Мои курсанты</span>
+              </span>
             </span>
-          </span>
-          <span className="instructor-home-section-toggle-meta">
-            {attachedIds.length > 0 ? attachedIds.length : attachedStudents.length}
-          </span>
-          <IconChevron open={cadetsOpen} />
-        </button>
+            <span className="instructor-home-section-toggle-meta">
+              {attachedIds.length > 0 ? attachedIds.length : attachedStudents.length}
+            </span>
+            <IconChevron open={cadetsOpen} />
+          </button>
         {cadetsOpen ? (
           attachedStudents.length === 0 && attachedIds.length > 0 && !err ? (
             <p className="admin-empty instructor-home-empty" role="status">
@@ -850,7 +851,7 @@ export function InstructorHomeTab() {
                           ? `${formatRuDate(g.trainingStartMs)} — ${formatRuDate(g.trainingEndMs)}`
                           : "Без срока";
                       return (
-                        <li key={g.id} className="instructor-home-group-block glossy-panel">
+                        <li key={g.id} className="instructor-home-group-block instructor-home-group-block--in-cadets-shell">
                           <div className="instructor-home-group-head">
                             <strong className="instructor-home-group-name">{g.name}</strong>
                             <span className="instructor-home-group-period">{periodText}</span>
@@ -869,6 +870,7 @@ export function InstructorHomeTab() {
             </div>
           )
         ) : null}
+        </div>
       </section>
 
       <section className="instructor-home-section" aria-labelledby="week-schedule-heading">
