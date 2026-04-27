@@ -963,6 +963,7 @@ export function InstructorHomeTab() {
                             slot={sl}
                             personRowLabel="Курсант"
                             personShortName={shortName}
+                            liveAwaitingStudentAck={!liveAcked}
                             statusValue={
                               <span className="drive-instructor-live-status">
                                 {!liveAcked

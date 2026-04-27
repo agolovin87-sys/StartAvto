@@ -49,6 +49,8 @@ export function DriveWeekScheduleNoticeCard({
   listItemRef,
   /** Пульс зелёного свечения до старта live (см. `useDriveImminentWeekAlert`). */
   imminentAttention = false,
+  /** Пульс, пока курсант не подтвердил начало live-сессии (инструктор уже нажал «Начать»). */
+  liveAwaitingStudentAck = false,
 }: {
   slot: DriveSlot;
   personRowLabel: string;
@@ -63,6 +65,7 @@ export function DriveWeekScheduleNoticeCard({
   belowStatusRow?: ReactNode;
   listItemRef?: RefCallback<HTMLLIElement>;
   imminentAttention?: boolean;
+  liveAwaitingStudentAck?: boolean;
 }) {
   const defaultDelete =
     onCancel != null ? (
@@ -86,7 +89,7 @@ export function DriveWeekScheduleNoticeCard({
       ref={listItemRef}
       className={`drive-week-schedule-notice-item${
         imminentAttention ? " drive-week-schedule-notice-item--imminent" : ""
-      }`}
+      }${liveAwaitingStudentAck ? " drive-week-schedule-notice-item--live-await-ack" : ""}`}
     >
       <div className="instructor-card instructor-card--student student-home-my-instructor">
         <div className="instructor-preview-bar">

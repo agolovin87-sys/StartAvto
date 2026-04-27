@@ -1303,6 +1303,7 @@ function StudentDashboardShell() {
                                         firstRow="time"
                                         personRowLabel="Инструктор"
                                         personShortName={shortName}
+                                        liveAwaitingStudentAck={!liveAcked}
                                         statusValue={
                                           <span className="drive-live-status-text">
                                             {!liveAcked

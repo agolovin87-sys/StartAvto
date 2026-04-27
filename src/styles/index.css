@@ -5882,13 +5882,28 @@ html[data-theme="light"] .instructor-week-schedule-hint-em {
   list-style: none;
 }
 
-.student-pending-drive-item .student-pending-drive-preview.instructor-card-preview,
+/** Свободные окна / «Подтверждение записи» — пульс до ответа курсанта */
+.student-pending-drive-item .student-pending-drive-preview.instructor-card-preview {
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: center;
+  gap: 0;
+  cursor: default;
+  animation: drive-week-imminent-glow 1.8s ease-in-out infinite;
+  border-color: rgba(34, 197, 94, 0.55);
+}
+
+/** Недельный график: без пульса, если просто «подтверждено»; пульс только --imminent / --live-await-ack */
 .drive-week-schedule-notice-item .student-pending-drive-preview.instructor-card-preview {
   flex-direction: column;
   align-items: stretch;
   justify-content: center;
   gap: 0;
   cursor: default;
+  border-color: rgba(34, 197, 94, 0.28);
+}
+
+.drive-week-schedule-notice-item--live-await-ack .student-pending-drive-preview.instructor-card-preview {
   animation: drive-week-imminent-glow 1.8s ease-in-out infinite;
   border-color: rgba(34, 197, 94, 0.55);
 }
@@ -5925,6 +5940,17 @@ html[data-theme="light"] .instructor-week-schedule-hint-em {
 .drive-week-schedule-notice-item.drive-week-schedule-notice-item--imminent {
   border-radius: 0.75rem;
   animation: drive-week-imminent-glow 1.15s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .student-pending-drive-item .student-pending-drive-preview.instructor-card-preview,
+  .drive-week-schedule-notice-item--live-await-ack .student-pending-drive-preview.instructor-card-preview {
+    animation: none;
+  }
+
+  .drive-week-schedule-notice-item.drive-week-schedule-notice-item--imminent {
+    animation: none;
+  }
 }
 
 .drive-scheduled-status-confirmed {
