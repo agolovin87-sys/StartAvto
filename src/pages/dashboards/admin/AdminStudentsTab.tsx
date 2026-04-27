@@ -58,6 +58,15 @@ function formatRuDate(ms: number): string {
   return `${String(d.getDate()).padStart(2, "0")}.${String(d.getMonth() + 1).padStart(2, "0")}.${d.getFullYear()}`;
 }
 
+function ruGroupsCountLabel(n: number): string {
+  const a = Math.abs(n) % 100;
+  const a1 = a % 10;
+  if (a > 10 && a < 20) return `${n} групп`;
+  if (a1 === 1) return `${n} группа`;
+  if (a1 >= 2 && a1 <= 4) return `${n} группы`;
+  return `${n} групп`;
+}
+
 function toDateInputValue(ms: number): string {
   const d = new Date(ms);
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
@@ -1335,6 +1344,7 @@ export function AdminStudentsTab() {
   const [confirmCancel, setConfirmCancel] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<TrainingGroup | null>(null);
   const [instructors, setInstructors] = useState<UserProfile[]>([]);
+  const [groupsSectionOpen, setGroupsSectionOpen] = useState(false);
   const [carsSectionOpen, setCarsSectionOpen] = useState(false);
 
   useEffect(() => {
@@ -1493,68 +1503,84 @@ export function AdminStudentsTab() {
 
   return (
     <div className="admin-tab">
-      <h1 className="admin-tab-title" id="groups-heading">
-        Группы
-      </h1>
-
-      <section
-        className="admin-students-groups"
-        aria-labelledby="groups-heading"
-      >
-        <div className="admin-groups-actions">
-          <button
-            type="button"
-            className="btn btn-primary btn-sm"
-            disabled={busy}
-            onClick={openCreate}
-          >
-            Создать группу
-          </button>
-        </div>
-
-        {feedback ? (
-          <div
-            className={
-              feedback.kind === "success"
-                ? "admin-feedback admin-feedback--success"
-                : "admin-feedback admin-feedback--error"
-            }
-            role={feedback.kind === "error" ? "alert" : "status"}
-          >
-            {feedback.text}
-          </div>
-        ) : null}
-
-        <h3
-          id="created-groups-heading"
-          className="admin-created-groups-title"
+      <section className="admin-students-groups-section" aria-labelledby="groups-heading">
+        <button
+          type="button"
+          id="groups-heading"
+          className="instructor-home-section-toggle glossy-panel admin-history-collapse-toggle"
+          aria-expanded={groupsSectionOpen}
+          aria-controls="admin-groups-collapsible-panel"
+          onClick={() => setGroupsSectionOpen((o) => !o)}
         >
-          Созданные группы
-        </h3>
+          <span className="instructor-home-section-toggle-label">Группы</span>
+          <span className="instructor-home-section-toggle-meta">
+            {ruGroupsCountLabel(groups.length)}
+          </span>
+          <IconChevron open={groupsSectionOpen} />
+        </button>
 
-        {groups.length === 0 ? (
-          <p className="admin-empty admin-groups-empty">
-            Пока нет групп. Нажмите «Создать группу», затем назначьте курсантов
-            ниже.
-          </p>
-        ) : (
-          <ul className="instructor-card-list">
-            {groups.map((g) => (
-              <GroupCard
-                key={g.id}
-                group={g}
-                members={students.filter((s) => s.groupId === g.id)}
-                instructors={instructors}
-                busy={busy}
-                groupChats={groupChats}
-                onEdit={() => openEdit(g)}
-                onDeleteRequest={() => setDeleteTarget(g)}
-                onRemoveMember={(uid) => void removeStudentFromGroup(uid)}
-                onLinkedChatChange={(tid, cid) => void onLinkedChatChange(tid, cid)}
-              />
-            ))}
-          </ul>
-        )}
+        <div
+          id="admin-groups-collapsible-panel"
+          className="admin-history-collapse-panel"
+          hidden={!groupsSectionOpen}
+        >
+          <div className="admin-students-groups">
+            <div className="admin-groups-actions">
+              <button
+                type="button"
+                className="btn btn-primary btn-sm"
+                disabled={busy}
+                onClick={openCreate}
+              >
+                Создать группу
+              </button>
+            </div>
+
+            {feedback ? (
+              <div
+                className={
+                  feedback.kind === "success"
+                    ? "admin-feedback admin-feedback--success"
+                    : "admin-feedback admin-feedback--error"
+                }
+                role={feedback.kind === "error" ? "alert" : "status"}
+              >
+                {feedback.text}
+              </div>
+            ) : null}
+
+            <h3
+              id="created-groups-heading"
+              className="admin-created-groups-title"
+            >
+              Созданные группы
+            </h3>
+
+            {groups.length === 0 ? (
+              <p className="admin-empty admin-groups-empty">
+                Пока нет групп. Нажмите «Создать группу», затем назначьте курсантов
+                ниже.
+              </p>
+            ) : (
+              <ul className="instructor-card-list">
+                {groups.map((g) => (
+                  <GroupCard
+                    key={g.id}
+                    group={g}
+                    members={students.filter((s) => s.groupId === g.id)}
+                    instructors={instructors}
+                    busy={busy}
+                    groupChats={groupChats}
+                    onEdit={() => openEdit(g)}
+                    onDeleteRequest={() => setDeleteTarget(g)}
+                    onRemoveMember={(uid) => void removeStudentFromGroup(uid)}
+                    onLinkedChatChange={(tid, cid) => void onLinkedChatChange(tid, cid)}
+                  />
+                ))}
+              </ul>
+            )}
+          </div>
+        </div>
       </section>
 
       <section className="admin-cars-section" aria-labelledby="admin-cars-heading">

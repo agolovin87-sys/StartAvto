@@ -27,6 +27,15 @@ const statusLabel: Record<AccountStatus, string> = {
   rejected: "Удалён",
 };
 
+function ruInstructorsCountLabel(n: number): string {
+  const a = Math.abs(n) % 100;
+  const a1 = a % 10;
+  if (a > 10 && a < 20) return `${n} инструкторов`;
+  if (a1 === 1) return `${n} инструктор`;
+  if (a1 >= 2 && a1 <= 4) return `${n} инструктора`;
+  return `${n} инструкторов`;
+}
+
 function telHrefFromPhone(phone: string): string | undefined {
   const n = normalizeRuPhone(phone);
   return n && isValidRuMobilePhone(n) ? `tel:${n}` : undefined;
@@ -973,6 +982,7 @@ function pickStudentOptions(
 }
 
 export function AdminInstructorsTab() {
+  const [sectionOpen, setSectionOpen] = useState(false);
   const [instructors, setInstructors] = useState<UserProfile[]>([]);
   const [allStudents, setAllStudents] = useState<UserProfile[]>([]);
   const [err, setErr] = useState<string | null>(null);
@@ -1004,27 +1014,45 @@ export function AdminInstructorsTab() {
 
   return (
     <div className="admin-tab admin-instructors-section">
-      <h1 className="admin-tab-title">Инструкторы</h1>
-      <p className="admin-tab-lead">Карточки инструкторов:</p>
-      {err ? (
-        <div className="form-error" role="alert">
-          {err}
-        </div>
-      ) : null}
-      {instructors.length === 0 ? (
-        <p className="admin-empty">Нет инструкторов в системе.</p>
-      ) : (
-        <ul className="instructor-card-list">
-          {instructors.map((ins) => (
-            <InstructorCard
-              key={ins.uid}
-              instructor={ins}
-              studentOwners={studentOwners}
-              studentsById={studentsById}
-            />
-          ))}
-        </ul>
-      )}
+      <button
+        type="button"
+        className="instructor-home-section-toggle glossy-panel admin-history-collapse-toggle"
+        aria-expanded={sectionOpen}
+        aria-controls="admin-instructors-collapsible-panel"
+        onClick={() => setSectionOpen((o) => !o)}
+      >
+        <span className="instructor-home-section-toggle-label">Инструкторы</span>
+        <span className="instructor-home-section-toggle-meta">
+          {ruInstructorsCountLabel(instructors.length)}
+        </span>
+        <IconChevron open={sectionOpen} />
+      </button>
+      <div
+        id="admin-instructors-collapsible-panel"
+        className="admin-history-collapse-panel"
+        hidden={!sectionOpen}
+      >
+        <p className="admin-tab-lead">Карточки инструкторов:</p>
+        {err ? (
+          <div className="form-error" role="alert">
+            {err}
+          </div>
+        ) : null}
+        {instructors.length === 0 ? (
+          <p className="admin-empty">Нет инструкторов в системе.</p>
+        ) : (
+          <ul className="instructor-card-list">
+            {instructors.map((ins) => (
+              <InstructorCard
+                key={ins.uid}
+                instructor={ins}
+                studentOwners={studentOwners}
+                studentsById={studentsById}
+              />
+            ))}
+          </ul>
+        )}
+      </div>
     </div>
   );
 }

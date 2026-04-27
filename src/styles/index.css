@@ -2734,6 +2734,25 @@ html[data-theme="light"] .page-loading-brand {
 /* Управление автомобилями (админ) */
 .admin-cars-section {
   margin-top: 1.75rem;
+  padding: 0.65rem 0.75rem 1rem;
+  border-radius: 0.85rem;
+  border: 1px solid rgba(167, 139, 250, 0.38);
+  background: linear-gradient(
+    155deg,
+    rgba(139, 92, 246, 0.2) 0%,
+    rgba(124, 58, 237, 0.14) 45%,
+    rgba(76, 29, 149, 0.12) 100%
+  );
+}
+
+html[data-theme="light"] .admin-cars-section {
+  border-color: rgba(139, 92, 246, 0.42);
+  background: linear-gradient(
+    155deg,
+    rgba(167, 139, 250, 0.28) 0%,
+    rgba(196, 181, 253, 0.2) 55%,
+    rgba(237, 233, 254, 0.45) 100%
+  );
 }
 
 .admin-cars-root {
