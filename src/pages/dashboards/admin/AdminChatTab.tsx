@@ -5036,8 +5036,6 @@ export function AdminChatTab({
               })}
             </ul>
           )}
-          <div className="chat-contacts-section-title">Контакты:</div>
-
           {contactsListLoading ? (
             <div className="chat-contacts-empty">Загрузка контактов…</div>
           ) : contactsForChatList.length === 0 ? (
@@ -5109,7 +5107,6 @@ export function AdminChatTab({
                 </ul>
               )}
 
-              <div className="chat-contacts-section-title">Курсанты:</div>
               {adminStudentGroupContacts.length === 0 ? (
                 <div className="chat-contacts-empty">Нет курсантов.</div>
               ) : (
@@ -5264,7 +5261,6 @@ export function AdminChatTab({
                 </>
               ) : null}
 
-              <div className="chat-contacts-section-title">Курсанты:</div>
               {adminStudentGroupContacts.length === 0 ? (
                 <div className="chat-contacts-empty">Нет курсантов.</div>
               ) : (
