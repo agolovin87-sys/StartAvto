@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { Route, Routes } from "react-router-dom";
 import type { UserProfile } from "@/types";
 import { subscribePendingNewUsers } from "@/firebase/admin";
 import { useBadgeExtra } from "@/context/BadgeExtraContext";
@@ -15,6 +16,10 @@ import { AdminGpsTab } from "@/pages/dashboards/admin/AdminGpsTab";
 import { AdminGamesTab } from "@/pages/dashboards/admin/AdminGamesTab";
 import { AdminHistoryTab } from "@/pages/dashboards/admin/AdminHistoryTab";
 import { AdminSettingsTab } from "@/pages/dashboards/admin/AdminSettingsTab";
+import {
+  AdminInstructorCabinetPreview,
+  AdminStudentCabinetPreview,
+} from "@/pages/dashboards/admin/AdminUserCabinetPreviewRoutes";
 import { backfillManualGroupParticipantEmails } from "@/firebase/chat";
 import { useDashboardTabHistory } from "@/hooks/useDashboardTabHistory";
 import { HapticButton } from "@/components/HapticButton";
@@ -126,7 +131,11 @@ const navItems: {
 export function AdminDashboard() {
   return (
     <AdminGpsPingProvider>
-      <AdminDashboardInner />
+      <Routes>
+        <Route path="view/student/:uid" element={<AdminStudentCabinetPreview />} />
+        <Route path="view/instructor/:uid" element={<AdminInstructorCabinetPreview />} />
+        <Route path="*" element={<AdminDashboardInner />} />
+      </Routes>
     </AdminGpsPingProvider>
   );
 }

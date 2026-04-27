@@ -18,6 +18,7 @@ import { mapFirebaseError } from "@/firebase/errors";
 import { isValidRuMobilePhone, normalizeRuPhone } from "@/lib/phoneRu";
 import type { AccountStatus, UserProfile, UserRole } from "@/types";
 import { isPresenceEffectivelyOnline } from "@/utils/presence";
+import { openAdminPreviewCabinet } from "@/lib/adminCabinetPreview";
 
 const statusLabel: Record<AccountStatus, string> = {
   pending: "Ожидает",
@@ -610,9 +611,21 @@ function InstructorCard({
                     placeholder="ФИО"
                   />
                 ) : (
-                  <h2 className="instructor-card-name instructor-card-name--full">
-                    {instructor.displayName}
-                  </h2>
+                  <>
+                    <h2 className="instructor-card-name instructor-card-name--full">
+                      {instructor.displayName}
+                    </h2>
+                    <button
+                      type="button"
+                      className="admin-user-cabinet-link"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        openAdminPreviewCabinet("instructor", instructor.uid);
+                      }}
+                    >
+                      Личный кабинет
+                    </button>
+                  </>
                 )}
                 {editMode ? (
                   <p className="instructor-edit-role-only">

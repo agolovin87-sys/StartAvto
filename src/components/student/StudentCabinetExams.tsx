@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { useAuth } from "@/context/AuthContext";
+import { useCabinetSubjectProfile } from "@/context/CabinetSubjectContext";
 import { useStudentExam } from "@/hooks/useStudentExam";
 import type { AdminScheduledExam } from "@/types/scheduledExam";
 import { ADMIN_SCHEDULED_EXAM_TYPE_LABEL } from "@/types/scheduledExam";
@@ -48,7 +48,7 @@ function latestByType(rows: AdminScheduledExam[], type: AdminScheduledExam["exam
  * Экзамены в ЛК: теория и ГИБДД (админ), вождение (сессия инструктора) — только просмотр.
  */
 export function StudentCabinetExams() {
-  const { profile } = useAuth();
+  const profile = useCabinetSubjectProfile();
   const studentId = profile?.uid;
   const groupId = profile?.groupId?.trim() ?? "";
 

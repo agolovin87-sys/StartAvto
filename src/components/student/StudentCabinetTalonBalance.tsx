@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { formatShortFio } from "@/admin/formatShortFio";
-import { useAuth } from "@/context/AuthContext";
+import { useCabinetEffectiveUid, useCabinetSubjectOverrideUid, useCabinetSubjectProfile } from "@/context/CabinetSubjectContext";
 import { subscribeTalonHistoryForUser, type TalonHistoryEntry } from "@/firebase/history";
 import type { UserRole } from "@/types";
 import { IconCabinetOps, IconCabinetTalon } from "@/components/student/studentCabinetSectionIcons";
@@ -53,8 +53,9 @@ function whoCell(e: TalonHistoryEntry): string {
  */
 export function StudentCabinetTalonBalance() {
   const navigate = useNavigate();
-  const { user, profile } = useAuth();
-  const uid = (user?.uid ?? profile?.uid ?? "").trim();
+  const uid = useCabinetEffectiveUid();
+  const profile = useCabinetSubjectProfile();
+  const cabinetPreview = useCabinetSubjectOverrideUid();
   const drivingTalons = profile?.talons ?? 0;
   const examTalons = profile?.examTalons ?? 0;
   const [entries, setEntries] = useState<TalonHistoryEntry[]>([]);
@@ -71,10 +72,14 @@ export function StudentCabinetTalonBalance() {
   const lastThree = useMemo(() => entries.slice(0, 3), [entries]);
 
   const goHistoryBalance = useCallback(() => {
+    if (cabinetPreview) {
+      navigate("/app/admin");
+      return;
+    }
     navigate("..", {
       state: { studentTab: "history" as const, focusHistoryBalance: true },
     });
-  }, [navigate]);
+  }, [navigate, cabinetPreview]);
 
   return (
     <section className="student-cabinet-card student-cabinet-talon-brief" aria-labelledby="cabinet-talon-title">

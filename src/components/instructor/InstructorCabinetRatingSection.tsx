@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { subscribeDriveSlotsForInstructor } from "@/firebase/drives";
-import { useAuth } from "@/context/AuthContext";
+import { useCabinetEffectiveUid } from "@/context/CabinetSubjectContext";
 import type { DriveSlot } from "@/types";
 import { IconInstructorCabinetRating } from "@/components/instructor/instructorCabinetSectionIcons";
 
@@ -8,8 +8,7 @@ import { IconInstructorCabinetRating } from "@/components/instructor/instructorC
  * Рейтинг инструктора по оценкам курсантов после завершённых вождений (1–5).
  */
 export function InstructorCabinetRatingSection() {
-  const { profile } = useAuth();
-  const uid = profile?.uid?.trim() ?? "";
+  const uid = useCabinetEffectiveUid();
   const [slots, setSlots] = useState<DriveSlot[]>([]);
 
   useEffect(() => {

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { ExamCard } from "@/components/student/ExamCard";
-import { useAuth } from "@/context/AuthContext";
+import { useCabinetEffectiveUid } from "@/context/CabinetSubjectContext";
 import { useStudentExam } from "@/hooks/useStudentExam";
 
 type Props = {
@@ -12,8 +12,7 @@ type Props = {
  * Предстоящие и завершённые внутренние экзамены по вождению (как на вкладке «Экзамен»).
  */
 export function StudentInternalDrivingExamPanels({ embedded = false }: Props) {
-  const { user } = useAuth();
-  const studentId = user?.uid ?? "";
+  const studentId = useCabinetEffectiveUid();
   const { loading, upcomingExams, completedExams, downloadExamPdf } = useStudentExam(studentId);
   const [completedCollapsed, setCompletedCollapsed] = useState(true);
 

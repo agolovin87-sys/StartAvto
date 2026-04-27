@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { subscribeDriveSlotsForInstructor } from "@/firebase/drives";
-import { useAuth } from "@/context/AuthContext";
+import { useCabinetEffectiveUid } from "@/context/CabinetSubjectContext";
 import type { DriveSlot } from "@/types";
 import {
   addCalendarDaysToDateKey,
@@ -49,8 +49,7 @@ function slotCountsAsWorkload(s: DriveSlot): boolean {
  * График загруженности: число подтверждённых вождений (слотов) по дням — как в «Мой график».
  */
 export function InstructorCabinetWorkloadSection() {
-  const { user, profile } = useAuth();
-  const uid = (user?.uid ?? profile?.uid ?? "").trim();
+  const uid = useCabinetEffectiveUid();
   const [slots, setSlots] = useState<DriveSlot[]>([]);
   const [weekMondayKey, setWeekMondayKey] = useState(() =>
     scheduleMondayDateKeyForWeekContaining()

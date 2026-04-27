@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { useAuth } from "@/context/AuthContext";
+import { useCabinetSubjectProfile } from "@/context/CabinetSubjectContext";
 import { IconCabinetProgress } from "@/components/student/studentCabinetSectionIcons";
 
 /** Норматив обязательных вождений по программе (для кольца прогресса). */
@@ -123,7 +123,7 @@ function DrivesRing({ completed, total }: { completed: number; total: number }) 
  * Прогресс вождений: завершённые по профилю к нормативу 29, роль по диапазону занятий.
  */
 export function StudentCabinetDrivingProgress() {
-  const { profile } = useAuth();
+  const profile = useCabinetSubjectProfile();
   const completed = profile?.drivesCount ?? 0;
   const total = STUDENT_CABINET_REQUIRED_DRIVES;
   const tier = useMemo(() => tierForCompletedCount(completed), [completed]);

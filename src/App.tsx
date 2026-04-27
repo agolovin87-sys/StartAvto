@@ -147,7 +147,7 @@ export default function App() {
           />
           <Route path="/install" element={<InstallAppPage />} />
           <Route path="/app" element={<RoleHome />} />
-          <Route path="/app/admin" element={<ProtectedApp role="admin" />} />
+          <Route path="/app/admin/*" element={<ProtectedApp role="admin" />} />
           <Route
             path="/app/instructor/*"
             element={

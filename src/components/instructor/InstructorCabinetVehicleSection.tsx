@@ -6,7 +6,7 @@ import {
   subscribeMaintenanceHistory,
 } from "@/services/carService";
 import type { Car, CarMaintenance } from "@/types/car";
-import { useAuth } from "@/context/AuthContext";
+import { useCabinetEffectiveUid } from "@/context/CabinetSubjectContext";
 import { scheduleMondayDateKeyForWeekContaining } from "@/lib/scheduleTimezone";
 
 function IconMini({ path }: { path: string }) {
@@ -48,8 +48,7 @@ function isDocExpiryUrgent(ms: number | null | undefined): boolean {
  * Учебный автомобиль инструктора (из профиля).
  */
 export function InstructorCabinetVehicleSection() {
-  const { user, profile } = useAuth();
-  const uid = (user?.uid ?? profile?.uid ?? "").trim();
+  const uid = useCabinetEffectiveUid();
   const [assignedCars, setAssignedCars] = useState<Car[]>([]);
   const assignedCar = assignedCars[0] ?? null;
   const [historyRows, setHistoryRows] = useState<CarMaintenance[]>([]);

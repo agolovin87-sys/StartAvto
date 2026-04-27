@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { formatShortFio } from "@/admin/formatShortFio";
-import { useAuth } from "@/context/AuthContext";
+import { useCabinetEffectiveUid } from "@/context/CabinetSubjectContext";
 import { useStudentDriveLessons } from "@/hooks/useStudentDriveLessons";
 import type { LessonDriveError } from "@/types/errorTemplate";
 import type { DrivingLesson } from "@/types/studentCabinet";
@@ -38,8 +38,7 @@ function formatErrorLine(e: LessonDriveError): string {
  * История завершённых вождений: ошибки из процесса урока; оценка — от инструктора (3–5) после урока.
  */
 export function StudentCabinetDrivingHistory() {
-  const { user, profile } = useAuth();
-  const uid = (user?.uid ?? profile?.uid ?? "").trim();
+  const uid = useCabinetEffectiveUid();
   const { lessons, errorsBySlot, loading, err } = useStudentDriveLessons(uid || undefined);
   const [open, setOpen] = useState(false);
   const [errorsModal, setErrorsModal] = useState<{

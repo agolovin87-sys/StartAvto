@@ -4366,6 +4366,25 @@ html[data-theme="purple"] .instr-side-btn.instr-side-loc:hover {
   font-weight: 600;
 }
 
+.admin-user-cabinet-link {
+  display: inline-block;
+  margin: 0.35rem 0 0;
+  padding: 0;
+  border: none;
+  background: none;
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--theme-accent, #2563eb);
+  text-decoration: underline;
+  text-underline-offset: 0.15em;
+  cursor: pointer;
+  text-align: left;
+}
+
+.admin-user-cabinet-link:hover {
+  opacity: 0.88;
+}
+
 .instructor-edit-role-only {
   margin: 0.35rem 0 0;
 }

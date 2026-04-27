@@ -1,13 +1,17 @@
 import { useNavigate } from "react-router-dom";
+import { useCabinetSubjectOverrideUid } from "@/context/CabinetSubjectContext";
 
-/** К «Главной» родительского раздела (`..` от `/app/…/cabinet`). */
+/** К «Главной» родительского раздела (`..` от `/app/…/cabinet`). В предпросмотре админом — на `/app/admin`. */
 export function CabinetBackToDashboardButton() {
   const navigate = useNavigate();
+  const cabinetPreviewUid = useCabinetSubjectOverrideUid();
   return (
     <button
       type="button"
       className="student-cab-back-ico-btn"
-      onClick={() => navigate("..")}
+      onClick={() =>
+        cabinetPreviewUid ? navigate("/app/admin") : navigate("..")
+      }
       aria-label="Назад к главной"
       title="Назад"
     >

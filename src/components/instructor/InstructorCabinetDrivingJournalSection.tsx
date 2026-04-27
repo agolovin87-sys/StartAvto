@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { formatShortFio } from "@/admin/formatShortFio";
 import { dateKeyToRuDisplay } from "@/admin/scheduleFormat";
-import { useAuth } from "@/context/AuthContext";
+import { useCabinetEffectiveUid, useCabinetSubjectProfile } from "@/context/CabinetSubjectContext";
 import { subscribeTrainingGroups } from "@/firebase/admin";
 import { subscribeDriveSlotsForInstructor } from "@/firebase/drives";
 import { subscribeUsersByIds } from "@/firebase/instructorData";
@@ -33,8 +33,8 @@ function IconChevron({ open }: { open: boolean }) {
 }
 
 export function InstructorCabinetDrivingJournalSection() {
-  const { user, profile } = useAuth();
-  const uid = (user?.uid ?? profile?.uid ?? "").trim();
+  const uid = useCabinetEffectiveUid();
+  const profile = useCabinetSubjectProfile();
   const attachedIds = useMemo(() => profile?.attachedStudentIds ?? [], [profile?.attachedStudentIds]);
 
   const [groups, setGroups] = useState<TrainingGroup[]>([]);

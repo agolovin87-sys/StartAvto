@@ -33,6 +33,7 @@ import type {
   UserRole,
 } from "@/types";
 import { isPresenceEffectivelyOnline } from "@/utils/presence";
+import { openAdminPreviewCabinet } from "@/lib/adminCabinetPreview";
 
 const statusLabel: Record<AccountStatus, string> = {
   pending: "Ожидает",
@@ -665,9 +666,24 @@ function GroupMemberStudentCard({
                     placeholder="ФИО"
                   />
                 ) : (
-                  <h2 className="instructor-card-name instructor-card-name--full">
-                    {student.displayName}
-                  </h2>
+                  <>
+                    <h2 className="instructor-card-name instructor-card-name--full">
+                      {student.displayName}
+                    </h2>
+                    <button
+                      type="button"
+                      className="admin-user-cabinet-link"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        openAdminPreviewCabinet(
+                          student.role === "instructor" ? "instructor" : "student",
+                          student.uid
+                        );
+                      }}
+                    >
+                      Личный кабинет
+                    </button>
+                  </>
                 )}
                 {editMode ? (
                   <p className="instructor-edit-role-only">

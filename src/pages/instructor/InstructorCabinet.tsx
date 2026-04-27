@@ -1,4 +1,4 @@
-import { useAuth } from "@/context/AuthContext";
+import { useCabinetSubjectProfile } from "@/context/CabinetSubjectContext";
 import { CabinetBackToDashboardButton } from "@/components/CabinetBackToDashboardButton";
 import { InstructorCabinetRatingSection } from "@/components/instructor/InstructorCabinetRatingSection";
 import { InstructorCabinetWorkloadSection } from "@/components/instructor/InstructorCabinetWorkloadSection";
@@ -10,7 +10,7 @@ import { InstructorCabinetVehicleSection } from "@/components/instructor/Instruc
  * Личный кабинет инструктора — структура как у курсанта (`/app/instructor/cabinet`).
  */
 export function InstructorCabinet() {
-  const { profile } = useAuth();
+  const profile = useCabinetSubjectProfile();
   const displayName = profile?.displayName?.trim() ?? "Инструктор";
 
   return (

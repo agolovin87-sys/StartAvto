@@ -1,4 +1,4 @@
-import { useAuth } from "@/context/AuthContext";
+import { useCabinetSubjectProfile } from "@/context/CabinetSubjectContext";
 import { CabinetBackToDashboardButton } from "@/components/CabinetBackToDashboardButton";
 import { StudentCabinetTalonBalance } from "@/components/student/StudentCabinetTalonBalance";
 import { StudentCabinetDrivingProgress } from "@/components/student/StudentCabinetDrivingProgress";
@@ -10,7 +10,7 @@ import { StudentCabinetInternalDrivingBlock } from "@/components/student/Student
  * Личный кабинет курсанта — отдельный маршрут `/app/student/cabinet` (без нижней навигации).
  */
 export function StudentCabinet() {
-  const { profile } = useAuth();
+  const profile = useCabinetSubjectProfile();
   const displayName = profile?.displayName?.trim() ?? "Курсант";
 
   return (
