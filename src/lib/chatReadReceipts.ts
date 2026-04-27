@@ -2,15 +2,28 @@
 
 export type OutgoingReceipt = "sent" | "read";
 
+/**
+ * Личный чат: курсор читателя в Firestore может быть записан под Firebase Auth uid,
+ * а в participantIds / контактах фигурировать другой id профиля — ищем максимум среди
+ * всех ключей lastReadAtByUser, кроме известных «своих» uid.
+ */
 export function pairOutgoingReceipt(
   messageCreatedAt: number,
-  peerUid: string,
-  lastReadByUser: Record<string, number> | undefined
+  lastReadByUser: Record<string, number> | undefined,
+  selfKnownUids: readonly string[]
 ): OutgoingReceipt {
-  const peer = peerUid.trim();
-  if (!peer) return "sent";
-  const r = lastReadByUser?.[peer] ?? 0;
-  return r >= messageCreatedAt ? "read" : "sent";
+  const self = new Set(
+    selfKnownUids
+      .map((s) => (typeof s === "string" ? s.trim() : ""))
+      .filter(Boolean)
+  );
+  let peerRead = 0;
+  for (const [uid, ms] of Object.entries(lastReadByUser ?? {})) {
+    const k = typeof uid === "string" ? uid.trim() : "";
+    if (!k || self.has(k)) continue;
+    if (typeof ms === "number" && Number.isFinite(ms) && ms > peerRead) peerRead = ms;
+  }
+  return peerRead >= messageCreatedAt ? "read" : "sent";
 }
 
 export function groupOutgoingReceipt(

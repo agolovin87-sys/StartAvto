@@ -103,6 +103,7 @@ function ChatOutgoingReceiptTicks({
 
 function dmContactListOutgoingReceipt(
   selfId: string,
+  selfKeysForReceipt: readonly string[],
   peerUid: string,
   dmChatId: string,
   preview: { at: number; senderId: string } | undefined,
@@ -113,7 +114,7 @@ function dmContactListOutgoingReceipt(
   const cid = dmChatId.trim();
   if (!me || !peer || !cid || !preview || preview.senderId !== me) return null;
   const room = allRoomsList.find((r) => r.id === cid);
-  return pairOutgoingReceipt(preview.at, peer, room?.lastReadAtByUser);
+  return pairOutgoingReceipt(preview.at, room?.lastReadAtByUser, selfKeysForReceipt);
 }
 
 function isFirestorePermissionDenied(e: unknown): boolean {
@@ -1402,6 +1403,15 @@ export function AdminChatTab({
   const currentUserId = authUid || (profile?.uid ?? "").trim();
   /** Для фильтра «удалено для меня», печати и pair_* — совпадать с токеном Auth, иначе лента пустая. */
   const selfId = authUid || currentUserId;
+  /** Для галочек: auth uid и uid профиля могут различаться — исключаем оба из чужих курсоров. */
+  const receiptSelfKeys = useMemo(() => {
+    const s = new Set<string>();
+    for (const x of [authUid, profile?.uid, currentUserId]) {
+      const t = (x ?? "").trim();
+      if (t) s.add(t);
+    }
+    return Array.from(s);
+  }, [authUid, profile?.uid, currentUserId]);
   const isAdmin = profile?.role === "admin";
   const currentUserRole = profile?.role ?? "student";
 
@@ -4624,6 +4634,7 @@ export function AdminChatTab({
                             currentUserRole={currentUserRole}
                             outgoingReceipt={dmContactListOutgoingReceipt(
                               selfId,
+                              receiptSelfKeys,
                               c.uid,
                               dmChatIdW,
                               dmChatIdW ? previewFromMessagesByChatId[dmChatIdW] : undefined,
@@ -5054,6 +5065,7 @@ export function AdminChatTab({
                         currentUserRole={currentUserRole}
                         outgoingReceipt={dmContactListOutgoingReceipt(
                           selfId,
+                          receiptSelfKeys,
                           c.uid,
                           dmChatId,
                           dmChatId ? previewFromMessagesByChatId[dmChatId] : undefined,
@@ -5138,6 +5150,7 @@ export function AdminChatTab({
                                 currentUserRole={currentUserRole}
                                 outgoingReceipt={dmContactListOutgoingReceipt(
                                   selfId,
+                                  receiptSelfKeys,
                                   c.uid,
                                   dmChatId,
                                   dmChatId ? previewFromMessagesByChatId[dmChatId] : undefined,
@@ -5199,6 +5212,7 @@ export function AdminChatTab({
                     currentUserRole={currentUserRole}
                     outgoingReceipt={dmContactListOutgoingReceipt(
                       selfId,
+                      receiptSelfKeys,
                       c.uid,
                       dmChatId,
                       dmChatId ? previewFromMessagesByChatId[dmChatId] : undefined,
@@ -5487,12 +5501,8 @@ export function AdminChatTab({
                               )
                             : pairOutgoingReceipt(
                                 m.createdAt,
-                                selectedContactId?.trim() ||
-                                  activeChatRoomForReceipts?.participantIds.find(
-                                    (x) => x.trim() !== currentUserId.trim()
-                                  ) ||
-                                  "",
-                                activeChatRoomForReceipts?.lastReadAtByUser
+                                activeChatRoomForReceipts?.lastReadAtByUser,
+                                receiptSelfKeys
                               )
                           : null;
                       const checkTitleMine = outgoingReceiptMine
