@@ -31,6 +31,15 @@ function kmUntilService(car: Car): number | null {
   return car.nextServiceDueMileage - car.mileage;
 }
 
+/** Дата показания пробега, переданная инструктором — дд.мм.гг. */
+function formatMileageSubmittedDate(ms: number): string {
+  const d = new Date(ms);
+  const dd = String(d.getDate()).padStart(2, "0");
+  const mm = String(d.getMonth() + 1).padStart(2, "0");
+  const yy = String(d.getFullYear()).slice(-2);
+  return `${dd}.${mm}.${yy}`;
+}
+
 function openDoc(dataUrl: string | null) {
   if (!dataUrl) return;
   window.open(dataUrl, "_blank", "noopener,noreferrer");
@@ -270,7 +279,20 @@ export function AdminCarsPanel() {
                         {STATUS_LABEL[c.status]}
                       </span>
                     </td>
-                    <td>{c.mileage.toLocaleString("ru-RU")} км</td>
+                    <td>
+                      <div className="admin-cars-mileage-cell">
+                        <span>{c.mileage.toLocaleString("ru-RU")} км</span>
+                        {typeof c.instructorMileageSubmittedAt === "number" &&
+                        Number.isFinite(c.instructorMileageSubmittedAt) ? (
+                          <span
+                            className="admin-cars-mileage-date"
+                            title="Дата переданных инструктором показаний пробега"
+                          >
+                            {formatMileageSubmittedDate(c.instructorMileageSubmittedAt)}
+                          </span>
+                        ) : null}
+                      </div>
+                    </td>
                     <td>
                       {c.nextServiceDueMileage != null ? (
                         <span className={warn ? "admin-cars-to-warn" : ""}>
