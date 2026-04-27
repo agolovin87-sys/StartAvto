@@ -41,6 +41,7 @@ import {
   shouldHideWeekScheduleGeoShareButtons,
 } from "@/lib/driveSession";
 import { useDriveImminentWeekAlert } from "@/hooks/useDriveImminentWeekAlert";
+import { playDriveEngineStartSound } from "@/audio/playDriveEngineStartSound";
 import { useAuth } from "@/context/AuthContext";
 import { useDriveLocationSharingUi } from "@/context/DriveLocationSharingUiContext";
 import { useChatNav } from "@/context/ChatNavContext";
@@ -722,6 +723,7 @@ export function InstructorHomeTab() {
     setWeekScheduleErr(null);
     try {
       await instructorStartDriveLiveSession(slot.id);
+      playDriveEngineStartSound(instructorUid.trim() || undefined);
     } catch (e: unknown) {
       setWeekScheduleErr(mapFirebaseError(e));
     } finally {

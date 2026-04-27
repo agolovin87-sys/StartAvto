@@ -30,6 +30,7 @@ import {
   scheduleMondayDateKeyForWeekContaining,
   weekDateKeysFromMondayDateKey,
 } from "@/lib/scheduleTimezone";
+import { playDriveEngineStartSound } from "@/audio/playDriveEngineStartSound";
 import { mapFirebaseError } from "@/firebase/errors";
 import { subscribeStudentAttachedInstructors } from "@/firebase/studentChatContacts";
 import {
@@ -981,6 +982,7 @@ function StudentDashboardShell() {
     setScheduleCancelErr(null);
     try {
       await studentAckDriveLiveSession(slotId);
+      playDriveEngineStartSound(studentUid.trim() || undefined);
     } catch (e: unknown) {
       setScheduleCancelErr(mapFirebaseError(e));
     } finally {
