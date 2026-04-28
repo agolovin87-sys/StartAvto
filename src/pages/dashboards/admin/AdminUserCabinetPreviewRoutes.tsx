@@ -3,26 +3,20 @@ import { Navigate, useParams } from "react-router-dom";
 import { PageLoading } from "@/components/PageLoading";
 import { CabinetSubjectProvider } from "@/context/CabinetSubjectContext";
 import { useAuth } from "@/context/AuthContext";
-import { getUserProfile } from "@/firebase/users";
 import { InstructorCabinet } from "@/pages/instructor/InstructorCabinet";
 import { StudentCabinet } from "@/pages/student/StudentCabinet";
 
 function PreviewGate({
-  expectedRole,
   children,
 }: {
-  expectedRole: "instructor" | "student";
   children: ReactNode;
 }) {
   const { uid } = useParams<{ uid: string }>();
   const { user, loading } = useAuth();
-  const [state, setState] = useState<"loading" | "ok" | "bad">("loading");
+  const [state, setState] = useState<"ok" | "bad">("ok");
 
   useEffect(() => {
-    if (loading) {
-      setState("loading");
-      return;
-    }
+    if (loading) return;
     if (!user?.uid) {
       setState("bad");
       return;
@@ -32,27 +26,12 @@ function PreviewGate({
       setState("bad");
       return;
     }
-    let cancelled = false;
-    void (async () => {
-      let p = null;
-      try {
-        p = await getUserProfile(id);
-      } catch {
-        if (!cancelled) setState("bad");
-        return;
-      }
-      if (cancelled) return;
-      if (!p || p.role !== expectedRole) setState("bad");
-      else setState("ok");
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [uid, expectedRole, user?.uid, loading]);
+    setState("ok");
+  }, [uid, user?.uid, loading]);
 
   const id = uid?.trim() ?? "";
   if (!id) return <Navigate to="/app/admin" replace />;
-  if (loading || state === "loading") return <PageLoading />;
+  if (loading) return <PageLoading />;
   if (state === "bad")
     return (
       <div className="admin-dashboard">
@@ -72,7 +51,7 @@ function PreviewGate({
 
 export function AdminStudentCabinetPreview() {
   return (
-    <PreviewGate expectedRole="student">
+    <PreviewGate>
       <StudentCabinet />
     </PreviewGate>
   );
@@ -80,7 +59,7 @@ export function AdminStudentCabinetPreview() {
 
 export function AdminInstructorCabinetPreview() {
   return (
-    <PreviewGate expectedRole="instructor">
+    <PreviewGate>
       <InstructorCabinet />
     </PreviewGate>
   );
