@@ -3213,6 +3213,25 @@ html[data-theme="light"] .admin-cars-service-alert {
   margin: 0.15rem 0 0.55rem;
 }
 
+.admin-history-user-picker-modal {
+  width: min(760px, calc(100vw - 24px));
+  max-height: min(82vh, calc(100dvh - 24px));
+  overflow: auto;
+  border-radius: 14px;
+  border: 1px solid var(--theme-line-strong);
+  background: var(--theme-bg-near);
+  box-shadow: var(--theme-card-shadow-2);
+  padding: 0.75rem 0.8rem 0.8rem;
+}
+
+.admin-history-user-picker-modal-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.55rem;
+  margin-bottom: 0.45rem;
+}
+
 .admin-history-user-picker-col {
   min-width: 0;
 }

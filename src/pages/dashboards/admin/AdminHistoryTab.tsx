@@ -186,8 +186,8 @@ export function AdminHistoryTab() {
     [activeUsersForPicker, pickedUserUid]
   );
   const pickedUserEntries = useMemo(
-    () => (pickedUserUid ? adminTalonEntries.filter((e) => e.targetUid === pickedUserUid) : []),
-    [adminTalonEntries, pickedUserUid]
+    () => (pickedUserUid ? talonEntries.filter((e) => e.targetUid === pickedUserUid) : []),
+    [talonEntries, pickedUserUid]
   );
   const pickedUserDrivingBalance =
     pickedUser?.talons ??
@@ -325,14 +325,16 @@ export function AdminHistoryTab() {
                 >
                   Выбрать пользователя
                 </button>
-                <button
-                  type="button"
-                  className="btn btn-sm btn-danger"
-                  disabled={selectedTalonEntryIds.length === 0 || clearTalonBusy}
-                  onClick={() => void deleteSelectedTalonEntries()}
-                >
-                  Удалить выбранные ({selectedTalonEntryIds.length})
-                </button>
+                {talonSelectionMode ? (
+                  <button
+                    type="button"
+                    className="btn btn-sm btn-danger"
+                    disabled={selectedTalonEntryIds.length === 0 || clearTalonBusy}
+                    onClick={() => void deleteSelectedTalonEntries()}
+                  >
+                    Удалить выбранные ({selectedTalonEntryIds.length})
+                  </button>
+                ) : null}
                 <button
                   type="button"
                   className="btn btn-sm btn-ghost"
@@ -345,35 +347,37 @@ export function AdminHistoryTab() {
             )}
           </div>
           {userPickerOpen ? (
-            <div className="admin-history-user-picker">
-              <div className="admin-history-user-picker-col">
-                <div className="chat-contacts-section-subtitle">Инструкторы</div>
-                <ul className="admin-history-user-picker-list">
-                  {instructorUsers.map((u) => (
-                    <li key={u.uid}>
-                      <button
-                        type="button"
-                        className={pickedUserUid === u.uid ? "admin-history-user-pick-btn is-active" : "admin-history-user-pick-btn"}
-                        onClick={() => setPickedUserUid(u.uid)}
-                      >
-                        {formatShortFio(u.displayName)}
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-              <div className="admin-history-user-picker-col">
-                <div className="chat-contacts-section-subtitle">Курсанты (по группам)</div>
-                {studentGroupsForPicker.map((g) => (
-                  <div key={g.id} className="admin-history-user-picker-group">
-                    <div className="admin-history-user-picker-group-title">{g.title}</div>
+            <div className="modal-backdrop" onClick={() => setUserPickerOpen(false)}>
+              <div
+                className="admin-history-user-picker-modal"
+                role="dialog"
+                aria-modal="true"
+                aria-label="Выбор пользователя для истории талонов"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <div className="admin-history-user-picker-modal-head">
+                  <strong>Выберите пользователя</strong>
+                  <button
+                    type="button"
+                    className="btn btn-sm btn-ghost"
+                    onClick={() => setUserPickerOpen(false)}
+                  >
+                    Закрыть
+                  </button>
+                </div>
+                <div className="admin-history-user-picker">
+                  <div className="admin-history-user-picker-col">
+                    <div className="chat-contacts-section-subtitle">Инструкторы</div>
                     <ul className="admin-history-user-picker-list">
-                      {g.users.map((u) => (
+                      {instructorUsers.map((u) => (
                         <li key={u.uid}>
                           <button
                             type="button"
                             className={pickedUserUid === u.uid ? "admin-history-user-pick-btn is-active" : "admin-history-user-pick-btn"}
-                            onClick={() => setPickedUserUid(u.uid)}
+                            onClick={() => {
+                              setPickedUserUid(u.uid);
+                              setUserPickerOpen(false);
+                            }}
                           >
                             {formatShortFio(u.displayName)}
                           </button>
@@ -381,7 +385,31 @@ export function AdminHistoryTab() {
                       ))}
                     </ul>
                   </div>
-                ))}
+                  <div className="admin-history-user-picker-col">
+                    <div className="chat-contacts-section-subtitle">Курсанты (по группам)</div>
+                    {studentGroupsForPicker.map((g) => (
+                      <div key={g.id} className="admin-history-user-picker-group">
+                        <div className="admin-history-user-picker-group-title">{g.title}</div>
+                        <ul className="admin-history-user-picker-list">
+                          {g.users.map((u) => (
+                            <li key={u.uid}>
+                              <button
+                                type="button"
+                                className={pickedUserUid === u.uid ? "admin-history-user-pick-btn is-active" : "admin-history-user-pick-btn"}
+                                onClick={() => {
+                                  setPickedUserUid(u.uid);
+                                  setUserPickerOpen(false);
+                                }}
+                              >
+                                {formatShortFio(u.displayName)}
+                              </button>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    ))}
+                  </div>
+                </div>
               </div>
             </div>
           ) : null}
