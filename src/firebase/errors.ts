@@ -1,12 +1,25 @@
 import type { FirebaseError } from "firebase/app";
 
-export function mapFirebaseError(err: unknown): string {
+const PROFILE_PERMISSION_DENIED_MSG =
+  "Не удалось загрузить профиль в базе данных (нет доступа). Обычно это значит, что учётная запись ещё не оформлена администратором, либо в Firestore документ пользователя не совпадает с аккаунтом (должен быть users/тот же uid, что в разделе Authentication). Обратитесь к администратору автошколы. Если вы администратор проекта — проверьте правила Firestore и поле role / список админских email.";
+
+export type MapFirebaseErrorOptions = {
+  /** Свой текст при permission-denied (например запись вождения, не профиль). */
+  permissionDeniedMessage?: string;
+};
+
+export function mapFirebaseError(
+  err: unknown,
+  options?: MapFirebaseErrorOptions
+): string {
   const code =
     err && typeof err === "object" && "code" in err
       ? String((err as FirebaseError).code)
       : "";
   if (code.endsWith("/permission-denied") || code === "permission-denied") {
-    return "Не удалось загрузить профиль в базе данных (нет доступа). Обычно это значит, что учётная запись ещё не оформлена администратором, либо в Firestore документ пользователя не совпадает с аккаунтом (должен быть users/тот же uid, что в разделе Authentication). Обратитесь к администратору автошколы. Если вы администратор проекта — проверьте правила Firestore и поле role / список админских email.";
+    return (
+      options?.permissionDeniedMessage?.trim() || PROFILE_PERMISSION_DENIED_MSG
+    );
   }
   if (code.endsWith("/resource-exhausted") || code === "resource-exhausted") {
     return "Превышена дневная квота Firestore (чтения/записи). Откройте Firebase Console → Usage, подождите сброса лимита или подключите тариф Blaze.";

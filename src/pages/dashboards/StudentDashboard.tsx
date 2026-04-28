@@ -984,7 +984,12 @@ function StudentDashboardShell() {
       await studentAckDriveLiveSession(slotId);
       playDriveEngineStartSound(studentUid.trim() || undefined);
     } catch (e: unknown) {
-      setScheduleCancelErr(mapFirebaseError(e));
+      setScheduleCancelErr(
+        mapFirebaseError(e, {
+          permissionDeniedMessage:
+            "Не удалось подтвердить начало вождения (нет доступа к записи). Обновите страницу и попробуйте снова. Если ошибка повторяется — обратитесь к администратору.",
+        })
+      );
     } finally {
       setAckLiveBusyId(null);
     }

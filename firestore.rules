@@ -481,7 +481,9 @@ service cloud.firestore {
 
       /** Курсант подтверждает начало вождения — меняется только liveStudentAckAt. */
       function driveSlotStudentAckLive() {
-        return isStudentAccount()
+        /** Достаточно совпадения studentId с auth.uid; не используем isStudentAccount(),
+         *  иначе отказ при «битом» role в users или задержке документа — ложное «нет профиля». */
+        return isSignedIn()
           && resource.data.studentId == request.auth.uid
           && resource.data.status == 'scheduled'
           && resource.data.get('liveStartedAt', null) != null
