@@ -3191,6 +3191,14 @@ html[data-theme="light"] .admin-cars-service-alert {
   margin-top: 0.35rem;
 }
 
+.admin-history-filter-row {
+  margin: 0.2rem 0 0.55rem;
+}
+
+.admin-history-filter-input {
+  width: 100%;
+}
+
 .admin-history-talon-op {
   display: inline-flex;
   align-items: baseline;

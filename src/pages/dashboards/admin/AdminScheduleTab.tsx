@@ -168,6 +168,8 @@ export function AdminScheduleTab() {
   const [instructors, setInstructors] = useState<UserProfile[]>([]);
   const [students, setStudents] = useState<UserProfile[]>([]);
   const [allSlots, setAllSlots] = useState<DriveSlot[]>([]);
+  const [exportOpen, setExportOpen] = useState(false);
+  const [instructorOpenById, setInstructorOpenById] = useState<Record<string, boolean>>({});
   const [historyOpenByInstructor, setHistoryOpenByInstructor] = useState<
     Record<string, boolean>
   >({});
@@ -284,7 +286,21 @@ export function AdminScheduleTab() {
           className="admin-history-collapse-panel admin-schedule-drive-panel"
           hidden={!driveScheduleOpen}
         >
-          <ExportSchedule nested />
+          <button
+            type="button"
+            className={exportOpen ? "admin-schedule-history-toggle is-open" : "admin-schedule-history-toggle"}
+            aria-expanded={exportOpen}
+            aria-controls="admin-schedule-export-panel"
+            onClick={() => setExportOpen((v) => !v)}
+          >
+            <span className="admin-schedule-history-toggle-label">Экспорт графика</span>
+            <IconChevronDown className="admin-schedule-history-chevron" />
+          </button>
+          {exportOpen ? (
+            <div id="admin-schedule-export-panel" className="admin-schedule-history-panel">
+              <ExportSchedule nested />
+            </div>
+          ) : null}
           {instructorList.length === 0 ? (
             <p className="admin-empty admin-schedule-drive-empty">Нет инструкторов.</p>
           ) : (
@@ -294,73 +310,95 @@ export function AdminScheduleTab() {
                 const byDay = groupByDateKey(instructorSlots);
                 const historyKeys = historyDateKeysOrdered(instructorSlots, todayKey);
                 const historyOpen = historyOpenByInstructor[ins.uid] ?? false;
+                const instructorOpen = instructorOpenById[ins.uid] ?? false;
                 const panelId = `history-panel-${ins.uid}`;
                 const btnId = `history-btn-${ins.uid}`;
+                const instructorPanelId = `instructor-panel-${ins.uid}`;
+                const instructorBtnId = `instructor-btn-${ins.uid}`;
                 return (
                   <li key={ins.uid} className="admin-schedule-instructor-block">
-                    <h2 className="admin-schedule-instructor-name">
-                      {formatShortFio(ins.displayName)}
-                    </h2>
-                <div className="admin-schedule-today-wrap">
-                  <ScheduleDayBlock
-                    dateKey={todayKey}
-                    slots={byDay.get(todayKey) ?? []}
-                    studentMap={studentMap}
-                    gpsTrackerEnabled={gpsTrackerEnabled}
-                    idSuffix={ins.uid}
-                    TitleTag="h3"
-                  />
-                </div>
-                <button
-                  type="button"
-                  id={btnId}
-                  className={
-                    historyOpen
-                      ? "admin-schedule-history-toggle is-open"
-                      : "admin-schedule-history-toggle"
-                  }
-                  aria-expanded={historyOpen}
-                  aria-controls={panelId}
-                  onClick={() =>
-                    setHistoryOpenByInstructor((prev) => ({
-                      ...prev,
-                      [ins.uid]: !prev[ins.uid],
-                    }))
-                  }
-                >
-                  <span className="admin-schedule-history-toggle-label">
-                    История вождений
-                  </span>
-                  <IconChevronDown className="admin-schedule-history-chevron" />
-                </button>
-                {historyOpen ? (
-                  <div
-                    id={panelId}
-                    className="admin-schedule-history-panel"
-                    role="region"
-                    aria-labelledby={btnId}
-                  >
-                    {historyKeys.length === 0 ? (
-                      <p className="admin-empty admin-schedule-history-empty">
-                        Нет записей в истории.
-                      </p>
-                    ) : (
-                      <div className="admin-schedule-instructor-history-days">
-                        {historyKeys.map((dk) => (
+                    <button
+                      type="button"
+                      id={instructorBtnId}
+                      className={instructorOpen ? "admin-schedule-history-toggle is-open" : "admin-schedule-history-toggle"}
+                      aria-expanded={instructorOpen}
+                      aria-controls={instructorPanelId}
+                      onClick={() =>
+                        setInstructorOpenById((prev) => ({
+                          ...prev,
+                          [ins.uid]: !prev[ins.uid],
+                        }))
+                      }
+                    >
+                      <span className="admin-schedule-history-toggle-label">
+                        {formatShortFio(ins.displayName)}
+                      </span>
+                      <IconChevronDown className="admin-schedule-history-chevron" />
+                    </button>
+                    {instructorOpen ? (
+                      <div id={instructorPanelId} role="region" aria-labelledby={instructorBtnId}>
+                        <div className="admin-schedule-today-wrap">
                           <ScheduleDayBlock
-                            key={dk}
-                            dateKey={dk}
-                            slots={byDay.get(dk) ?? []}
+                            dateKey={todayKey}
+                            slots={byDay.get(todayKey) ?? []}
                             studentMap={studentMap}
                             gpsTrackerEnabled={gpsTrackerEnabled}
                             idSuffix={ins.uid}
-                            TitleTag="h4"
+                            TitleTag="h3"
                           />
-                        ))}
+                        </div>
+                        <button
+                          type="button"
+                          id={btnId}
+                          className={
+                            historyOpen
+                              ? "admin-schedule-history-toggle is-open"
+                              : "admin-schedule-history-toggle"
+                          }
+                          aria-expanded={historyOpen}
+                          aria-controls={panelId}
+                          onClick={() =>
+                            setHistoryOpenByInstructor((prev) => ({
+                              ...prev,
+                              [ins.uid]: !prev[ins.uid],
+                            }))
+                          }
+                        >
+                          <span className="admin-schedule-history-toggle-label">
+                            История вождений
+                          </span>
+                          <IconChevronDown className="admin-schedule-history-chevron" />
+                        </button>
+                        {historyOpen ? (
+                          <div
+                            id={panelId}
+                            className="admin-schedule-history-panel"
+                            role="region"
+                            aria-labelledby={btnId}
+                          >
+                            {historyKeys.length === 0 ? (
+                              <p className="admin-empty admin-schedule-history-empty">
+                                Нет записей в истории.
+                              </p>
+                            ) : (
+                              <div className="admin-schedule-instructor-history-days">
+                                {historyKeys.map((dk) => (
+                                  <ScheduleDayBlock
+                                    key={dk}
+                                    dateKey={dk}
+                                    slots={byDay.get(dk) ?? []}
+                                    studentMap={studentMap}
+                                    gpsTrackerEnabled={gpsTrackerEnabled}
+                                    idSuffix={ins.uid}
+                                    TitleTag="h4"
+                                  />
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        ) : null}
                       </div>
-                    )}
-                  </div>
-                ) : null}
+                    ) : null}
                   </li>
                 );
               })}

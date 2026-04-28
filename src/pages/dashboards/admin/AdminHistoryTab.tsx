@@ -81,6 +81,7 @@ export function AdminHistoryTab() {
   const [err, setErr] = useState<string | null>(null);
   const [clearTalonConfirm, setClearTalonConfirm] = useState(false);
   const [clearTalonBusy, setClearTalonBusy] = useState(false);
+  const [talonFioFilter, setTalonFioFilter] = useState("");
 
   const [talonOpen, setTalonOpen] = useState(false);
   const [usersOpen, setUsersOpen] = useState(false);
@@ -106,6 +107,15 @@ export function AdminHistoryTab() {
     () => talonEntries.filter((e) => !e.fromRole || e.fromRole === "admin"),
     [talonEntries]
   );
+  const talonFioFilterNorm = talonFioFilter.trim().toLowerCase();
+  const filteredAdminTalonEntries = useMemo(() => {
+    if (!talonFioFilterNorm) return adminTalonEntries;
+    return adminTalonEntries.filter((e) => {
+      const full = (e.targetDisplayName ?? "").trim().toLowerCase();
+      const short = formatShortFio(e.targetDisplayName ?? "").toLowerCase();
+      return full.includes(talonFioFilterNorm) || short.includes(talonFioFilterNorm);
+    });
+  }, [adminTalonEntries, talonFioFilterNorm]);
 
   async function confirmClearTalonHistory() {
     setClearTalonBusy(true);
@@ -185,6 +195,16 @@ export function AdminHistoryTab() {
               </button>
             )}
           </div>
+          <div className="admin-history-filter-row">
+            <input
+              type="text"
+              className="input admin-history-filter-input"
+              value={talonFioFilter}
+              onChange={(e) => setTalonFioFilter(e.target.value)}
+              placeholder="Фильтр по ФИО курсанта (например: Насибуллина)"
+              aria-label="Фильтр по ФИО в истории талонов"
+            />
+          </div>
           <div className="admin-schedule-table-wrap admin-history-table-wrap">
             <table className="admin-schedule-table admin-history-table">
               <thead>
@@ -198,16 +218,18 @@ export function AdminHistoryTab() {
                 </tr>
               </thead>
               <tbody>
-                {adminTalonEntries.length === 0 ? (
+                {filteredAdminTalonEntries.length === 0 ? (
                   <tr>
                     <td colSpan={6} className="admin-schedule-table-empty">
-                      {talonEntries.length === 0
+                      {adminTalonEntries.length === 0
                         ? "Записей пока нет. Зачисление и списание талонов администратором фиксируются при сохранении в карточках курсантов и инструкторов."
-                        : "Нет операций администратора по талонам. Списания за вождение (инструктор — курсант) здесь не отображаются."}
+                        : talonFioFilterNorm
+                          ? "По этому ФИО записей не найдено."
+                          : "Нет операций администратора по талонам. Списания за вождение (инструктор — курсант) здесь не отображаются."}
                     </td>
                   </tr>
                 ) : (
-                  adminTalonEntries.map((e) => {
+                  filteredAdminTalonEntries.map((e) => {
                     const fromParty =
                       e.fromUid && e.fromRole
                         ? `${e.fromRole === "admin" ? "Админ" : roleLabel[e.fromRole]} / ${formatShortFio(e.fromDisplayName ?? "")}`
