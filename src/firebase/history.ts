@@ -146,6 +146,21 @@ export async function deleteAllTalonHistory(): Promise<void> {
   }
 }
 
+/** Удаляет выбранные записи журнала талонов по id (только для администратора по правилам Firestore). */
+export async function deleteTalonHistoryEntriesByIds(entryIds: string[]): Promise<void> {
+  const ids = [...new Set(entryIds.map((x) => x.trim()).filter(Boolean))];
+  if (ids.length === 0) return;
+  const { db } = getFirebase();
+  for (let i = 0; i < ids.length; i += FIRESTORE_BATCH_MAX) {
+    const chunk = ids.slice(i, i + FIRESTORE_BATCH_MAX);
+    const batch = writeBatch(db);
+    for (const id of chunk) {
+      batch.delete(doc(db, TALON_HISTORY, id));
+    }
+    await batch.commit();
+  }
+}
+
 export function subscribeTalonHistory(
   onUpdate: (entries: TalonHistoryEntry[]) => void,
   onError?: (e: Error) => void

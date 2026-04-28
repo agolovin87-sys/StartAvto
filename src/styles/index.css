@@ -3181,6 +3181,13 @@ html[data-theme="light"] .admin-cars-service-alert {
   gap: 0.5rem 0.65rem;
 }
 
+.admin-history-head-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.45rem;
+}
+
 .admin-history-clear-question {
   color: var(--theme-text);
   font-size: 0.95rem;
@@ -3197,6 +3204,65 @@ html[data-theme="light"] .admin-cars-service-alert {
 
 .admin-history-filter-input {
   width: 100%;
+}
+
+.admin-history-user-picker {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+  margin: 0.15rem 0 0.55rem;
+}
+
+.admin-history-user-picker-col {
+  min-width: 0;
+}
+
+.admin-history-user-picker-group {
+  margin-top: 0.4rem;
+}
+
+.admin-history-user-picker-group-title {
+  font-size: 0.8rem;
+  color: var(--theme-muted);
+  margin-bottom: 0.25rem;
+}
+
+.admin-history-user-picker-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.admin-history-user-pick-btn {
+  width: 100%;
+  text-align: left;
+  border: 1px solid var(--theme-line-input);
+  background: var(--theme-bg-soft);
+  color: var(--theme-text);
+  border-radius: 8px;
+  padding: 0.3rem 0.45rem;
+  cursor: pointer;
+}
+
+.admin-history-user-pick-btn.is-active {
+  border-color: rgba(56, 189, 248, 0.55);
+  background: rgba(56, 189, 248, 0.12);
+}
+
+.admin-history-user-focus {
+  margin: 0.2rem 0 0.7rem;
+}
+
+.admin-history-user-focus-head {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+  align-items: center;
+  margin-bottom: 0.35rem;
+  color: var(--theme-soft);
 }
 
 .admin-history-talon-op {

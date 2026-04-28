@@ -2,13 +2,14 @@ import { useEffect, useMemo, useState } from "react";
 import { formatShortFio } from "@/admin/formatShortFio";
 import { useAuth } from "@/context/AuthContext";
 import { AuditLogPanel } from "@/pages/admin/AuditLog";
-import { subscribeAllUsersAdmin } from "@/firebase/admin";
+import { subscribeAllUsersAdmin, subscribeTrainingGroups } from "@/firebase/admin";
 import {
   deleteAllTalonHistory,
+  deleteTalonHistoryEntriesByIds,
   subscribeTalonHistory,
   type TalonHistoryEntry,
 } from "@/firebase/history";
-import type { UserProfile, UserRole } from "@/types";
+import type { TrainingGroup, UserProfile, UserRole } from "@/types";
 
 const roleLabel: Record<UserRole, string> = {
   admin: "Администратор",
@@ -55,6 +56,27 @@ function buildUserHistoryRows(users: UserProfile[]): UserHistoryRow[] {
   return rows;
 }
 
+function groupStudentsForPicker(
+  students: UserProfile[],
+  groupNameById: Map<string, string>
+): Array<{ id: string; title: string; users: UserProfile[] }> {
+  const buckets = new Map<string, { title: string; users: UserProfile[] }>();
+  for (const s of students) {
+    const gid = (s.groupId ?? "").trim() || "__no_group__";
+    const title =
+      gid === "__no_group__" ? "Без группы" : groupNameById.get(gid) || "Группа";
+    if (!buckets.has(gid)) buckets.set(gid, { title, users: [] });
+    buckets.get(gid)?.users.push(s);
+  }
+  const out = [...buckets.entries()].map(([id, v]) => ({
+    id,
+    title: v.title,
+    users: v.users.slice().sort((a, b) => a.displayName.localeCompare(b.displayName, "ru")),
+  }));
+  out.sort((a, b) => a.title.localeCompare(b.title, "ru"));
+  return out;
+}
+
 function IconClearHistory({ className }: { className?: string }) {
   return (
     <svg className={className} viewBox="0 0 24 24" aria-hidden>
@@ -78,10 +100,15 @@ export function AdminHistoryTab() {
   const { user, loading: authLoading } = useAuth();
   const [talonEntries, setTalonEntries] = useState<TalonHistoryEntry[]>([]);
   const [users, setUsers] = useState<UserProfile[]>([]);
+  const [trainingGroups, setTrainingGroups] = useState<TrainingGroup[]>([]);
   const [err, setErr] = useState<string | null>(null);
   const [clearTalonConfirm, setClearTalonConfirm] = useState(false);
   const [clearTalonBusy, setClearTalonBusy] = useState(false);
   const [talonFioFilter, setTalonFioFilter] = useState("");
+  const [talonSelectionMode, setTalonSelectionMode] = useState(false);
+  const [selectedTalonEntryIds, setSelectedTalonEntryIds] = useState<string[]>([]);
+  const [userPickerOpen, setUserPickerOpen] = useState(false);
+  const [pickedUserUid, setPickedUserUid] = useState<string>("");
 
   const [talonOpen, setTalonOpen] = useState(false);
   const [usersOpen, setUsersOpen] = useState(false);
@@ -94,9 +121,11 @@ export function AdminHistoryTab() {
     setErr(null);
     const unsubT = subscribeTalonHistory(setTalonEntries, (e) => setErr(e.message));
     const unsubU = subscribeAllUsersAdmin(setUsers, (e) => setErr(e.message));
+    const unsubG = subscribeTrainingGroups(setTrainingGroups, (e) => setErr(e.message));
     return () => {
       unsubT();
       unsubU();
+      unsubG();
     };
   }, [authLoading, user]);
 
@@ -116,6 +145,89 @@ export function AdminHistoryTab() {
       return full.includes(talonFioFilterNorm) || short.includes(talonFioFilterNorm);
     });
   }, [adminTalonEntries, talonFioFilterNorm]);
+  const selectedTalonIdSet = useMemo(() => new Set(selectedTalonEntryIds), [selectedTalonEntryIds]);
+  const allFilteredSelected =
+    filteredAdminTalonEntries.length > 0 &&
+    filteredAdminTalonEntries.every((e) => selectedTalonIdSet.has(e.id));
+  const someFilteredSelected =
+    filteredAdminTalonEntries.some((e) => selectedTalonIdSet.has(e.id)) && !allFilteredSelected;
+
+  const groupNameById = useMemo(() => {
+    const m = new Map<string, string>();
+    for (const g of trainingGroups) {
+      const id = (g.id ?? "").trim();
+      if (!id) continue;
+      m.set(id, (g.name ?? "").trim() || "Группа");
+    }
+    return m;
+  }, [trainingGroups]);
+  const activeUsersForPicker = useMemo(
+    () => users.filter((u) => u.accountStatus !== "rejected"),
+    [users]
+  );
+  const instructorUsers = useMemo(
+    () =>
+      activeUsersForPicker
+        .filter((u) => u.role === "instructor")
+        .slice()
+        .sort((a, b) => a.displayName.localeCompare(b.displayName, "ru")),
+    [activeUsersForPicker]
+  );
+  const studentGroupsForPicker = useMemo(
+    () =>
+      groupStudentsForPicker(
+        activeUsersForPicker.filter((u) => u.role === "student"),
+        groupNameById
+      ),
+    [activeUsersForPicker, groupNameById]
+  );
+  const pickedUser = useMemo(
+    () => activeUsersForPicker.find((u) => u.uid === pickedUserUid) ?? null,
+    [activeUsersForPicker, pickedUserUid]
+  );
+  const pickedUserEntries = useMemo(
+    () => (pickedUserUid ? adminTalonEntries.filter((e) => e.targetUid === pickedUserUid) : []),
+    [adminTalonEntries, pickedUserUid]
+  );
+  const pickedUserDrivingBalance =
+    pickedUser?.talons ??
+    (pickedUserEntries.length > 0 ? pickedUserEntries[0]?.newTalons ?? 0 : 0);
+
+  function toggleRowSelected(entryId: string) {
+    const id = entryId.trim();
+    if (!id) return;
+    setSelectedTalonEntryIds((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
+    );
+  }
+
+  function toggleSelectAllFilteredRows() {
+    setSelectedTalonEntryIds((prev) => {
+      const prevSet = new Set(prev);
+      if (allFilteredSelected) {
+        for (const e of filteredAdminTalonEntries) prevSet.delete(e.id);
+      } else {
+        for (const e of filteredAdminTalonEntries) prevSet.add(e.id);
+      }
+      return [...prevSet];
+    });
+  }
+
+  async function deleteSelectedTalonEntries() {
+    if (selectedTalonEntryIds.length === 0) return;
+    if (!confirm(`Удалить выбранные записи: ${selectedTalonEntryIds.length} шт.?`)) return;
+    setClearTalonBusy(true);
+    setErr(null);
+    try {
+      await deleteTalonHistoryEntriesByIds(selectedTalonEntryIds);
+      setSelectedTalonEntryIds([]);
+      setTalonSelectionMode(false);
+    } catch (e: unknown) {
+      setErr(e instanceof Error ? e.message : "Не удалось удалить выбранные записи");
+    } finally {
+      setClearTalonBusy(false);
+    }
+  }
 
   async function confirmClearTalonHistory() {
     setClearTalonBusy(true);
@@ -183,18 +295,141 @@ export function AdminHistoryTab() {
                 </button>
               </div>
             ) : (
-              <button
-                type="button"
-                className="admin-history-clear-btn glossy-btn"
-                title="Очистить историю баланса талонов"
-                aria-label="Очистить историю баланса талонов"
-                disabled={talonEntries.length === 0 || clearTalonBusy}
-                onClick={() => setClearTalonConfirm(true)}
-              >
-                <IconClearHistory className="admin-history-clear-icon" />
-              </button>
+              <div className="admin-history-head-actions">
+                <button
+                  type="button"
+                  className="admin-history-clear-btn glossy-btn"
+                  title={
+                    talonSelectionMode
+                      ? "Отменить выбор записей"
+                      : "Выбрать записи для удаления"
+                  }
+                  aria-label={
+                    talonSelectionMode
+                      ? "Отменить выбор записей"
+                      : "Выбрать записи для удаления"
+                  }
+                  disabled={talonEntries.length === 0 || clearTalonBusy}
+                  onClick={() => {
+                    setClearTalonConfirm(false);
+                    setTalonSelectionMode((v) => !v);
+                    if (talonSelectionMode) setSelectedTalonEntryIds([]);
+                  }}
+                >
+                  <IconClearHistory className="admin-history-clear-icon" />
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-sm btn-ghost"
+                  onClick={() => setUserPickerOpen((v) => !v)}
+                >
+                  Выбрать пользователя
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-sm btn-danger"
+                  disabled={selectedTalonEntryIds.length === 0 || clearTalonBusy}
+                  onClick={() => void deleteSelectedTalonEntries()}
+                >
+                  Удалить выбранные ({selectedTalonEntryIds.length})
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-sm btn-ghost"
+                  disabled={talonEntries.length === 0 || clearTalonBusy || talonSelectionMode}
+                  onClick={() => setClearTalonConfirm(true)}
+                >
+                  Очистить все
+                </button>
+              </div>
             )}
           </div>
+          {userPickerOpen ? (
+            <div className="admin-history-user-picker">
+              <div className="admin-history-user-picker-col">
+                <div className="chat-contacts-section-subtitle">Инструкторы</div>
+                <ul className="admin-history-user-picker-list">
+                  {instructorUsers.map((u) => (
+                    <li key={u.uid}>
+                      <button
+                        type="button"
+                        className={pickedUserUid === u.uid ? "admin-history-user-pick-btn is-active" : "admin-history-user-pick-btn"}
+                        onClick={() => setPickedUserUid(u.uid)}
+                      >
+                        {formatShortFio(u.displayName)}
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+              <div className="admin-history-user-picker-col">
+                <div className="chat-contacts-section-subtitle">Курсанты (по группам)</div>
+                {studentGroupsForPicker.map((g) => (
+                  <div key={g.id} className="admin-history-user-picker-group">
+                    <div className="admin-history-user-picker-group-title">{g.title}</div>
+                    <ul className="admin-history-user-picker-list">
+                      {g.users.map((u) => (
+                        <li key={u.uid}>
+                          <button
+                            type="button"
+                            className={pickedUserUid === u.uid ? "admin-history-user-pick-btn is-active" : "admin-history-user-pick-btn"}
+                            onClick={() => setPickedUserUid(u.uid)}
+                          >
+                            {formatShortFio(u.displayName)}
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : null}
+          {pickedUser ? (
+            <div className="admin-history-user-focus">
+              <div className="admin-history-user-focus-head">
+                <strong>{formatShortFio(pickedUser.displayName)}</strong>
+                <span>{roleLabel[pickedUser.role]}</span>
+                <span>Общее количество талонов: {pickedUserDrivingBalance}</span>
+              </div>
+              <div className="admin-schedule-table-wrap admin-history-table-wrap">
+                <table className="admin-schedule-table admin-history-table">
+                  <thead>
+                    <tr>
+                      <th>Дата</th>
+                      <th>Время</th>
+                      <th>Зачисление</th>
+                      <th>Списание</th>
+                      <th>Кому</th>
+                      <th>От кого</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {pickedUserEntries.length === 0 ? (
+                      <tr>
+                        <td colSpan={6} className="admin-schedule-table-empty">Нет записей по пользователю.</td>
+                      </tr>
+                    ) : (
+                      pickedUserEntries.map((e) => (
+                        <tr key={`picked-${e.id}`}>
+                          <td>{formatRuDate(e.at)}</td>
+                          <td>{formatRuTime(e.at)}</td>
+                          <td>{e.delta > 0 ? `+${e.delta}` : "—"}</td>
+                          <td>{e.delta < 0 ? `-${Math.abs(e.delta)}` : "—"}</td>
+                          <td>{formatShortFio(e.targetDisplayName)}</td>
+                          <td>
+                            {e.fromUid && e.fromRole
+                              ? `${e.fromRole === "admin" ? "Админ" : roleLabel[e.fromRole]} / ${formatShortFio(e.fromDisplayName ?? "")}`
+                              : "—"}
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          ) : null}
           <div className="admin-history-filter-row">
             <input
               type="text"
@@ -209,6 +444,19 @@ export function AdminHistoryTab() {
             <table className="admin-schedule-table admin-history-table">
               <thead>
                 <tr>
+                  {talonSelectionMode ? (
+                    <th>
+                      <input
+                        type="checkbox"
+                        aria-label="Выбрать все строки"
+                        checked={allFilteredSelected}
+                        ref={(el) => {
+                          if (el) el.indeterminate = someFilteredSelected;
+                        }}
+                        onChange={toggleSelectAllFilteredRows}
+                      />
+                    </th>
+                  ) : null}
                   <th>Дата</th>
                   <th>Время</th>
                   <th>Списание / зачисление</th>
@@ -220,7 +468,7 @@ export function AdminHistoryTab() {
               <tbody>
                 {filteredAdminTalonEntries.length === 0 ? (
                   <tr>
-                    <td colSpan={6} className="admin-schedule-table-empty">
+                    <td colSpan={talonSelectionMode ? 7 : 6} className="admin-schedule-table-empty">
                       {adminTalonEntries.length === 0
                         ? "Записей пока нет. Зачисление и списание талонов администратором фиксируются при сохранении в карточках курсантов и инструкторов."
                         : talonFioFilterNorm
@@ -236,6 +484,16 @@ export function AdminHistoryTab() {
                         : "—";
                     return (
                       <tr key={e.id}>
+                        {talonSelectionMode ? (
+                          <td>
+                            <input
+                              type="checkbox"
+                              aria-label="Выбрать запись"
+                              checked={selectedTalonIdSet.has(e.id)}
+                              onChange={() => toggleRowSelected(e.id)}
+                            />
+                          </td>
+                        ) : null}
                         <td>{formatRuDate(e.at)}</td>
                         <td>{formatRuTime(e.at)}</td>
                         <td>
