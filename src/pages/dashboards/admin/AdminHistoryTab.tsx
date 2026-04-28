@@ -410,51 +410,53 @@ export function AdminHistoryTab() {
                     ))}
                   </div>
                 </div>
-              </div>
-            </div>
-          ) : null}
-          {pickedUser ? (
-            <div className="admin-history-user-focus">
-              <div className="admin-history-user-focus-head">
-                <strong>{formatShortFio(pickedUser.displayName)}</strong>
-                <span>{roleLabel[pickedUser.role]}</span>
-                <span>Общее количество талонов: {pickedUserDrivingBalance}</span>
-              </div>
-              <div className="admin-schedule-table-wrap admin-history-table-wrap">
-                <table className="admin-schedule-table admin-history-table">
-                  <thead>
-                    <tr>
-                      <th>Дата</th>
-                      <th>Время</th>
-                      <th>Зачисление</th>
-                      <th>Списание</th>
-                      <th>Кому</th>
-                      <th>От кого</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {pickedUserEntries.length === 0 ? (
-                      <tr>
-                        <td colSpan={6} className="admin-schedule-table-empty">Нет записей по пользователю.</td>
-                      </tr>
-                    ) : (
-                      pickedUserEntries.map((e) => (
-                        <tr key={`picked-${e.id}`}>
-                          <td>{formatRuDate(e.at)}</td>
-                          <td>{formatRuTime(e.at)}</td>
-                          <td>{e.delta > 0 ? `+${e.delta}` : "—"}</td>
-                          <td>{e.delta < 0 ? `-${Math.abs(e.delta)}` : "—"}</td>
-                          <td>{formatShortFio(e.targetDisplayName)}</td>
-                          <td>
-                            {e.fromUid && e.fromRole
-                              ? `${e.fromRole === "admin" ? "Админ" : roleLabel[e.fromRole]} / ${formatShortFio(e.fromDisplayName ?? "")}`
-                              : "—"}
-                          </td>
-                        </tr>
-                      ))
-                    )}
-                  </tbody>
-                </table>
+                {pickedUser ? (
+                  <div className="admin-history-user-focus">
+                    <div className="admin-history-user-focus-head">
+                      <strong>{formatShortFio(pickedUser.displayName)}</strong>
+                      <span>{roleLabel[pickedUser.role]}</span>
+                      <span>Общее количество талонов: {pickedUserDrivingBalance}</span>
+                    </div>
+                    <div className="admin-schedule-table-wrap admin-history-table-wrap">
+                      <table className="admin-schedule-table admin-history-table">
+                        <thead>
+                          <tr>
+                            <th>Дата</th>
+                            <th>Время</th>
+                            <th>Зачисление</th>
+                            <th>Списание</th>
+                            <th>Кому</th>
+                            <th>От кого</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {pickedUserEntries.length === 0 ? (
+                            <tr>
+                              <td colSpan={6} className="admin-schedule-table-empty">
+                                Нет записей по пользователю.
+                              </td>
+                            </tr>
+                          ) : (
+                            pickedUserEntries.map((e) => (
+                              <tr key={`picked-${e.id}`}>
+                                <td>{formatRuDate(e.at)}</td>
+                                <td>{formatRuTime(e.at)}</td>
+                                <td>{e.delta > 0 ? `+${e.delta}` : "—"}</td>
+                                <td>{e.delta < 0 ? `-${Math.abs(e.delta)}` : "—"}</td>
+                                <td>{formatShortFio(e.targetDisplayName)}</td>
+                                <td>
+                                  {e.fromUid && e.fromRole
+                                    ? `${e.fromRole === "admin" ? "Админ" : roleLabel[e.fromRole]} / ${formatShortFio(e.fromDisplayName ?? "")}`
+                                    : "—"}
+                                </td>
+                              </tr>
+                            ))
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                ) : null}
               </div>
             </div>
           ) : null}
