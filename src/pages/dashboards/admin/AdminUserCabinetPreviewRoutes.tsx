@@ -2,6 +2,7 @@ import { useEffect, useState, type ReactNode } from "react";
 import { Navigate, useParams } from "react-router-dom";
 import { PageLoading } from "@/components/PageLoading";
 import { CabinetSubjectProvider } from "@/context/CabinetSubjectContext";
+import { useAuth } from "@/context/AuthContext";
 import { getUserProfile } from "@/firebase/users";
 import { InstructorCabinet } from "@/pages/instructor/InstructorCabinet";
 import { StudentCabinet } from "@/pages/student/StudentCabinet";
@@ -14,9 +15,18 @@ function PreviewGate({
   children: ReactNode;
 }) {
   const { uid } = useParams<{ uid: string }>();
+  const { user, loading } = useAuth();
   const [state, setState] = useState<"loading" | "ok" | "bad">("loading");
 
   useEffect(() => {
+    if (loading) {
+      setState("loading");
+      return;
+    }
+    if (!user?.uid) {
+      setState("bad");
+      return;
+    }
     const id = uid?.trim();
     if (!id) {
       setState("bad");
@@ -24,7 +34,13 @@ function PreviewGate({
     }
     let cancelled = false;
     void (async () => {
-      const p = await getUserProfile(id);
+      let p = null;
+      try {
+        p = await getUserProfile(id);
+      } catch {
+        if (!cancelled) setState("bad");
+        return;
+      }
       if (cancelled) return;
       if (!p || p.role !== expectedRole) setState("bad");
       else setState("ok");
@@ -32,11 +48,11 @@ function PreviewGate({
     return () => {
       cancelled = true;
     };
-  }, [uid, expectedRole]);
+  }, [uid, expectedRole, user?.uid, loading]);
 
   const id = uid?.trim() ?? "";
   if (!id) return <Navigate to="/app/admin" replace />;
-  if (state === "loading") return <PageLoading />;
+  if (loading || state === "loading") return <PageLoading />;
   if (state === "bad")
     return (
       <div className="admin-dashboard">
